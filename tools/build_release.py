@@ -186,7 +186,7 @@ def main() -> None:
         parser.error("Host documentation_url must point to the Avatar connectors guide")
     vrc = unity_sources(VRC_ROOT, tracked)
     manifest = json.loads(vrc["package.json"])
-    vpm_name = f"{PACKAGE}-{args.version}.zip"
+    vpm_name = f"XRT-Avatar-Plugin-VRChat-VCC-{args.version}.zip"
     url = f"https://github.com/{REPOSITORY}/releases/download/v{args.version}/{vpm_name}"
     if manifest.get("name") != PACKAGE or manifest.get("version") != args.version:
         parser.error("Package name/version differs from the requested release")
@@ -196,11 +196,14 @@ def main() -> None:
         parser.error("legacyFolders must identify only the VRChat installer folder and its stable GUID")
     if "zipSHA256" in manifest:
         parser.error("zipSHA256 belongs in the VPM listing, not package.json")
-    args.output.mkdir(parents=True, exist_ok=True)
+    packages = args.output / "packages"
+    metadata = args.output / "metadata"
+    packages.mkdir(parents=True, exist_ok=True)
+    metadata.mkdir(parents=True, exist_ok=True)
     paths = []
 
     def artifact(name: str) -> Path:
-        result = args.output / name
+        result = packages / name
         paths.append(result)
         return result
 
@@ -225,7 +228,7 @@ def main() -> None:
     write_zip(artifact(f"XRT-Avatar-Plugin-Overte-{args.version}.zip"), overte)
 
     listing = json_bytes(make_listing(manifest, vpm_archive, args.listing_input))
-    artifact("index.json").write_bytes(listing)
+    (metadata / "index.json").write_bytes(listing)
     package_manifest = {"version": args.version, "tag": "v" + args.version,
                         "source_commit": git("rev-parse", "HEAD").decode().strip(),
                         "source_tree_dirty": dirty,
@@ -233,12 +236,12 @@ def main() -> None:
                         "connector_protocol": compatibility["connector_protocol"],
                         "artifacts": [{"name": path.name, "sha256": sha256(path), "bytes": path.stat().st_size}
                                       for path in paths]}
-    artifact("release-manifest.json").write_bytes(json_bytes(package_manifest))
-    (args.output / "SHA256SUMS").write_text("".join(f"{sha256(path)}  {path.name}\n" for path in paths), "utf-8")
+    (metadata / "release-manifest.json").write_bytes(json_bytes(package_manifest))
+    (metadata / "SHA256SUMS").write_text("".join(f"{sha256(path)}  {path.name}\n" for path in paths), "utf-8")
     if args.listing_output:
         args.listing_output.parent.mkdir(parents=True, exist_ok=True)
         args.listing_output.write_bytes(listing)
-    print(f"Built {len(paths) + 1} release files in {args.output}")
+    print(f"Built {len(paths)} install packages in {packages}; release metadata in {metadata}")
     print("Archive structure and GUIDs checked. Unity and game acceptance are separate checks.")
 
 

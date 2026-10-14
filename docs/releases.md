@@ -4,17 +4,19 @@ Releases provide installable platform components with explicit XRTranslate
 host requirements. The primary user entry is the root README and each platform's installation
 guide. Source archives are for development.
 
-## Artifacts
+## Downloads
 
 | File | Purpose |
 |---|---|
 | `XRT-Avatar-Plugin-VRChat-<version>.unitypackage` | Import the VRChat editor tool into an existing Avatar project |
-| `dev.nowloady.xrt-avatar-<version>.zip` | VPM package consumed by VCC; `package.json` is at the archive root |
+| `XRT-Avatar-Plugin-VRChat-VCC-<version>.zip` | VPM package consumed by VCC; `package.json` is at the archive root |
 | `XRT-Avatar-Plugin-ChilloutVR-<version>.unitypackage` | Import the CCK editor tool into an existing ChilloutVR project |
 | `XRT-Avatar-Plugin-Overte-<version>.zip` | Extract and load the included game script; keep the shared client beside it |
-| `index.json` | VPM repository listing with versioned download URLs and ZIP hashes |
-| `release-manifest.json` | Source commit, compatible host and artifact checksums |
-| `SHA256SUMS` | Checksums for the other release files |
+
+Only install packages are attached to GitHub releases. The builder writes them
+to `dist/release/packages/`; VPM indexes, source manifests and checksum files go
+to `dist/release/metadata/` and remain available in the Actions artifact. Publish
+the VPM index at `vpm/index.json` and include checksums in the release notes.
 
 `release/compatibility.json` owns the target host version, development revision
 and setup guide. Host releases follow XRTranslate's own release cycle.
@@ -38,15 +40,19 @@ lifecycle and remain independently pinned by the host.
 3. Push the tag and run **Build release packages** with that tag. The workflow
    verifies the checkout, builds the archives and attaches them to a draft
    prerelease. A rerun accepts identical assets; different bytes require a new
-   version. Keep published files immutable.
+   version. Preserve published package bytes and stable package identities.
+   When renaming an existing download, update its listing URL while retaining
+   its checksum. Future package manifests use the product download filename.
 4. Inspect the draft's files and checksums. State whether the compatible host
    is a released version or requires a development build. Record archive checks
    and actual Unity/game testing separately in the release notes. Publish the
    preview when the plugin downloads and stated compatibility are ready.
-5. Merge the generated `index.json` into `vpm/index.json` on `main`, retaining
+5. Merge the generated `metadata/index.json` into `vpm/index.json` on `main`, retaining
    earlier versions. Publish the listing after its download URLs are available.
    The tool's `--listing-input` and `--listing-output` options support this update.
    It rejects an existing version whose metadata or ZIP hash changed.
+   Store release provenance under `release/records/<tag>.json` when retaining it
+   in the repository; metadata files do not belong in the player download list.
 
 VCC uses this stable listing URL:
 
