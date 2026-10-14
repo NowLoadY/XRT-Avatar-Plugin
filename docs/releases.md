@@ -11,7 +11,7 @@ guide. Source archives are for development.
 | `XRT-Avatar-Plugin-VRChat-<version>.unitypackage` | Import the VRChat editor tool into an existing Avatar project |
 | `XRT-Avatar-Plugin-VRChat-VCC-<version>.zip` | VPM package consumed by VCC; `package.json` is at the archive root |
 | `XRT-Avatar-Plugin-ChilloutVR-<version>.unitypackage` | Import the CCK editor tool into an existing ChilloutVR project |
-| `XRT-Avatar-Plugin-Overte-<version>.zip` | Extract and load the included game script; keep the shared client beside it |
+| `XRT-Avatar-Plugin-Overte-<version>.zip` | Extract and load the included game script; keep the included folder structure |
 
 Only install packages are attached to GitHub releases. The builder writes them
 to `dist/release/packages/`; VPM indexes, source manifests and checksum files go
@@ -29,11 +29,12 @@ lifecycle and remain independently pinned by the host.
 1. Update the Unity package version and release ZIP URL, compatibility metadata,
    download links and installation guides. Keep existing parameter and package
    identities stable. Check generated bindings with
-   `python3 tools/generate_protocol.py --check`.
+   `python3 tools/generate_protocol.py --check`. The packager also checks the
+   shared presentation binding with `tools/generate_presentation.py --check`.
 2. Commit the source and create its version tag. Use a clean checkout to build:
 
    ```sh
-   python3 tools/build_release.py --version 0.1.0-preview.1 \
+   python3 tools/build_release.py --version 0.1.0-preview.2 \
      --output dist/release --require-clean
    ```
 
@@ -68,7 +69,7 @@ own package manifest.
 
 The builder reads tracked files from explicit platform subtrees and checks
 metadata, paths and GUID uniqueness. It includes licenses and the Overte setup
-guide. It excludes local runtime data and third-party SDK binaries. ZIP timestamps
+guide, shared presentation helper and toolbar icons. It excludes local runtime data and third-party SDK binaries. ZIP timestamps
 and Unity archive metadata are deterministic so the same inputs produce identical
 install packages.
 

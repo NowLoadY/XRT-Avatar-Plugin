@@ -1,6 +1,7 @@
 # Second Life adapter
 
-A wearable LSL attachment connects touch controls and status to XRTranslate.
+A wearable LSL attachment opens translation controls when touched and can show
+compact captions above the attachment.
 Its relay carries the shared connector messages between the simulator and the
 local host bridge. Both ends make outbound connections.
 

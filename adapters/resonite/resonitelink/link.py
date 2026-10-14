@@ -69,7 +69,7 @@ async def install(link, parent_id):
         })
         for name, kind, value, component_type in (
             ("Enabled", "bool", False, BOOL_TYPE),
-            ("Status", "string", "off", STRING_TYPE),
+            ("Status", "string", "Off", STRING_TYPE),
         ):
             child_id = prefix + "_" + name
             await link.request("addSlot", data={

@@ -9,7 +9,9 @@ string generation;
 string session;
 integer exchangeSequence;
 integer commandSequence;
+integer resetSequence;
 integer requested;
+integer stopPending;
 integer ready;
 integer helloSent;
 string status = "unavailable";
@@ -25,36 +27,71 @@ string caption;
 string captionIdentity;
 integer captionRevision;
 float captionUntil;
+list retiredCaptions;
+integer dialogChannel;
+integer dialogListener;
+float dialogUntil;
+string dialogAction;
 
-showStatus()
+closeControls()
 {
-    if (!llGetAttached())
+    if (dialogListener) llListenRemove(dialogListener);
+    dialogListener = 0;
+    dialogAction = "";
+    dialogUntil = 0.0;
+}
+
+showControls()
+{
+    closeControls();
+    string label = "Disconnected";
+    if (ready)
     {
-        llSetText("", ZERO_VECTOR, 0.0);
-        return;
+        if (status == "off") label = "Off";
+        else if (status == "starting") label = "Starting…";
+        else if (status == "active") label = "On";
+        else if (status == "stopping") label = "Stopping…";
+        else if (status == "error") label = "Check XRTranslate";
     }
-    vector color = <0.7, 0.7, 0.7>;
-    if (status == "active") color = <0.3, 0.9, 0.5>;
-    if (status == "error") color = <1.0, 0.4, 0.3>;
-    string text = "XRT: " + status;
-    if (SHOW_CAPTIONS && caption != "" && llGetTime() < captionUntil)
-        text = caption;
-    llSetText(text, color, 1.0);
+    if (stopPending) label = "Stopping…";
+    list buttons = ["Close"];
+    if (ready && status != "unavailable" && status != "stopping" && !stopPending)
+    {
+        dialogAction = "Start";
+        if (requested) dialogAction = "Stop";
+        buttons += [dialogAction];
+    }
+    dialogChannel = -1 - (integer)llFrand(1000000000.0);
+    dialogListener = llListen(dialogChannel, "", llGetOwner(), "");
+    dialogUntil = llGetTime() + 30.0;
+    llDialog(llGetOwner(), "Translation: " + label, buttons, dialogChannel);
+}
+
+showCaption()
+{
+    if (llGetAttached() && SHOW_CAPTIONS && caption != "" && llGetTime() < captionUntil)
+        // Native hover text uses the shared presentation text color and opacity.
+        llSetText(caption, <0.933333, 0.941176, 0.952941>, 0.94);
+    else llSetText("", ZERO_VECTOR, 0.0);
 }
 
 clearControl()
 {
+    closeControls();
     session = "";
     commandSequence = 0;
+    resetSequence = 0;
     requested = FALSE;
+    stopPending = FALSE;
     ready = FALSE;
     helloSent = FALSE;
     caption = "";
     captionUntil = 0.0;
     captionIdentity = "";
     captionRevision = -1;
+    retiredCaptions = [];
     status = "unavailable";
-    showStatus();
+    showCaption();
 }
 
 newConnection(float pause)
@@ -93,8 +130,10 @@ sendHello()
 
 setEnabled(integer value)
 {
+    if (!value && requested) stopPending = TRUE;
     requested = value;
     caption = "";
+    captionUntil = 0.0;
     if (ready && session != "")
     {
         ++commandSequence;
@@ -103,7 +142,7 @@ setEnabled(integer value)
         queueFrame(llList2Json(JSON_OBJECT, ["type", "set_enabled", "session", session,
             "sequence", commandSequence, "enabled", enabled]));
     }
-    showStatus();
+    showCaption();
 }
 
 sendExchange()
@@ -150,10 +189,18 @@ receiveFrame(string frame)
     if (kind == "reset")
     {
         string reset = llJsonGetValue(frame, ["reset"]);
-        if (llJsonValueType(frame, ["reset"]) != JSON_NUMBER) return;
+        if (llJsonValueType(frame, ["reset"]) != JSON_NUMBER || (integer)reset <= resetSequence) return;
+        resetSequence = (integer)reset;
+        status = "off";
+        closeControls();
         requested = FALSE;
+        stopPending = FALSE;
         ready = TRUE;
         caption = "";
+        captionUntil = 0.0;
+        captionIdentity = "";
+        captionRevision = -1;
+        retiredCaptions = [];
         // A reset discards user commands queued before the host reconciliation.
         outgoing = [];
         queueFrame(llList2Json(JSON_OBJECT, ["type", "reset_ack", "session", session,
@@ -165,28 +212,44 @@ receiveFrame(string frame)
         if (llListFindList(["unavailable", "off", "starting", "active", "stopping", "error"], [value]) != -1)
         {
             status = value;
+            if (value == "off" || value == "error" || value == "unavailable") stopPending = FALSE;
             if (value != "active") caption = "";
         }
         // Status reports never overwrite a newer touch request.
     }
     else if (kind == "caption" && SHOW_CAPTIONS && requested && status == "active")
     {
+        if (llJsonValueType(frame, ["text"]) != JSON_STRING ||
+            llJsonValueType(frame, ["stream"]) != JSON_STRING ||
+            llJsonValueType(frame, ["id"]) != JSON_STRING ||
+            llJsonValueType(frame, ["revision"]) != JSON_NUMBER ||
+            llJsonValueType(frame, ["expires_ms"]) != JSON_NUMBER) return;
         string text = llJsonGetValue(frame, ["text"]);
-        string identity = llJsonGetValue(frame, ["stream"]) + ":" + llJsonGetValue(frame, ["id"]);
+        string identity = llList2Json(JSON_ARRAY, [
+            llJsonGetValue(frame, ["stream"]), llJsonGetValue(frame, ["id"])]);
         integer revision = (integer)llJsonGetValue(frame, ["revision"]);
-        if (identity == captionIdentity && revision < captionRevision) return;
-        integer lifetime = (integer)llJsonGetValue(frame, ["expires_ms"]);
-        if (text != JSON_INVALID && lifetime > 0)
+        if (revision < 0 || llListFindList(retiredCaptions, [identity]) != -1 ||
+            (identity == captionIdentity && revision <= captionRevision)) return;
+        if (identity != captionIdentity && captionIdentity != "")
         {
-            if (lifetime > 15000) lifetime = 15000;
+            retiredCaptions += [captionIdentity];
+            if (llGetListLength(retiredCaptions) > 32)
+                retiredCaptions = llDeleteSubList(retiredCaptions, 0, 0);
+        }
+        captionIdentity = identity;
+        captionRevision = revision;
+        integer lifetime = (integer)llJsonGetValue(frame, ["expires_ms"]);
+        if (lifetime > 8000) lifetime = 8000;
+        caption = "";
+        captionUntil = 0.0;
+        if (text != "" && lifetime > 0)
+        {
             caption = text;
-            captionIdentity = identity;
-            captionRevision = revision;
             captionUntil = llGetTime() + (float)lifetime / 1000.0;
         }
     }
     else if (kind == "clear") caption = "";
-    showStatus();
+    showCaption();
 }
 
 startAttachment()
@@ -200,7 +263,7 @@ startAttachment()
         llOwnerSay("Configure the relay URL, client token and owner UUID in this script.");
         return;
     }
-    showStatus();
+    showCaption();
     if (llGetAttached()) llSetTimerEvent(1.0);
     else llSetTimerEvent(0.0);
 }
@@ -214,6 +277,7 @@ default
         if (avatar != NULL_KEY) startAttachment();
         else if (llGetAttached() == 0)
         {
+            closeControls();
             setEnabled(FALSE);
             nextRequest = 0.0;
             sendExchange();
@@ -233,14 +297,24 @@ default
         {
             if (llDetectedKey(index) == llGetOwner() && llGetOwner() == PAIRED_OWNER)
             {
-                if (ready && llGetAttached()) setEnabled(!requested);
-                else llOwnerSay("XRT is waiting for its host connection.");
+                if (llGetAttached()) showControls();
                 return;
             }
         }
     }
+    listen(integer channel, string name, key speaker, string message)
+    {
+        if (channel != dialogChannel || !dialogListener || speaker != llGetOwner() ||
+            speaker != PAIRED_OWNER || llGetTime() >= dialogUntil) return;
+        string action = dialogAction;
+        closeControls();
+        if (!ready || !llGetAttached() || message != action || action == "") return;
+        if (action == "Start" && !requested && !stopPending && status != "stopping") setEnabled(TRUE);
+        else if (action == "Stop" && requested) setEnabled(FALSE);
+    }
     timer()
     {
+        if (dialogListener && llGetTime() >= dialogUntil) closeControls();
         if (!llGetAttached() || llGetOwner() != PAIRED_OWNER)
         {
             llSetTimerEvent(0.0);
@@ -250,7 +324,7 @@ default
         if (caption != "" && llGetTime() >= captionUntil)
         {
             caption = "";
-            showStatus();
+            showCaption();
         }
         if (requestId != NULL_KEY && llGetTime() - requestStarted > 60.0)
         {

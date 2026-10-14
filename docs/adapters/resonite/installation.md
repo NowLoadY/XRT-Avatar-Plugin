@@ -1,8 +1,6 @@
-# Resonite
+# Install in Resonite
 
-The ResoniteLink bridge connects an Avatar's native control fields to the shared
-XRTranslate connector. Resonite owns the Avatar components and their rendering;
-the bridge translates control values and result messages.
+Add translation controls and an optional caption display to your Avatar.
 
 ## Requirements
 
@@ -44,10 +42,13 @@ python3 -m venv .venv
 3. In the Inspector, set `XRT/Enabled → Value` to control translation. For Avatar
    buttons, add `ButtonValueSet<bool>` to each native TouchButton or UIX Button
    slot; point `TargetValue` at the `Enabled` component's **Value field**. Set one
-   button's `SetValue` to true (start), and the other's to false (stop).
+   button's `SetValue` to true (start), and the other's to false (stop). Use a
+   play symbol and a stop square on the two button surfaces.
 4. For captions, use **Create New → Text → Basic** to create a complete native
    text object, position it on the Avatar and note its `TextRenderer` component
-   ID. This step supplies the platform's font and material configuration.
+   ID. Keep the object close to your Avatar without covering its face or hands.
+   Choose a readable font and adjust its scale to a compact caption width, about
+   0.45–0.9 m at normal Avatar scale. The bridge preserves this placement and font.
 
 ## Run
 
@@ -63,13 +64,19 @@ then run:
 
 Enter the pairing token at the local prompt. Omit `--text` to use controls alone.
 The bridge resets `Enabled` to false on connection. Press Start after it reports
-`off`. `starting` and `active` reflect the host's actual session state. Stop
+**Off**. **Starting…** and **On** show the current translation state. Stop
 cancels startup or active translation and clears captions.
 
-TextRenderer output is ordinary synchronized world content. Use a caption object
-whose visibility matches the intended audience. The bridge treats translated
-text as plain text, clears expired results and restores the previous text settings
-when it exits, provided they still match the bridge's last write.
+## Captions
+
+The display shows the latest translation in soft white text, with up to three
+short lines. Long results end with an ellipsis. A caption disappears within eight
+seconds; repeated delivery does not keep it visible. There is no idle label or
+connection status above the Avatar.
+
+TextRenderer captions are synchronized world content. Use a caption object whose
+visibility matches the intended audience. On exit, the bridge restores the text,
+color and rich-text setting it found, preserving edits made while it was running.
 
 Expiry is performed by the bridge. If that process is forcibly terminated or the
 ResoniteLink connection is lost, clear the TextRenderer's Text field in the
@@ -81,16 +88,12 @@ in another world. ResoniteLink IDs are session-local, so inspect the current
 scene again after loading a saved Avatar. To remove the installation, delete its
 XRT slot and remove references from any buttons you connected to it.
 
-## Platform boundary
+## Compatibility
 
-`resonitelink/` contains the runnable bridge for sessions that expose the official
-data-model API. Native ProtoFlux WebsocketClient integration is a separate
-platform branch: it requires its HandlingUser to be the wearer, access approval
-and in-game graph construction. No ProtoFlux package is distributed here.
-
-The bridge follows the current official models and component contracts. A
-Resonite client acceptance run is still required for the installed component
-graph and rendering. ResoniteLink is currently documented as beta.
+The bridge uses the official ResoniteLink API, currently documented as beta.
+The installed controls and rendering still require an acceptance run in Resonite.
+TextRenderer supplies text color, font and placement; this integration uses its
+native text surface. Background panels and animation are not added to the Avatar.
 
 - [ResoniteLink activation](https://wiki.resonite.com/ResoniteLink)
 - [Official protocol and data-model examples](https://github.com/Yellow-Dog-Man/ResoniteLink)
@@ -98,4 +101,4 @@ graph and rendering. ResoniteLink is currently documented as beta.
 - [ButtonValueSet](https://wiki.resonite.com/Component:ButtonValueSet)
 - [AvatarDestroyOnDequip](https://wiki.resonite.com/Component:AvatarDestroyOnDequip)
 - [TextRenderer](https://wiki.resonite.com/Component:TextRenderer)
-- [Native WebsocketClient](https://wiki.resonite.com/Component:WebsocketClient)
+- [Color profiles](https://wiki.resonite.com/Type:ColorProfile)

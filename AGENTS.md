@@ -6,7 +6,7 @@ results. Share host capabilities through their existing owners.
 
 Keep SDK integration and platform interaction under `adapters/<platform>/`.
 Shared lifecycle belongs in `crates/connector-core`; shared wire clients belong
-in `connectors/`. XRTranslate owns host transports and session composition. Platform details belong in
+in `connectors/`; shared caption styling and layout belong in `presentation/`. XRTranslate owns host transports and session composition. Platform details belong in
 `docs/adapters/<platform>/`; top-level documents own repository and host rules.
 
 Architecture documents describe ownership, dependency and lifecycle rules.

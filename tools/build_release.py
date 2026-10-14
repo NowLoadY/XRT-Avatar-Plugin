@@ -11,6 +11,7 @@ import json
 from pathlib import Path, PurePosixPath
 import re
 import subprocess
+import sys
 import tarfile
 import zipfile
 
@@ -175,6 +176,7 @@ def main() -> None:
     dirty = bool(git("status", "--porcelain", "--untracked-files=normal").strip())
     if args.require_clean and dirty:
         parser.error("The source checkout must be clean for release packaging")
+    subprocess.run([sys.executable, str(ROOT / "tools/generate_presentation.py"), "--check"], check=True)
     tracked = tracked_files()
     compatibility = json.loads(read_source("release/compatibility.json", tracked))
     host = compatibility["host"]
@@ -223,7 +225,11 @@ def main() -> None:
     write_unitypackage(artifact(f"XRT-Avatar-Plugin-ChilloutVR-{args.version}.unitypackage"), cvr_assets)
 
     overte = {name: read_source(name, tracked) for name in (
-        "adapters/overte/scripts/xrt-avatar.js", "connectors/websocket/javascript/xrt_connector.js", "LICENSE")}
+        "adapters/overte/scripts/xrt-avatar.js", "connectors/websocket/javascript/xrt_connector.js",
+        "presentation/javascript/bubble.js", "LICENSE")}
+    for icon in ("connect", "start", "stop", "stop-active", "waiting", "retry"):
+        name = f"adapters/overte/scripts/icons/{icon}.svg"
+        overte[name] = read_source(name, tracked)
     overte["START-HERE.md"] = read_source("docs/adapters/overte/installation.md", tracked)
     write_zip(artifact(f"XRT-Avatar-Plugin-Overte-{args.version}.zip"), overte)
 

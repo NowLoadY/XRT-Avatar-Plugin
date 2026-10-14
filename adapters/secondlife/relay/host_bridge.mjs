@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 // HTTP transport bridge. Session policy remains in the connector and XRTranslate.
 import { randomUUID } from 'node:crypto';
+import { createRequire } from 'node:module';
 import { setTimeout as delay } from 'node:timers/promises';
+
+const { layout, lifetime } = createRequire(import.meta.url)('../../../presentation/javascript/bubble.js');
 
 const relay = new URL(process.env.XRT_RELAY_URL || 'https://invalid.example');
 const host = new URL(process.env.XRT_CONNECTOR_URL || 'ws://127.0.0.1:0');
@@ -36,17 +39,6 @@ function invalidate() {
   generation = '';
   restart = false;
 }
-function textWithinBytes(value, limit) {
-  let text = '';
-  let bytes = 0;
-  for (const character of String(value)) {
-    const size = Buffer.byteLength(character);
-    if (bytes + size > limit) break;
-    text += character;
-    bytes += size;
-  }
-  return text;
-}
 async function openSocket(hello) {
   closeSocket();
   const socket = new WebSocket(host);
@@ -57,9 +49,18 @@ async function openSocket(hello) {
       if (typeof event.data !== 'string' || event.data.length > 32768) throw new Error();
       const frame = JSON.parse(event.data);
       if (!frame || typeof frame !== 'object' || Array.isArray(frame)) throw new Error();
-      if (frame.type === 'caption') frame.text = textWithinBytes(frame.text, 254);
+      let expiresAt = null;
+      if (frame.type === 'caption') {
+        frame.text = layout(frame.text, { maxBytes: 254 }).text;
+        frame.expires_ms = lifetime(frame);
+        expiresAt = performance.now() + frame.expires_ms;
+        outgoing = outgoing.filter(item => item.frame.type !== 'caption');
+      } else if (frame.type === 'clear' || frame.type === 'reset' ||
+                 frame.type === 'state' && frame.status !== 'active') {
+        outgoing = outgoing.filter(item => item.frame.type !== 'caption');
+      }
       if (Buffer.byteLength(JSON.stringify(frame)) > 2048 || outgoing.length >= 16) throw new Error();
-      outgoing.push(frame);
+      outgoing.push({ frame, expiresAt });
     } catch {
       restart = true;
       closeSocket();
@@ -87,7 +88,12 @@ for (const signal of ['SIGINT', 'SIGTERM']) {
 console.log('Second Life bridge running.');
 while (!stopping) {
   if (restart) invalidate();
-  const batch = outgoing.splice(0, 4);
+  const now = performance.now();
+  const batch = outgoing.splice(0, 4).flatMap(({ frame, expiresAt }) => {
+    if (expiresAt === null) return [frame];
+    const remaining = Math.floor(expiresAt - now);
+    return remaining > 0 ? [{ ...frame, expires_ms: remaining }] : [];
+  });
   try {
     const response = await fetch(relay, {
       method: 'POST', redirect: 'error', signal: AbortSignal.timeout(5000),

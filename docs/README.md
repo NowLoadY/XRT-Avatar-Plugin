@@ -14,7 +14,8 @@ interaction, transport mapping, installation and compatibility documentation.
 - [Architecture](architecture.md): repository layout and component ownership.
 - [Connector protocol](connector-protocol.md): pairing, reset, heartbeat and captions.
 - [Host integration](host-integration.md): session acquisition, results and cleanup.
-- [Presentation architecture](presentation-architecture.md): result rendering and visibility.
+- [Presentation architecture](presentation-architecture.md): shared caption appearance, lifetime and visibility.
+- [Interaction](interaction.md): control states, icons and user-facing copy.
 - [Refactoring contract](refactoring-contract.md): stable interfaces and verification.
 
 ## Platform adapters

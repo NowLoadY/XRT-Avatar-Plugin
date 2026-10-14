@@ -52,17 +52,20 @@ does not send that token to the relay.
    origin, the relay's client token, and your avatar UUID. The URL has no trailing
    slash. Keep this configured script private and remove it before transferring
    the object.
-3. Wear the attachment. Wait for **XRT: off**, then touch it to start translation.
-   Touch again to stop. Only owner touches are accepted.
+3. Wear the attachment and touch it to open its controls. When the dialog shows
+   **Off**, choose **Start**. Touch it again and choose **Stop** to stop translation.
+   **Close** dismisses the controls. Only the owner can use them.
 4. To show translated text above the attachment, enable connector captions in
    XRTranslate and set `SHOW_CAPTIONS = TRUE` in the script. World attachment text
    is visible to nearby residents; a HUD is the appropriate placement for a
-   personal display.
+   personal display. Captions appear in soft white, with up to three short lines
+   and no idle label. They disappear within eight seconds.
 
 Connection reconciliation always clears the requested switch. Wearing the
-attachment, crossing a region or reconnecting therefore requires a new touch to
-start translation. **starting**, **active**, **stopping** and **error** reflect
-the host's actual state; the touch request itself does not report success.
+attachment, crossing a region or reconnecting therefore requires choosing **Start** again.
+The dialog shows **Starting…**, **On**, **Stopping…**, or **Check XRTranslate**.
+Open it again to see the current state. Connection messages stay in the controls;
+only translated text appears above the attachment.
 
 ## Remove
 
@@ -75,15 +78,19 @@ original object. Remove the relay's tokens when retiring the pairing.
 
 With XRTranslate configured for a working input and translation provider:
 
-- Wear the object, verify Off, touch once and verify Starting then Active only
-  when XRTranslate is ready. Touch again and verify the owned session stops.
-- Confirm another resident's touch cannot start a session.
+- Wear the object, open the controls and verify Off. Choose Start, reopen the
+  controls and verify Starting then On when XRTranslate is ready. Choose Stop
+  and verify translation stops.
+- Confirm another resident's touch cannot open the controls or start translation.
+- Open the dialog, reconnect, then press its old Start button. Translation must
+  remain Off until Start is chosen from a fresh dialog.
 - Detach, teleport and restart the bridge during capture. Each path must stop the
   old operation and return to Off after reconnection.
 - Interrupt the relay connection and confirm the host retires its session after
   the heartbeat deadline. Restoring connectivity must not resume translation.
-- With captions enabled, verify Unicode text, expiration, stop clearing and the
-  intended visibility of your attachment or HUD.
+- With captions enabled, verify Unicode wrapping, expiration, stop clearing and
+  the intended visibility of your attachment or HUD. Repeated or replaced results
+  must not reappear after they expire.
 
 These steps require the Second Life viewer and simulator. The repository does
 not record them as passed until that environment has been exercised.

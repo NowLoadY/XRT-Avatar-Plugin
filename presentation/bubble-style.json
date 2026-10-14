@@ -1,0 +1,17 @@
+{
+  "maxLines": 3,
+  "maxColumns": 42,
+  "lineHeight": 0.043,
+  "lineSpacing": 1.25,
+  "padding": 0.025,
+  "minWidth": 0.44,
+  "maxWidth": 0.9,
+  "columnWidth": 0.019,
+  "textColor": { "red": 238, "green": 240, "blue": 243 },
+  "textAlpha": 0.94,
+  "backgroundColor": { "red": 23, "green": 27, "blue": 34 },
+  "backgroundAlpha": 0.72,
+  "fadeInMs": 160,
+  "fadeOutMs": 220,
+  "maxLifetimeMs": 8000
+}

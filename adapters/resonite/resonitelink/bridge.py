@@ -6,6 +6,7 @@ import asyncio
 import contextlib
 import getpass
 import json
+import math
 from pathlib import Path
 import sys
 import time
@@ -17,19 +18,40 @@ from link import Link, controls, field, install, loopback_url
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "connectors/websocket/python"))
 from xrt_connector import Connector  # noqa: E402
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "presentation/python"))
+from bubble import STYLE, layout, lifetime  # noqa: E402
+
+
+STATUS_LABELS = {
+    "unavailable": "Disconnected", "off": "Off", "starting": "Starting…",
+    "active": "On", "stopping": "Stopping…", "error": "Check XRTranslate",
+}
+
+
+def same_value(current, expected):
+    """Allow the native float serializer to round color channel values."""
+    if isinstance(current, dict) and isinstance(expected, dict):
+        return current.keys() == expected.keys() and all(
+            same_value(current[key], expected[key]) for key in current)
+    if type(current) is float and type(expected) is float:
+        return math.isclose(current, expected, rel_tol=0, abs_tol=0.000001)
+    return current == expected
+
 
 class ResoniteAdapter:
     def __init__(self, link, components, text_id):
         self.link = link
         self.components = components
         self.text_id = text_id
-        self.original_text = None
-        self.original_rich_text = None
-        self.last_text = None
+        self.original_fields = {}
+        self.applied_fields = {}
         self.caption_deadline = 0
         self.revisions = {}
+        self.current_identity = None
         self.requested = False
+        self.stop_pending = False
         self.last_status = None
+        self.status_label = None
         self.connector = None
 
     async def prepare(self):
@@ -38,43 +60,75 @@ class ResoniteAdapter:
             if component.get("componentType") != "[FrooxEngine]FrooxEngine.TextRenderer":
                 raise ValueError("--text must identify a native TextRenderer component")
             members = component["members"]
-            self.original_text = members["Text"]["value"]
-            self.original_rich_text = members["ParseRichText"]["value"]
-            await self.link.write(self.text_id, ParseRichText=field("bool", False))
-            await self.clear({})
+            self.original_fields = {
+                name: field(members[name]["$type"], members[name]["value"])
+                for name in ("Text", "ParseRichText", "Color")
+            }
+            if members["Color"]["$type"] != "colorX":
+                raise ValueError("The selected TextRenderer has an unsupported color field")
+            rgb = STYLE["textColor"]
+            await self.write_text(
+                Text=field("string", ""), ParseRichText=field("bool", False),
+                Color=field("colorX", {
+                    "r": rgb["red"] / 255, "g": rgb["green"] / 255,
+                    "b": rgb["blue"] / 255, "a": STYLE["textAlpha"], "profile": "sRGB",
+                }),
+            )
+
+    async def write_text(self, **fields):
+        await self.link.write(self.text_id, **fields)
+        self.applied_fields.update(fields)
 
     async def reset(self, _message):
         self.requested = False
+        self.stop_pending = False
+        self.revisions.clear()
+        self.current_identity = None
         await self.link.write(self.components["Enabled"], Value=field("bool", False))
+        await self.state({"status": "off"})
         await self.clear({})
+
+    async def show_status(self):
+        label = "Stopping…" if self.stop_pending else STATUS_LABELS.get(self.last_status, "Disconnected")
+        if label != self.status_label:
+            await self.link.write(self.components["Status"], Value=field("string", label))
+            print("Translation:", label, flush=True)
+            self.status_label = label
 
     async def state(self, message):
         status = message["status"]
-        if status != self.last_status:
-            await self.link.write(self.components["Status"], Value=field("string", status))
-            print("XRT:", status, flush=True)
-            self.last_status = status
+        if status in ("off", "error", "unavailable"):
+            self.stop_pending = False
+        self.last_status = status
+        await self.show_status()
+        if status != "active":
+            await self.clear({})
 
     async def caption(self, message):
-        if not self.text_id or not self.requested:
+        if not self.text_id or not self.requested or self.last_status != "active":
             return
         key = (message["stream"], message["id"])
         revision = message["revision"]
-        if revision <= self.revisions.get(key, -1):
+        if (key in self.revisions and key != self.current_identity
+                or revision <= self.revisions.get(key, -1)):
             return
         self.revisions[key] = revision
+        self.current_identity = key
         if len(self.revisions) > 64:
             del self.revisions[next(iter(self.revisions))]
-        self.last_text = message["text"][:4096]
-        self.caption_deadline = time.monotonic() + min(max(message["expires_ms"], 0), 15000) / 1000
-        await self.link.write(self.text_id, Text=field("string", self.last_text))
+        text = layout(message["text"])["text"]
+        duration = lifetime(message)
+        if not text or duration <= 0:
+            await self.clear({})
+            return
+        self.caption_deadline = time.monotonic() + duration / 1000
+        await self.write_text(Text=field("string", text))
 
     async def clear(self, _message):
-        self.revisions.clear()
         self.caption_deadline = 0
-        if self.text_id:
-            self.last_text = ""
-            await self.link.write(self.text_id, Text=field("string", ""))
+        # Keep revision tombstones until reset so expiry cannot revive old text.
+        if self.text_id and self.applied_fields.get("Text", {}).get("value") != "":
+            await self.write_text(Text=field("string", ""))
 
     async def poll(self):
         while True:
@@ -87,10 +141,15 @@ class ResoniteAdapter:
                 # A read started before reset cannot become a new start request.
                 if (self.connector.ready and reset_sequence == self.connector.reset_sequence
                         and enabled != self.requested):
-                    self.requested = enabled
-                    if not enabled:
-                        await self.clear({})
-                    await self.connector.set_enabled(enabled)
+                    if enabled and (self.stop_pending or self.last_status == "stopping"):
+                        await self.link.write(self.components["Enabled"], Value=field("bool", False))
+                    else:
+                        self.requested = enabled
+                        if not enabled:
+                            self.stop_pending = True
+                            await self.clear({})
+                            await self.show_status()
+                        await self.connector.set_enabled(enabled)
             if self.caption_deadline and time.monotonic() >= self.caption_deadline:
                 await self.clear({})
             await asyncio.sleep(0.25)
@@ -101,15 +160,15 @@ class ResoniteAdapter:
         closing = asyncio.create_task(self.connector.close())
         with contextlib.suppress(Exception):
             await self.link.write(self.components["Enabled"], Value=field("bool", False))
-            await self.link.write(self.components["Status"], Value=field("string", "unavailable"))
-        if self.text_id and self.last_text is not None:
+            await self.link.write(self.components["Status"], Value=field("string", "Disconnected"))
+        if self.text_id and self.applied_fields:
             with contextlib.suppress(Exception):
                 members = (await self.link.component(self.text_id))["members"]
-                restore = {}
-                if members["Text"]["value"] == self.last_text:
-                    restore["Text"] = field("string", self.original_text)
-                if members["ParseRichText"]["value"] is False:
-                    restore["ParseRichText"] = field("bool", self.original_rich_text)
+                restore = {
+                    name: self.original_fields[name]
+                    for name, applied in self.applied_fields.items()
+                    if same_value(members.get(name, {}).get("value"), applied["value"])
+                }
                 if restore:
                     await self.link.write(self.text_id, **restore)
         await closing

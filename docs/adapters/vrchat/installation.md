@@ -7,7 +7,7 @@ with Avatar controls. XRTranslate 0.3.3 does not contain the Avatar connector.
 
 ## Import the Unity package
 
-1. Download [XRT-Avatar-Plugin-VRChat-0.1.0-preview.1.unitypackage](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.1/XRT-Avatar-Plugin-VRChat-0.1.0-preview.1.unitypackage).
+1. Download [XRT-Avatar-Plugin-VRChat-0.1.0-preview.2.unitypackage](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.2/XRT-Avatar-Plugin-VRChat-0.1.0-preview.2.unitypackage).
 2. Open your Avatar project through VCC. In Unity, choose **Assets → Import
    Package → Custom Package**, select the downloaded file and import its contents.
 3. Open **Tools → XRT-Avatar-Plugin → Avatar Controls**.
@@ -40,18 +40,18 @@ After moving to VCC, use VCC for updates.
 ## Add controls to your avatar
 
 1. Open and save the scene containing your avatar. Select the avatar in the
-   Hierarchy, then click **Use Selected Avatar** in the plugin window, or drag
-   its Avatar Descriptor into the **Avatar** field.
+   Hierarchy, then click the avatar icon beside the **Avatar** field, or drag
+   its Avatar Descriptor into that field.
 2. Review the status shown in the window. If the avatar needs expression setup,
    follow the displayed instructions in its SDK **Expressions** panel.
-3. Click **Add Translation Menu**. Existing controls are preserved; a full menu
+3. Click **+** beside **Translation menu**. Existing controls are preserved; a full menu
    is retained in an **Avatar** submenu beside the new **XRT** submenu.
-4. Save the scene, then upload your avatar using the VRChat SDK's normal build
-   and upload panel.
+4. Click the save icon, then upload your avatar using the VRChat SDK's normal
+   build and upload panel.
 
-The tool creates an `XRT → Translation` toggle and local control parameters.
-It copies the menu and parameter assets and keeps a restore record. Repeating
-installation checks the existing installation rather than adding another menu.
+The tool adds an **XRT → Translation** toggle. The status changes to **Added**
+when the avatar is ready. Hover over any icon for its action; the help icon opens
+this guide. **In game** expands the short connection instructions.
 
 ## Avatars that use default Expressions
 
@@ -69,8 +69,8 @@ that you want to retain before adding XRT:
    parameter: Wave 1, Clap 2, Point 3, Cheer 4, Dance 5, Backflip 6, Sadness 7,
    and Die 8. Custom Action layers may use a different mapping; retain the
    avatar author's supplied assets for those avatars.
-4. Save the assets and return to the XRT window. Click **Check Installation**,
-   then **Add Translation Menu**.
+4. Save the assets and return to the XRT window. Click the refresh icon,
+   then **+** beside **Translation menu**.
 
 The custom menu becomes your avatar's Expressions menu. The installer preserves
 its controls and does not replace the Action animator.
@@ -91,16 +91,30 @@ Configure OSC Chatbox, overlays and TTS in XRTranslate according to your needs.
 
 ## Check, update or remove
 
-**Check Installation** checks the selected avatar without changing it. To remove
-its controls, use **Remove Translation Menu**, save and upload the avatar again.
+The refresh icon checks the selected avatar. To remove its controls, click **−**
+beside **Translation menu**, save and upload the avatar again.
 Keep the editor package installed until you have restored every avatar that uses
 it. Then remove the VCC package or the imported `VRChat` tool folder.
 
-If generated assets or descriptor references were edited after installation,
-the window identifies the conflict instead of overwriting those edits. Restore
-the expected references or use your project backup before removing the component.
-Keep your generated asset folders and their installation records with the Avatar
-project; removing the editor package alone does not restore the avatar.
+Keep the generated XRT folders with your Avatar project. Remove the translation
+menu before deleting the editor package.
+
+## Recover an edited setup
+
+If the window reports an edited or duplicate XRT setup:
+
+1. Save a copy of the project to keep your current changes.
+2. Restore the avatar's XRT setup and its generated folder from a known working
+   project backup. Keep the scene and assets from the same backup together.
+3. Refresh the window, remove XRT with **−**, then make your intended changes to
+   the avatar's original Expressions. Add XRT again when those assets are saved.
+
+For a setup that was removed before its original Expressions changed, keep a
+project backup and inspect the retained `Installation.asset` in the generated
+XRT folder. Remove that record only after checking the avatar uses the original
+Menu and Parameters and that no avatar still uses the generated copies. The
+next **+** operation creates a fresh copy of the current Expressions. Ask the
+avatar author for help if you are unsure which assets are in use.
 
 ## Troubleshooting
 

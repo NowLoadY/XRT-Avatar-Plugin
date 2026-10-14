@@ -3,12 +3,19 @@
   "name": "Second Life",
   "protocol": "xrt-avatar/1",
   "transport": "https-exchange-to-local-websocket",
-  "interaction": "lsl-owner-touch",
-  "capabilities": ["session-control", "status", "captions"],
+  "interaction": "lsl-owner-dialog",
+  "capabilities": [
+    "session-control",
+    "status",
+    "captions"
+  ],
   "presentation": {
     "api": "llSetText",
     "maximum_utf8_bytes": 254,
-    "enabled_by_default": false
+    "enabled_by_default": false,
+    "style": "../../presentation/bubble-style.json",
+    "maximum_lines": 3,
+    "maximum_lifetime_ms": 8000
   },
   "entrypoint": "attachment/XRT.lsl",
   "host_bridge": "relay/host_bridge.mjs",
@@ -20,6 +27,7 @@
     "https://wiki.secondlife.com/wiki/Attach",
     "https://wiki.secondlife.com/wiki/Changed",
     "https://wiki.secondlife.com/wiki/Touch_start",
-    "https://wiki.secondlife.com/wiki/LlSetText"
+    "https://wiki.secondlife.com/wiki/LlSetText",
+    "https://wiki.secondlife.com/wiki/LlDialog"
   ]
 }

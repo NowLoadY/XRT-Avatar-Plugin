@@ -19,24 +19,55 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
         private static readonly string[] Parameters =
             { XrtChilloutProtocol.Enabled, XrtChilloutProtocol.Status, XrtChilloutProtocol.VersionParameter };
 
-        [MenuItem("Tools/XRT-Avatar-Plugin/ChilloutVR/Install on selected avatar")]
-        private static void InstallSelected() => Run(Install);
-
-        [MenuItem("Tools/XRT-Avatar-Plugin/ChilloutVR/Remove from selected avatar")]
-        private static void RemoveSelected() => Run(Remove);
-
-        private static void Run(Func<CVRAvatar, string> action)
+        internal sealed class InstallationStatus
         {
+            internal string Title;
+            internal string Detail;
+            internal bool CanInstall;
+            internal bool CanRemove;
+            internal MessageType Severity = MessageType.None;
+        }
+
+        internal static InstallationStatus Inspect(CVRAvatar avatar)
+        {
+            if (avatar == null)
+                return new InstallationStatus
+                {
+                    Title = "No avatar selected",
+                    Detail = "Drag your avatar from the Hierarchy into the Avatar field."
+                };
             try
             {
-                CVRAvatar avatar = Selection.activeGameObject == null ? null :
-                    Selection.activeGameObject.GetComponentInParent<CVRAvatar>();
-                EditorUtility.DisplayDialog("XRT-Avatar-Plugin", action(avatar), "OK");
+                string id = ValidateAvatar(avatar);
+                XrtChilloutInstallationRecord record = FindInstalled(id);
+                if (record != null)
+                {
+                    ValidateInstallation(avatar, record);
+                    return new InstallationStatus
+                    {
+                        Title = "Added",
+                        Detail = avatar.gameObject.scene.isDirty ? "Save the scene before uploading." :
+                            "XRT Translation is ready. Upload this avatar with the CCK.",
+                        CanRemove = true
+                    };
+                }
+                ValidateSource(avatar, out _);
+                return new InstallationStatus
+                {
+                    Title = "Not added",
+                    Detail = "Adds XRT Translation to Advanced Avatar Settings. Your existing controls are kept.",
+                    CanInstall = true
+                };
             }
-            catch (Exception error)
+            catch (Exception exception)
             {
-                Debug.LogException(error);
-                EditorUtility.DisplayDialog("XRT-Avatar-Plugin", error.Message, "OK");
+                return new InstallationStatus
+                {
+                    Title = "Check avatar",
+                    Detail = exception is InvalidOperationException ? exception.Message :
+                        "Could not read this avatar's setup. Check the setup guide for help.",
+                    Severity = MessageType.Warning
+                };
             }
         }
 
@@ -50,18 +81,7 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
                 return "XRT Translation is already installed.";
             }
 
-            RuntimeAnimatorController source = avatar.overrides;
-            if (source == null)
-                source = avatar.GetComponent<Animator>()?.runtimeAnimatorController;
-            if (source == null)
-                source = avatar.avatarSettings?.baseController;
-            AnimatorController controller = BaseController(source);
-            if (controller == null || string.IsNullOrEmpty(AssetDatabase.GetAssetPath(controller)))
-                throw new InvalidOperationException(
-                    "Configure the avatar's animator first. In the CCK, create and attach its Animator Override Controller, then install XRT.");
-            if (controller.parameters.Any(p => Parameters.Contains(p.name)) ||
-                (avatar.avatarSettings?.settings?.Any(e => e != null && Parameters.Contains(e.machineName)) ?? false))
-                throw new InvalidOperationException("The avatar already contains XRT parameters. Remove the existing integration before installing.");
+            AnimatorController controller = ValidateSource(avatar, out RuntimeAnimatorController source);
 
             string folder = null;
             AnimatorOverrideController originalOverride = avatar.overrides;
@@ -133,8 +153,7 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
                 avatar.overrides = installedOverride;
                 MarkChanged(avatar);
                 AssetDatabase.SaveAssets();
-                Selection.activeObject = record;
-                return "Installed XRT Translation in Advanced Avatar Settings. Save the scene, then upload with the CCK.\nAssets: " + folder;
+                return "Translation menu added. Save the scene, then upload this avatar with the CCK.";
             }
             catch
             {
@@ -171,19 +190,37 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
             EditorUtility.SetDirty(record);
             MarkChanged(avatar);
             AssetDatabase.SaveAssets();
-            return "Removed XRT Translation. Save the scene before uploading. Generated assets are retained for recovery.";
+            return "Translation menu removed. Save the scene, then upload this avatar again.";
+        }
+
+        private static AnimatorController ValidateSource(CVRAvatar avatar, out RuntimeAnimatorController source)
+        {
+            source = avatar.overrides;
+            if (source == null)
+                source = avatar.GetComponent<Animator>()?.runtimeAnimatorController;
+            if (source == null)
+                source = avatar.avatarSettings?.baseController;
+            AnimatorController controller = BaseController(source);
+            if (controller == null || string.IsNullOrEmpty(AssetDatabase.GetAssetPath(controller)))
+                throw new InvalidOperationException(
+                    "Configure the avatar's animator first. In the CCK, create and attach its Animator Override Controller, then install XRT.");
+            if (controller.parameters.Any(p => Parameters.Contains(p.name)) ||
+                (avatar.avatarSettings?.settings?.Any(e => e != null && Parameters.Contains(e.machineName)) ?? false))
+                throw new InvalidOperationException("This avatar already has an XRT setup. Follow the recovery steps in the setup guide before adding it again.");
+
+            return controller;
         }
 
         private static string ValidateAvatar(CVRAvatar avatar)
         {
-            if (avatar == null) throw new InvalidOperationException("Select an avatar with a CVRAvatar component.");
+            if (avatar == null) throw new InvalidOperationException("Choose a ChilloutVR avatar from the Hierarchy.");
             if (EditorApplication.isPlayingOrWillChangePlaymode || EditorUtility.IsPersistent(avatar) ||
                 !avatar.gameObject.scene.IsValid() || string.IsNullOrEmpty(avatar.gameObject.scene.path) ||
                 PrefabStageUtility.GetCurrentPrefabStage() != null)
                 throw new InvalidOperationException("Select an avatar in a saved scene outside Play mode and Prefab mode.");
             GlobalObjectId id = GlobalObjectId.GetGlobalObjectIdSlow(avatar);
             if (id.identifierType != 2 || id.targetObjectId == 0)
-                throw new InvalidOperationException("Save the scene so this avatar has a persistent scene identity.");
+                throw new InvalidOperationException("Save the scene, then select the avatar again.");
             return id.ToString();
         }
 
@@ -239,7 +276,7 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
             var records = AssetDatabase.FindAssets("t:XrtChilloutInstallationRecord")
                 .Select(g => AssetDatabase.LoadAssetAtPath<XrtChilloutInstallationRecord>(AssetDatabase.GUIDToAssetPath(g)))
                 .Where(r => r != null && r.installed && r.avatarGlobalId == id).ToArray();
-            if (records.Length > 1) throw new InvalidOperationException("Multiple XRT installation records refer to this avatar.");
+            if (records.Length > 1) throw new InvalidOperationException("More than one XRT setup was found for this avatar. Follow the recovery steps in the setup guide.");
             return records.FirstOrDefault();
         }
 
@@ -252,7 +289,7 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
                 !IsControlEntry(entries[0]) ||
                 Hash(record.installedController) != record.controllerHash || Hash(record.installedOverride) != record.overrideHash)
                 throw new InvalidOperationException(
-                    "The installed XRT menu or controller has changed. Preserve your changes and restore the recorded installation before removing or reinstalling it.");
+                    "This avatar's XRT setup has been edited. Keep your changes and follow the recovery steps in the setup guide.");
         }
 
         private static bool IsControlEntry(CVRAdvancedSettingsEntry entry)

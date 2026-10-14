@@ -36,8 +36,8 @@ Committed text is suitable for shared output. Local output may use replaceable
 previews when the renderer supports revisions. Replacement, expiry and owner
 cancellation clear pending content; reconnect must not resurrect old text.
 
-The visual package owns readable typography, restrained styling, stable placement
-and a simple size/position adjustment. It declares actual Avatar resource cost
+The visual package follows the [shared presentation style](../../presentation-architecture.md)
+for typography, spacing, restrained color, placement and expiry. It declares actual Avatar resource cost
 and its platform fallback. Neither PC shader compatibility nor remote visibility
 can be inferred for standalone Android or another user's safety settings.
 

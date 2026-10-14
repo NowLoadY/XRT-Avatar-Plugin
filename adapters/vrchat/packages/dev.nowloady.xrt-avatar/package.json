@@ -1,7 +1,7 @@
 {
   "name": "dev.nowloady.xrt-avatar",
   "displayName": "XRT-Avatar-Plugin (VRChat)",
-  "version": "0.1.0-preview.1",
+  "version": "0.1.0-preview.2",
   "unity": "2022.3",
   "description": "Add XRTranslate controls to your VRChat avatar from a guided Unity editor window.",
   "license": "AGPL-3.0-only",
@@ -17,5 +17,5 @@
   "legacyFolders": {
     "Assets\\XRT-Avatar-Plugin\\VRChat": "f481224d1ee34d72a4c4f24f7c44e91f"
   },
-  "url": "https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.1/XRT-Avatar-Plugin-VRChat-VCC-0.1.0-preview.1.zip"
+  "url": "https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.2/XRT-Avatar-Plugin-VRChat-VCC-0.1.0-preview.2.zip"
 }

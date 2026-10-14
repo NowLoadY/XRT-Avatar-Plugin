@@ -1,6 +1,6 @@
 # VRChat compatibility
 
-**XRT-Avatar-Plugin 0.1.0-preview.1** targets XRTranslate **0.3.4**. Until that release is available, the host integration is
+**XRT-Avatar-Plugin 0.1.0-preview.2** targets XRTranslate **0.3.4**. Until that release is available, the host integration is
 usable from the XRTranslate development branch; see
 [host requirements](../../host-integration.md).
 Select **VRChat** in **Settings → Plugins → Avatar translation controls**.

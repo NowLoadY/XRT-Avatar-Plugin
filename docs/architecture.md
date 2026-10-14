@@ -31,7 +31,7 @@ Host adapters use existing session and output contracts. Resource owners manage
 their lifetimes; translation infrastructure stays independent of platform
 implementations. The [host integration contract](host-integration.md) defines
 request ownership and cleanup. The [presentation contract](presentation-architecture.md)
-defines the boundary for result consumers.
+defines shared appearance, result lifetime and native rendering ownership.
 
 ## Repository layout
 
@@ -42,7 +42,8 @@ defines the boundary for result consumers.
 | `docs/` | Repository architecture and common host contracts |
 | `crates/connector-core/` | I/O-free lifecycle shared by every platform |
 | `connectors/websocket/` | Common JavaScript and Python wire clients |
-| `tools/` | Protocol generation entry point |
+| `presentation/` | Shared caption style and plain-text layout helpers |
+| `tools/` | Generated bindings, release packaging and visual preview |
 
 The host selects one connector and retains one lifecycle controller across
 connection changes. VRChat and ChilloutVR use profiles of XRTranslate's OSCQuery
