@@ -51,7 +51,9 @@ python3 -m venv .venv
 
 ## Run
 
-Enable the Avatar connector in XRTranslate, then run:
+In XRTranslate Avatar translation controls, select **Resonite** and enable the
+plugin. Enable **Send captions to the game component** when using a text renderer,
+then run:
 
 ```sh
 .venv/bin/python adapters/resonite/resonitelink/bridge.py \

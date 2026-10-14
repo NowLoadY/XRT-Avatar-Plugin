@@ -101,5 +101,5 @@ VRChat discovery against a real client and end-to-end gameplay behavior remain
 unverified. Use [compatibility](compatibility.md) for release acceptance and
 [installation](installation.md) for the paired source workflow.
 
-Host contracts: [plugin architecture](https://github.com/NowLoadY/XRTranslate/blob/401766d02499217a8b9a83c66465eeca589f6f2c/docs/plugin-architecture.md),
+Host contracts: [plugin architecture](https://github.com/NowLoadY/XRTranslate/blob/codex/vrc-avatar-host/docs/plugin-architecture.md),
 [platform architecture](https://github.com/NowLoadY/XRTranslate/blob/main/docs/platform-architecture.md).

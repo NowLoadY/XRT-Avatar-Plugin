@@ -5,3 +5,14 @@ version = 4
 [[package]]
 name = "xrt-avatar-control"
 version = "0.1.0-dev.1"
+dependencies = [
+ "xrt-connector-core",
+]
+
+[[package]]
+name = "xrt-chilloutvr-control"
+version = "0.1.0-dev.1"
+
+[[package]]
+name = "xrt-connector-core"
+version = "0.1.0-dev.1"
