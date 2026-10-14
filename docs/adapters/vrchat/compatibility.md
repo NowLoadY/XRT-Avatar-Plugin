@@ -5,7 +5,7 @@ control core and companion XRTranslate host source. Use a host build containing
 **Avatar translation controls** in Settings → Plugins. No completed Unity/VRChat
 end-to-end validation or packaged VCC listing is claimed by this source delivery.
 
-Use the host source from [integration PR #24](https://github.com/NowLoadY/XRTranslate/pull/24)
+Use the host source from [XRTranslate main](https://github.com/NowLoadY/XRTranslate/tree/main)
 with **VRChat** selected in Avatar translation controls. A release without that
 settings entry does not provide the integration. Shared controller, local
 transport and cancellation checks are separate from game-client acceptance.
