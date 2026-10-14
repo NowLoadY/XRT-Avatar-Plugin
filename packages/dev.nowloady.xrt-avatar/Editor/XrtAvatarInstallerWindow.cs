@@ -28,7 +28,7 @@ namespace XrtAvatarPlugin.Editor
             EditorGUILayout.LabelField("XRT-Avatar-Plugin", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
                 "Development preview. Adds XRT > Translation to this avatar's Expressions menu. " +
-                "The XRTranslate host adapter is not yet integrated; this preview installs control assets only.",
+                "Use an XRTranslate build with Avatar translation controls enabled. Unity and in-game validation are still pending.",
                 MessageType.Info);
             avatar = (VRCAvatarDescriptor)EditorGUILayout.ObjectField(
                 "Avatar", avatar, typeof(VRCAvatarDescriptor), true);

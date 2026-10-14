@@ -1,76 +1,46 @@
 # Presentation architecture
 
-This contract reserves the integration boundary for a future Avatar-attached
-translation bubble. It does not define or ship a renderer, font asset, shader,
-text-paging protocol or new desktop output service.
+A future Avatar-attached translation bubble is an independent presentation
+adapter. The current package contains no bubble renderer, font atlas, shader or
+text-paging protocol. Existing XRTranslate overlays and VRChat Chatbox remain the
+available output paths.
 
-## Result ownership
+## Ownership
 
-Translation produces semantic results independently of a game. A presentation
-adapter consumes normalized events with their owner, message identity, revision,
-source/target language and preview/final status. It preserves replacements and
-cancellation. A renderer never starts translation or reconstructs a sentence
-from visible UI text.
+The adapter consumes normalized translation results with their owner, message
+identity, revision, language and preview/final status. It preserves replacement
+and cancellation semantics. It does not start translation, own audio or models,
+or reconstruct results from visible UI text.
 
-The presentation policy determines visibility, lifetime and a bounded text budget.
-Transport encodes the chosen update; a game renderer draws it. Appearance assets
-do not own audio, providers, conversation storage or the control state machine.
+Presentation policy owns audience, placement, lifetime and a bounded text budget.
+The shared transport encodes accepted updates; installed Avatar assets render
+those updates. Adding presentation does not change the control state machine or
+create another OSC listener.
 
-## Display capabilities
+## Target and visibility
 
-| Target | Audience | Capability boundary |
-|---|---|---|
-| Existing XRTranslate overlay | Local user | Rich local text; positioning only from available, supported tracking |
-| VRChat Chatbox | Viewers allowed by VRChat | Official string endpoint, built-in appearance and limits |
-| Future Avatar bubble | Local or explicitly shared | Preinstalled Avatar assets and a negotiated numeric text encoding |
+The initial bubble target is the wearer's own Avatar. It is not an API for
+attaching objects to other players. Local visibility is the default; sharing
+requires an explicit source and audience setting. Mixed system audio provides
+neither per-player identity nor a different translation for each viewer.
 
-The first Avatar bubble target is the wearer's own Avatar. It is not an API for
-attaching objects to arbitrary nearby players. Shared parameter values do not
-provide a different translation language for each viewer. No per-player audio
-or identity mapping is inferred from a mixed system-audio stream.
+Avatar parameters carry numeric values rather than arbitrary text. A renderer
+therefore needs its own bounded encoding and declared character/font capability;
+`/chatbox/input` cannot update an arbitrary Avatar text component. Text encoding,
+resource cost and platform support must be established with that renderer before
+its parameters become part of a public contract.
 
-Avatar parameters support numeric types, not arbitrary text. A custom bubble
-therefore needs a bounded character encoding, font resources and an Avatar-side
-rendering mechanism. OSC `/chatbox/input` does not update arbitrary Avatar text
-components. Local overlays and native Chatbox remain valid separate outputs.
+## Result lifetime and appearance
 
-## Visibility and content
+Committed text is suitable for shared output. Local output may use replaceable
+previews when the renderer supports revisions. Replacement, expiry and owner
+cancellation clear pending content; reconnect must not resurrect old text.
 
-Audience is explicit: local presentation is the default, sharing is opt-in.
-Recognized system audio must not become public merely because a bubble exists.
-The initial shared policy should publish only the wearer's configured microphone
-translations; changing source or audience requires a visible host setting.
+The visual package owns readable typography, restrained styling, stable placement
+and a simple size/position adjustment. It declares actual Avatar resource cost
+and its platform fallback. Neither PC shader compatibility nor remote visibility
+can be inferred for standalone Android or another user's safety settings.
 
-Public presentation uses committed translations. Local presentation may show
-replaceable previews if the target supports revisions. Dismissal, expiration,
-replacement and owner cancellation remove pending content without resurfacing
-superseded text after reconnect. Do not insert invisible padding or truncate
-inside a grapheme cluster to meet a display budget.
-
-## Renderer contract
-
-A renderer declares its platform, audience, anchor, character repertoire,
-character/line capacity, update budget and required Avatar parameters. The adapter
-must be able to reject unsupported text explicitly or select a user-configured
-fallback. Never advertise full multilingual support from a Latin-only font atlas.
-
-A shared renderer must specify page identity/revision, complete-message commit,
-clear, expiry, loss handling and late-viewer behavior before its wire protocol
-is accepted. Partial pages must not mix two translations. A local OSC echo is
-not acknowledgement that remote viewers received or rendered a message.
-
-Rendering acceptance includes text legibility in VR, font fallback, stable
-head-relative placement, distance scaling, mirrored views, occlusion and clean
-expiry. A visual prefab must provide a simple size/position adjustment and avoid
-unnecessary animations or decorative UI. The Avatar build reports its actual
-parameter, texture, material and geometry cost.
-
-PC custom shaders cannot be assumed compatible with standalone Android avatars.
-Remote visibility also depends on Avatar and shader safety settings. A platform
-fallback must be declared rather than silently claiming the custom bubble is
-visible. The control package remains usable without any bubble resources.
-
-Official references: [parameter types](https://creators.vrchat.com/avatars/animator-parameters/),
+Official boundaries: [Avatar parameters](https://creators.vrchat.com/avatars/animator-parameters/),
 [OSC Chatbox](https://docs.vrchat.com/docs/osc-as-input-controller),
-[Android Avatar restrictions](https://creators.vrchat.com/platforms/android/quest-content-limitations/),
-[shader fallback](https://creators.vrchat.com/avatars/shader-fallback-system/).
+[Android Avatar restrictions](https://creators.vrchat.com/platforms/android/quest-content-limitations/).

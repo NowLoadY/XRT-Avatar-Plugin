@@ -45,10 +45,18 @@ and an active translation session are separate states. Disabling Chatbox output
 does not revoke the control transport while another consumer needs it.
 
 The host owns resource acquisition. A plugin session has an opaque operation
-owner that survives asynchronous startup and cancellation. Cancellation drops
-that owner's pending input and output, releases its capture lease, and leaves
-unrelated tasks intact. Workers and transports are joined by their owners at
-shutdown. No adapter creates a second model pool or duplicate audio pipeline.
+owner that survives asynchronous startup and cancellation. Its exclusive live
+input lease rejects overlapping work without taking over another session.
+Cancellation stops that owner's input and invalidates its pending output; the
+owner and lease remain until its workers have exited. Unrelated tasks retain
+their resources. Shutdown cleanup belongs to each resource owner. No adapter
+creates a second model pool or duplicate audio pipeline.
+
+The desktop plugin owns control state; the host's `avatar_host` module composes
+sessions through neutral coordinator contracts. The OSC capability owns the
+shared receive transport for all consumers. See [host integration](host-integration.md)
+for the implementation boundary and [control protocol](control-protocol.md) for
+binding and reset semantics.
 
 Installation creates project-local assets and leaves source Avatar assets
 intact. Removal restores original descriptor references only when ownership is

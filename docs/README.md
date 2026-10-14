@@ -16,8 +16,8 @@ design discussions, work logs or duplicated implementation details here.
 
 ## Integration and operations
 
-- [Host integration](host-integration.md): XRTranslate composition and required
-  integration work.
+- [Host integration](host-integration.md): XRTranslate implementation, composition and
+  lifecycle contracts.
 - [Installation](installation.md): editor package, Avatar installation and removal.
 - [Compatibility](compatibility.md): delivery status, supported targets and the
   requirements for a runnable release.

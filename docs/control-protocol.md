@@ -23,9 +23,9 @@ from the currently bound local Avatar. OSC endpoints are not authentication.
 
 The menu shows **requested enablement**, not a read-only actual-state widget.
 The host displays Unavailable, Off, Starting, Active, Stopping or Error in its
-settings and existing in-headset presentation when available. Startup acceptance
-alone is not Active. A future Avatar status indicator consumes host status through
-an explicitly installed renderer; no such indicator is shipped in this baseline.
+plugin settings. Startup acceptance alone is not Active. A future Avatar status
+indicator consumes host status through an explicitly installed renderer; no such
+indicator is shipped in this baseline.
 
 ## Binding and state reconciliation
 
@@ -36,9 +36,10 @@ an explicitly installed renderer; no such indicator is shipped in this baseline.
    confirms that reset only after a fresh current-Avatar snapshot reads off.
    A value cached before binding or an arbitrary UDP false is not confirmation.
 3. After confirmation, a new on request creates one operation. Its language,
-   input and output configuration is captured before startup. Repeated on values
-   do not create duplicate work. Resource or configuration failure resets the
-   request and reports Error through the host.
+   input source and recognition settings are captured before startup. It uses
+   the existing host output configuration. Repeated on values do not create
+   duplicate work. Resource or configuration failure resets the request and
+   reports Error through the host.
 4. Off cancels only that operation, including pending startup and accepted output.
    Stopping remains visible until the host confirms release. An on request during
    cancellation is rejected; the user can retry after Off.

@@ -4,9 +4,11 @@
 的开源插件。角色表情菜单提供翻译开关，XRTranslate 负责音频、识别、翻译与输出。
 使用 VRChat Avatar SDK 和官方 OSC 接口，不修改游戏客户端。
 
-**当前为开发基线，尚不是可用的端到端发行版。** 本仓库包含控制协议、无 I/O 的
-Rust 控制核心、Unity 编辑器安装器源码及集成规范。XRTranslate 当前发行版尚未接入
-本协议；仅安装角色菜单不会启动翻译。Unity 导入、头像上传和 VRChat 实机验证尚未执行。
+**当前提供配套源码，仍处于开发预览阶段。** 本仓库包含控制协议、无 I/O 的 Rust
+控制核心与 Unity 编辑器安装器；XRTranslate 源码已实现宿主适配和共享 OSCQuery 传输。
+使用包含“Avatar translation controls”设置项的配套 XRTranslate 构建，安装角色菜单后
+再启用宿主控制。Unity 导入、头像上传和 VRChat 实机验证尚未执行，源码交付不代表
+已经通过完整游戏环境验证。
 
 ## 功能范围
 
@@ -31,8 +33,8 @@ Rust 控制核心、Unity 编辑器安装器源码及集成规范。XRTranslate 
 | `tools/generate_protocol.py` | 从协议生成 Rust / C# 常量 |
 
 先阅读[兼容性与交付状态](docs/compatibility.md)，再按[安装说明](docs/installation.md)
-在已有的 VRChat Avatar 创作环境中使用源码。开发宿主适配器请从
-[宿主集成](docs/host-integration.md)开始。完整索引见[文档地图](docs/README.md)。
+在已有的 VRChat Avatar 创作环境中使用源码。宿主实现与对接边界见
+[宿主集成](docs/host-integration.md)。完整索引见[文档地图](docs/README.md)。
 
 ## 开发
 

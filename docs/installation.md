@@ -1,9 +1,12 @@
 # Installation and removal
 
-This guide describes the **source preview** in an existing VRChat Avatar
-authoring environment. It does not install Unity. The editor source has not
-been imported or compiled in Unity, and the compatible XRTranslate host adapter
-is still pending. Installing these assets alone cannot start translation.
+This guide uses the editor package with the compatible XRTranslate host source.
+Use an existing VRChat Avatar authoring environment; this guide does not install
+Unity. The editor source and in-game interaction have not yet been validated in
+Unity/VRChat. The desktop host adapter and OSCQuery transport are implemented in
+XRTranslate; select a build containing **Settings → Plugins → Avatar translation
+controls** from the [paired source revision](compatibility.md). Installing Avatar
+assets does not install or launch XRTranslate.
 
 ## Load the editor package
 
@@ -44,11 +47,30 @@ Organize the original menu manually if necessary; the installer does not silentl
 rearrange unrelated controls. Repeated installation of an intact record is a check,
 not a second copy. A modified installation requires review before replacement.
 
-Once a compatible host build exists and the source preview has passed Unity
-validation, upload using the official SDK, enable VRChat OSC, permit Avatar
-control in XRTranslate, and confirm the local connection reports Off. Open
-`Expressions → XRT → Translation` to request startup. Check actual host status;
-the menu tick is a request and cannot prove translation is running.
+## Connect to XRTranslate
+
+1. In a compatible XRTranslate build, complete setup and choose the languages,
+   microphone/system audio input and recognition settings. Configure the existing
+   Chatbox, overlay and TTS outputs you want to use.
+2. After checking the editor assets in your authoring project, upload the Avatar
+   using the official SDK, select it in VRChat and enable VRChat OSC.
+3. In XRTranslate, enable **Settings → Plugins → Avatar translation controls**.
+   The shared OSC transport discovers the local VRChat endpoint and uses an
+   advertised available receive port. It does not require another listener on 9001.
+4. Wait for the Avatar settings status to report **Off** after synchronization.
+   Open `Expressions → XRT → Translation` to request startup. **Active** means
+   both capture and the backend session are ready; the menu tick alone is a request.
+5. Turn the menu toggle off to stop its session. **Stopping** remains until owned
+   work is released. Changing Avatar, losing the connection, disabling the plugin
+   or using the desktop Stop control also ends that session. Reconnect starts Off.
+
+Avatar control does not enable Chatbox output or TTS for you. OSC Chatbox output
+retains its existing target/settings, and disabling that output does not disable
+Avatar control. If another live task already uses the selected input, the Avatar
+request is rejected with a diagnostic; that task continues. Separate inputs and
+file/text tasks remain available. Change the source/language configuration before
+starting a new Avatar session; see [host integration](host-integration.md) for
+which settings remain live.
 
 The menu and parameters travel with the uploaded Avatar across worlds. Every
 Avatar requiring this control must be prepared separately; world plugins are not
@@ -76,14 +98,14 @@ Remove the editor package from the project only after restoring the desired
 Avatars; otherwise its record type and restore command will be unavailable.
 No desktop model, language setting or translation history is removed.
 
-## Runtime diagnosis after host integration
+## Runtime diagnosis
 
 | Symptom | Check |
 |---|---|
-| Menu exists but nothing starts | Confirm a compatible XRTranslate build; the current baseline has no host adapter |
+| Menu exists but nothing starts | Use a build with Avatar translation controls, enable the plugin, and check its connection/status message |
 | Connection unavailable | Enable VRChat OSC, use the installed Avatar, check version/parameter discovery and local endpoint |
 | On returns to off | Read the host error: missing configuration, input already owned, cancellation still pending or connection reset |
-| Works alone but not with another OSC app | Check shared OSCQuery discovery; do not launch a second listener on port 9001 |
+| Works alone but not with another OSC app | Check local OSCQuery discovery and endpoint diagnostics; do not launch another fixed-port listener or replace another app's mappings |
 | Custom bubble absent | No bubble renderer ships in this control preview |
 
 For stale VRChat-generated OSC parameter configuration, use the official OSC
