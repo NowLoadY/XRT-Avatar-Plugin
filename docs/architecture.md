@@ -8,7 +8,9 @@ by each platform. XRTranslate provides the translation runtime.
 
 | Owner | Responsibility |
 |---|---|
-| Platform adapter | SDK integration, installation assets, transport contract and control lifecycle |
+| Platform adapter | SDK integration, installation assets, game interaction and display |
+| Connector core | Shared reset, intent, operation identity and lifecycle rules |
+| Connector client | Pairing, framing, heartbeat and session validation |
 | XRTranslate host adapter | Validate requests, compose host capabilities and return actual operation state |
 | XRTranslate session infrastructure | Session ownership, input acquisition, cancellation and resource cleanup |
 | XRTranslate translation infrastructure | Audio, recognition, translation, scheduling and normalized results |
@@ -38,12 +40,21 @@ defines the boundary for result consumers.
 | `adapters/<platform>/` | Platform code, packages, protocol definitions, tools and examples |
 | `docs/adapters/<platform>/` | Platform installation, protocol, compatibility and host integration |
 | `docs/` | Repository architecture and common host contracts |
+| `crates/connector-core/` | I/O-free lifecycle shared by every platform |
+| `connectors/websocket/` | Common JavaScript and Python wire clients |
+| `tools/` | Protocol generation entry point |
 
-The current adapter is [VRChat](adapters/vrchat/installation.md). Its
-`xrt-avatar-control` crate is an I/O-free controller for the VRChat protocol.
-It is maintained within `adapters/vrchat/control/`; its crate name remains the
-host dependency identifier. The corresponding host implementation is a
-statically linked XRTranslate plugin, with a pinned source dependency.
+The host selects one connector and retains one lifecycle controller across
+connection changes. VRChat and ChilloutVR use profiles of XRTranslate's OSCQuery
+transport. Overte, Resonite and Second Life use the [local connector protocol](connector-protocol.md).
+Platform bridges adapt game APIs to this protocol. ResoniteLink and Second Life's
+HTTP relay remain explicit platform-specific branches.
+
+The `xrt-avatar-control` crate preserves the VRChat dependency interface and
+re-exports the shared lifecycle. Platform crates own generated parameter
+constants. Host dependencies are pinned to a companion repository revision.
+OSC Chatbox sending, formatting and destination settings belong to XRTranslate's
+OSC plugin; game adapters consume existing host outputs where applicable.
 
 Each adapter declares its supported platform capabilities, installation method,
 protocol and compatible host versions. SDK and transport details remain within

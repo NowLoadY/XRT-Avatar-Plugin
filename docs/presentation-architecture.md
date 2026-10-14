@@ -2,7 +2,9 @@
 
 Presentation adapters turn XRTranslate results into platform-supported displays,
 including Avatar translation bubbles. They consume the host's results and remain
-separate from session control. No Avatar bubble renderer is currently released.
+separate from session control. Overte supplies a local caption entity; Resonite
+and Second Life render through their native text components. Platform guides
+declare visibility and installation requirements.
 
 ## Contract
 
@@ -20,5 +22,6 @@ Platform-specific transport, encoding, text rendering and asset installation
 belong to the presentation adapter. Its compatibility documentation records the
 supported behavior and runtime verification.
 
+WebSocket presentation follows the [connector protocol](connector-protocol.md).
 See [VRChat presentation](adapters/vrchat/presentation.md) for that platform's
 display capabilities and constraints.

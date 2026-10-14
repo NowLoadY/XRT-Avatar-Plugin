@@ -4,9 +4,9 @@ Keep ownership explicit: platform adapters provide Avatar interaction and
 platform-specific control; XRTranslate owns sessions, audio, translation and
 results. Share host capabilities through their existing owners.
 
-Keep SDK integration, transport semantics and control policy under the relevant
-`adapters/<platform>/` directory. Introduce shared abstractions when implemented
-adapters have a concrete common contract. Platform details belong in
+Keep SDK integration and platform interaction under `adapters/<platform>/`.
+Shared lifecycle belongs in `crates/connector-core`; shared wire clients belong
+in `connectors/`. XRTranslate owns host transports and session composition. Platform details belong in
 `docs/adapters/<platform>/`; top-level documents own repository and host rules.
 
 Architecture documents describe ownership, dependency and lifecycle rules.

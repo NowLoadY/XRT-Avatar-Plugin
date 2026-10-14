@@ -9,7 +9,7 @@ host build includes **Settings → Plugins → Avatar translation controls**.
 
 | Host module | Responsibility |
 |---|---|
-| `plugins::vrc_avatar` | Adapt verified snapshots to the control core, retain binding/reset identity, queue host actions and parameter feedback |
+| `plugins::avatar` | Adapt verified snapshots to the control core, retain binding/reset identity, queue host actions and parameter feedback |
 | `avatar_host` | Map operations to owned translation tasks, capture startup intent and report readiness/cleanup outcomes |
 | `plugins::osc::transport` | Shared receive owner, local OSCQuery discovery/advertisement, bounded events, fresh queries and epoch-checked parameter writes |
 | `session_coordinator` | Neutral task, input, owner and output contracts |

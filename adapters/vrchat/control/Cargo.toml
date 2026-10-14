@@ -4,8 +4,11 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "I/O-free lifecycle control for the XRT VRChat adapter"
+description = "VRChat protocol and shared XRT connector lifecycle"
 
 [[example]]
 name = "lifecycle"
 path = "../examples/lifecycle.rs"
+
+[dependencies]
+xrt-connector-core = { path = "../../../crates/connector-core" }

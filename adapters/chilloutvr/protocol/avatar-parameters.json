@@ -1,0 +1,14 @@
+{
+  "protocol": "xrt-avatar-control",
+  "version": 1,
+  "connector": "oscquery",
+  "peer": "chilloutvr",
+  "servicePrefix": "ChilloutVR-",
+  "identityPath": "/avatar/change",
+  "invalidatePaths": ["/avatar/change", "/avatar/profile/change"],
+  "parameters": [
+    { "key": "enabled", "name": "#XRT/Enabled", "type": "Bool", "default": 0, "networkSynced": false, "direction": "request-with-host-reset" },
+    { "key": "status", "name": "#XRT/Status", "type": "Int", "default": 0, "networkSynced": false, "direction": "host-feedback" },
+    { "key": "version", "name": "#XRT/Version", "type": "Int", "default": 1, "networkSynced": false, "direction": "avatar-capability" }
+  ]
+}

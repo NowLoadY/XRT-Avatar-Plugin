@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["adapters/vrchat/control"]
+members = ["crates/connector-core", "adapters/vrchat/control", "adapters/chilloutvr/control"]
 
 [workspace.package]
 version = "0.1.0-dev.1"

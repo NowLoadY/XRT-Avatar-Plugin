@@ -39,8 +39,20 @@ Presentation consumers receive results through a separate
 [presentation contract](presentation-architecture.md). They preserve session
 identity and follow owner-scoped cancellation.
 
-## Implementations
+## Connector composition
 
-[VRChat host integration](adapters/vrchat/host-integration.md) describes its
-implemented host modules, control lifecycle, transport and settings behavior.
-Platform-specific compatibility is recorded alongside each adapter.
+XRTranslate's `plugins::avatar` owns settings, platform capability mapping and
+validated connector intent. `avatar_host` composes that intent into existing
+owned tasks. OSC profiles share the OSC plugin's transport; WebSocket connectors
+share one local worker and one bounded message contract. Switching connectors
+invalidates the old binding and cancels its operation before another can start.
+Existing `vrc_avatar` settings identities migrate to `avatar` at deserialization.
+
+Game-component captions are an explicit output preference, delivered through
+an owner-filtered `SessionEventSubscriber`. They use normalized translation
+results and have no capture or model dependency. Reset and cancellation clear
+pending presentation; a new connection receives no previous-session history.
+
+See the [connector protocol](connector-protocol.md) and platform guides for
+transport mappings and installation. The [VRChat host guide](adapters/vrchat/host-integration.md)
+records its OSCQuery mapping and setting lifetimes.

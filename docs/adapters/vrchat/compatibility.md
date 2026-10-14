@@ -18,7 +18,7 @@ OSCQuery/UDP, binding and reset lifecycle, startup cancellation and TTS isolatio
 | Protocol and generated bindings | Defined in source |
 | Rust control core | Implemented; no transport or inference dependencies |
 | Unity editor installer | Source implementation; Unity import/compilation not verified |
-| XRTranslate host adapter | Implemented in `plugins::vrc_avatar` and `avatar_host` |
+| XRTranslate host adapter | Implemented in `plugins::avatar` and `avatar_host` |
 | Shared OSCQuery transport | Implemented in `plugins::osc::transport` |
 | In-game enable/disable | Runtime path implemented; live VRChat validation outstanding |
 | Custom floating Avatar bubble | Presentation boundary only; no renderer |

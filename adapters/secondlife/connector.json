@@ -1,0 +1,25 @@
+{
+  "id": "secondlife",
+  "name": "Second Life",
+  "protocol": "xrt-avatar/1",
+  "transport": "https-exchange-to-local-websocket",
+  "interaction": "lsl-owner-touch",
+  "capabilities": ["session-control", "status", "captions"],
+  "presentation": {
+    "api": "llSetText",
+    "maximum_utf8_bytes": 254,
+    "enabled_by_default": false
+  },
+  "entrypoint": "attachment/XRT.lsl",
+  "host_bridge": "relay/host_bridge.mjs",
+  "relay": "relay/server.py",
+  "guide": "../../docs/adapters/secondlife/installation.md",
+  "sources": [
+    "https://wiki.secondlife.com/wiki/LlHTTPRequest",
+    "https://wiki.secondlife.com/wiki/Http_response",
+    "https://wiki.secondlife.com/wiki/Attach",
+    "https://wiki.secondlife.com/wiki/Changed",
+    "https://wiki.secondlife.com/wiki/Touch_start",
+    "https://wiki.secondlife.com/wiki/LlSetText"
+  ]
+}
