@@ -4,6 +4,11 @@ XRT-Avatar-Plugin connects virtual social platforms to XRTranslate. Project
 contracts define ownership and host integration; each platform adapter owns its
 interaction, transport mapping, installation and compatibility documentation.
 
+## Using releases
+
+- [Release packaging](releases.md): artifact formats and the release workflow.
+- [VRChat installation](adapters/vrchat/installation.md): install through Unity or VCC.
+
 ## Project contracts
 
 - [Architecture](architecture.md): repository layout and component ownership.

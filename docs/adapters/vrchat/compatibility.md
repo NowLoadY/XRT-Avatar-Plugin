@@ -1,14 +1,13 @@
 # VRChat compatibility
 
-This source preview implements protocol version 1 in the Avatar package, Rust
-control core and companion XRTranslate host source. Use a host build containing
-**Avatar translation controls** in Settings → Plugins. No completed Unity/VRChat
-end-to-end validation or packaged VCC listing is claimed by this source delivery.
+The installable preview pairs **XRT-Avatar-Plugin 0.1.0-preview.1** with
+[XRTranslate 0.3.4-preview.1](https://github.com/NowLoadY/XRTranslate/releases/tag/v0.3.4-preview.1).
+Select **VRChat** in **Settings → Plugins → Avatar translation controls**.
+XRTranslate 0.3.3 does not include this connector.
 
-Use the host source from [XRTranslate main](https://github.com/NowLoadY/XRTranslate/tree/main)
-with **VRChat** selected in Avatar translation controls. A release without that
-settings entry does not provide the integration. Shared controller, local
-transport and cancellation checks are separate from game-client acceptance.
+The release provides a VPM package and a Unity asset package. Packaging validates
+archive contents, GUIDs, protocol bindings and download hashes. Unity import,
+Avatar upload and game-client interaction remain pending acceptance.
 
 | Component | Current status |
 |---|---|
@@ -40,7 +39,7 @@ Before declaring a runnable release, record exact Unity, SDK, VRChat and XRTrans
 versions and verify the following in that environment:
 
 1. Install on a copy of an Avatar, preserve original menu/parameters, reject
-   collisions and a full root menu, and restore an unchanged installation. An
+   collisions, retain a full root menu in a submenu, and restore an unchanged installation. An
    edited installation must produce a diagnostic without destructive removal.
 2. Confirm generated parameters are unsaved/unsynchronized; upload with the
    official SDK, enable OSC and observe values on the correct Avatar.

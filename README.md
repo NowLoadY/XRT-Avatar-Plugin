@@ -1,29 +1,32 @@
 # XRT-Avatar-Plugin
 
-Open-source game plugins connecting virtual social platforms to [XRTranslate](https://github.com/NowLoadY/XRTranslate).
-Control translation through avatar menus, buttons or attachments, and display captions using native platform components.
+Control [XRTranslate](https://github.com/NowLoadY/XRTranslate) from your avatar's menus, buttons or attachments.
+Game components share XRTranslate's audio, translation and output settings.
 
-## Features
+## Get started
 
-- Start and stop translation in-game and view its current status.
-- Use XRTranslate's configured languages, audio sources, recognition, translation and output settings.
-- Keep translation sessions and their display lifecycle scoped to each connection.
+1. Download and extract [XRTranslate 0.3.4-preview.1](https://github.com/NowLoadY/XRTranslate/releases/tag/v0.3.4-preview.1) for Windows or Linux.
+2. Install the component for your platform below.
+3. In XRTranslate, open **Settings → Plugins → Avatar translation controls**, select your game and enable the plugin.
 
-## Platform connectors
-
-| Platform | Game components | Setup |
+| Platform | Download | Setup |
 |---|---|---|
-| VRChat | Expressions menu and local avatar parameters | [Install](docs/adapters/vrchat/installation.md) |
-| ChilloutVR | CCK avatar menu and local parameters | [Install](docs/adapters/chilloutvr/installation.md) |
-| Overte | Avatar script, tablet controls and local captions | [Install](docs/adapters/overte/installation.md) |
-| Resonite | ResoniteLink bridge for avatar controls and text components | [Install](docs/adapters/resonite/installation.md) |
-| Second Life | LSL attachment controls, floating text and a connection bridge | [Install](docs/adapters/secondlife/installation.md) |
+| VRChat | [Unity package](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.1/XRT-Avatar-Plugin-VRChat-0.1.0-preview.1.unitypackage) | [Import or install through VCC](docs/adapters/vrchat/installation.md) |
+| ChilloutVR | [Unity package](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.1/XRT-Avatar-Plugin-ChilloutVR-0.1.0-preview.1.unitypackage) | [Install on your avatar](docs/adapters/chilloutvr/installation.md) |
+| Overte | [Script bundle](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.1/XRT-Avatar-Plugin-Overte-0.1.0-preview.1.zip) | [Load and pair](docs/adapters/overte/installation.md) |
 
-Development preview. See each platform guide for compatibility and in-game validation status.
+For VRChat, import the package into your Avatar project, then open **Tools → XRT-Avatar-Plugin → Avatar Controls**.
+Select your avatar and add its translation menu. [View all release files](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/tag/v0.1.0-preview.1).
+
+[Resonite](docs/adapters/resonite/installation.md) and [Second Life](docs/adapters/secondlife/installation.md) provide bridge-based connectors with separate setup.
 ResoniteLink requires a session you host with the appropriate permissions; Second Life requires an HTTPS relay.
 
-This project maintains game components and connector protocols. XRTranslate provides the audio and translation runtime,
-and its OSC plugin provides OSC Chatbox output. See the [documentation](docs/README.md) for architecture and development guidelines.
+This is a development preview. Package checks are complete; Unity import and game-client acceptance remain pending.
+The VRChat package provides menu controls. Caption output is configured in XRTranslate; OSC Chatbox is provided by its OSC plugin.
+
+## Development
+
+See the [documentation](docs/README.md) for architecture, connector contracts and release packaging.
 
 ## License
 

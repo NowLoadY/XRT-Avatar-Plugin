@@ -12,7 +12,7 @@ in `connectors/`. XRTranslate owns host transports and session composition. Plat
 Architecture documents describe ownership, dependency and lifecycle rules.
 Put procedures in guides and wire fields in the adapter's protocol manifest.
 Source commits and release archives contain project source, documentation and
-required assets. Exclude credentials, local runtime data, generated files and
+required assets. Exclude credentials, local runtime data, build intermediates and
 third-party SDK binaries.
 
 Preserve user-authored assets and unrelated host sessions. Use stable identities,

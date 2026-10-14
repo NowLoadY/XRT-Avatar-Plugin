@@ -5,8 +5,8 @@
 1. Use a ChilloutVR CCK project and finish the avatar's normal animator setup.
    The CCK's **Create Animator** and **Attach created Override to Avatar**
    controls provide this setup for an avatar using generated settings.
-2. Copy `adapters/chilloutvr/Assets/XRT-Avatar-Plugin/Editor/` into
-   `Assets/XRT-Avatar-Plugin/Editor/` in the project.
+2. Download [the ChilloutVR Unity package](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.1/XRT-Avatar-Plugin-ChilloutVR-0.1.0-preview.1.unitypackage).
+   In Unity, use **Assets → Import Package → Custom Package** and import it.
 3. Save the scene and select the avatar root with its `CVRAvatar` component.
 4. Choose **Tools → XRT-Avatar-Plugin → ChilloutVR → Install on selected avatar**.
 5. Save the scene and upload through the CCK.
@@ -23,7 +23,7 @@ to restore the original controller and remove the owned menu entry.
 
 ## Connect XRTranslate
 
-1. Enable OSC in **Settings → Implementation → OSC** in ChilloutVR.
+1. Run [XRTranslate 0.3.4-preview.1](https://github.com/NowLoadY/XRTranslate/releases/tag/v0.3.4-preview.1). Enable OSC in **Settings → Implementation → OSC** in ChilloutVR.
 2. In XRTranslate, enable Avatar translation controls and select **ChilloutVR**.
 3. Wear the installed avatar and wait for the connection to show **Off**.
 4. Enable **XRT Translation** in Advanced Avatar Settings to start. Disable it

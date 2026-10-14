@@ -1,0 +1,8 @@
+{
+  "host": {
+    "name": "XRTranslate",
+    "minimum_version": "0.3.4-preview.1",
+    "release_url": "https://github.com/NowLoadY/XRTranslate/releases/tag/v0.3.4-preview.1"
+  },
+  "connector_protocol": 1
+}

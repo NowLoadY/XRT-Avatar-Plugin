@@ -9,7 +9,7 @@ and compatibility.
 |---|---|
 | `packages/dev.nowloady.xrt-avatar/` | Unity editor package for menu installation and removal |
 | `protocol/avatar-parameters.json` | VRChat parameter names, types, defaults and status codes |
-| `control/` | I/O-free lifecycle core and generated Rust protocol bindings |
+| `control/` | Generated Rust protocol bindings and shared lifecycle re-export |
 | `examples/lifecycle.rs` | Executable lifecycle scenarios |
 | `tools/generate_protocol.py` | Rust and C# bindings generated from the manifest |
 

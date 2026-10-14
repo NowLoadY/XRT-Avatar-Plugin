@@ -5,11 +5,13 @@ caption panel. XRTranslate provides capture, translation and session ownership.
 
 ## Install
 
-1. In XRTranslate Avatar translation controls, select **Overte**, enable the
+1. Download and extract [the Overte script bundle](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.1/XRT-Avatar-Plugin-Overte-0.1.0-preview.1.zip).
+   Start [XRTranslate 0.3.4-preview.1](https://github.com/NowLoadY/XRTranslate/releases/tag/v0.3.4-preview.1).
+   In Avatar translation controls, select **Overte**, enable the
    plugin, and copy its connection address and pairing token. Enable **Send
    captions to the game component** to display translated text.
 2. In Overte, open **Edit → Running Scripts → From Disk** and select
-   `adapters/overte/scripts/xrt-avatar.js` from this repository.
+   `adapters/overte/scripts/xrt-avatar.js` from the extracted bundle. Keep its directory structure intact.
 3. Open the tablet and press **XRT Pair**. Enter the XRTranslate address and
    token. The token remains in script memory and is cleared when the script ends.
 4. Press **XRT Off** to start translation. **XRT Starting** indicates startup;

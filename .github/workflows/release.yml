@@ -1,0 +1,102 @@
+name: Build release packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag (for example v0.1.0-preview.1)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out the release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify tag and package version
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          python - <<'PY'
+          import os, re, subprocess
+          tag = os.environ['RELEASE_TAG']
+          if not re.fullmatch(r'v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?', tag):
+              raise SystemExit('Expected an existing v<SemVer> tag')
+          def git(*args):
+              return subprocess.check_output(['git', *args], text=True).strip()
+          if git('rev-parse', 'refs/tags/' + tag + '^{commit}') != git('rev-parse', 'HEAD'):
+              raise SystemExit('Checkout does not match the release tag')
+          subprocess.run(['python', 'tools/build_release.py', '--version', tag[1:],
+                          '--output', 'dist/release', '--require-clean'], check=True)
+          PY
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ inputs.tag }}
+          path: dist/release/*
+          if-no-files-found: error
+      - name: Prepare draft preview release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          python - <<'PY'
+          import hashlib, json, os, pathlib, subprocess, tempfile
+          tag = os.environ['RELEASE_TAG']
+          def gh(*args, **kwargs):
+              return subprocess.run(['gh', *args], text=True, check=True, **kwargs)
+          # Listing releases distinguishes an absent release from a network or
+          # permissions error; never turn a failed lookup into a duplicate write.
+          releases = json.loads(gh('api', '--paginate', '--slurp',
+                                   'repos/{owner}/{repo}/releases', capture_output=True).stdout)
+          release = next((item for page in releases for item in page if item['tag_name'] == tag), None)
+          if release is None:
+              manifest = json.loads(pathlib.Path('dist/release/release-manifest.json').read_text())
+              host = manifest['host']
+              notes = ('Installable preview packages for VRChat, ChilloutVR and Overte.\n\n'
+                       'Required host: [XRTranslate ' + host['minimum_version'] + '](' + host['release_url'] + ').\n\n'
+                       'For VRChat, import the .unitypackage into your Avatar project, then open '
+                       'Tools > XRT-Avatar-Plugin > Avatar Controls. Select your avatar and add its translation menu.\n\n'
+                       'Use the platform installation guides linked from the repository README. '
+                       'Archive structure and GUIDs are checked during packaging; '
+                       'Unity import and game-client acceptance remain pending. '
+                       'The VRChat package provides menu controls; avatar bubble rendering is not included.')
+              gh('release', 'create', tag, '--verify-tag', '--draft', '--prerelease',
+                 '--title', 'XRT-Avatar-Plugin ' + tag, '--notes', notes)
+              release = {'draft': True, 'assets': []}
+          known = {asset['name']: asset for asset in release['assets']}
+          pending = []
+          with tempfile.TemporaryDirectory() as temporary:
+              for source in sorted(pathlib.Path('dist/release').iterdir()):
+                  if source.name in known:
+                      gh('release', 'download', tag, '--pattern', source.name, '--dir', temporary)
+                      actual = pathlib.Path(temporary, source.name).read_bytes()
+                      if hashlib.sha256(actual).digest() != hashlib.sha256(source.read_bytes()).digest():
+                          raise SystemExit('Existing release asset differs: ' + source.name +
+                                           '. Publish a new version instead of replacing assets.')
+                  else:
+                      pending.append(str(source))
+          if pending and not release['draft']:
+              raise SystemExit('Published releases are immutable; a new version is required')
+          if pending:
+              gh('release', 'upload', tag, *pending)
+          PY

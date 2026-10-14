@@ -4,8 +4,8 @@ XRTranslate owns translation sessions and their resources. A platform adapter
 turns supported interactions into session requests and reports the host's actual
 state back to the platform. The adapter's protocol defines how requests and
 feedback travel between them. The companion host implementation is maintained
-on [XRTranslate main](https://github.com/NowLoadY/XRTranslate/tree/main);
-use a build with the game selector in **Avatar translation controls**.
+on [XRTranslate main](https://github.com/NowLoadY/XRTranslate/tree/main).
+Installable releases declare their compatible host in `release/compatibility.json`.
 
 ## Session ownership
 
