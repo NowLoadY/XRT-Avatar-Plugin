@@ -1,0 +1,11 @@
+[package]
+name = "xrt-avatar-control"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Transport-independent lifecycle control for XRT Avatar integration"
+
+[[example]]
+name = "lifecycle"
+path = "../../examples/lifecycle.rs"

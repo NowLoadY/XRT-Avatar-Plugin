@@ -1,0 +1,14 @@
+{
+  "name": "dev.nowloady.xrt-avatar",
+  "displayName": "XRT-Avatar-Plugin",
+  "version": "0.1.0-dev.1",
+  "unity": "2022.3",
+  "description": "Editor-only VRChat avatar controls for the XRTranslate companion integration. Development preview.",
+  "license": "AGPL-3.0-only",
+  "author": {
+    "name": "NowLoadY"
+  },
+  "vpmDependencies": {
+    "com.vrchat.avatars": ">=3.10.0 <3.11.0"
+  }
+}

@@ -1,0 +1,31 @@
+# Local workspace files
+/deepthink/
+
+# Local tools, credentials and generated artifacts
+.env
+.env.*
+*.key
+*.pfx
+*.p12
+.DS_Store
+.idea/
+.vscode/
+__pycache__/
+*.pyc
+*.log
+/target/
+/dist/
+/runtime/
+/scratch/
+
+# Unity projects and generated local assets
+/unity-project/
+**/Library/
+**/Temp/
+**/Obj/
+**/Logs/
+**/UserSettings/
+**/Build/
+**/Builds/
+*.csproj
+*.sln
