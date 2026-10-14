@@ -1,29 +1,30 @@
 # XRT-Avatar-Plugin
 
-连接虚拟社交平台与 [XRTranslate](https://github.com/NowLoadY/XRTranslate) 的开源游戏插件。
-通过角色菜单、按钮或附件控制翻译，并将字幕接入平台支持的显示组件。
+Open-source game plugins connecting virtual social platforms to [XRTranslate](https://github.com/NowLoadY/XRTranslate).
+Control translation through avatar menus, buttons or attachments, and display captions using native platform components.
 
-## 功能
+## Features
 
-- 在游戏内开启、关闭翻译，查看实际运行状态。
-- 复用 XRTranslate 的语言、音源、识别、翻译和输出设置。
-- 按连接独立管理翻译会话，断开后清理该会话及其显示。
+- Start and stop translation in-game and view its current status.
+- Use XRTranslate's configured languages, audio sources, recognition, translation and output settings.
+- Keep translation sessions and their display lifecycle scoped to each connection.
 
-## 平台连接器
+## Platform connectors
 
-| 平台 | 游戏组件 | 使用说明 |
+| Platform | Game components | Setup |
 |---|---|---|
-| VRChat | Expressions 菜单与本地角色参数 | [安装](docs/adapters/vrchat/installation.md) |
-| ChilloutVR | CCK 角色菜单与本地参数 | [安装](docs/adapters/chilloutvr/installation.md) |
-| Overte | 角色脚本、Tablet 控件与本地字幕 | [安装](docs/adapters/overte/installation.md) |
-| Resonite | ResoniteLink 角色控件桥接与文本组件 | [安装](docs/adapters/resonite/installation.md) |
-| Second Life | LSL 附件控件、浮空字幕与连接桥接 | [安装](docs/adapters/secondlife/installation.md) |
+| VRChat | Expressions menu and local avatar parameters | [Install](docs/adapters/vrchat/installation.md) |
+| ChilloutVR | CCK avatar menu and local parameters | [Install](docs/adapters/chilloutvr/installation.md) |
+| Overte | Avatar script, tablet controls and local captions | [Install](docs/adapters/overte/installation.md) |
+| Resonite | ResoniteLink bridge for avatar controls and text components | [Install](docs/adapters/resonite/installation.md) |
+| Second Life | LSL attachment controls, floating text and a connection bridge | [Install](docs/adapters/secondlife/installation.md) |
 
-当前为开发预览，游戏内验收情况见各平台指南。ResoniteLink 用于具有相应权限的本人主持会话；Second Life 需要 HTTPS 中继。
+Development preview. See each platform guide for compatibility and in-game validation status.
+ResoniteLink requires a session you host with the appropriate permissions; Second Life requires an HTTPS relay.
 
-游戏组件与连接协议由本项目维护；音频和翻译运行时由 XRTranslate 提供。
-OSC Chatbox 由 XRTranslate 的 OSC 插件提供。架构和开发规范见[文档索引](docs/README.md)。
+This project maintains game components and connector protocols. XRTranslate provides the audio and translation runtime,
+and its OSC plugin provides OSC Chatbox output. See the [documentation](docs/README.md) for architecture and development guidelines.
 
-## 许可证
+## License
 
-[AGPL-3.0-only](LICENSE)。本项目为独立社区项目。
+[AGPL-3.0-only](LICENSE). This is an independent community project.
