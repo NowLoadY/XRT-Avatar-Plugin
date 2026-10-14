@@ -13,9 +13,32 @@
     "api": "llSetText",
     "maximum_utf8_bytes": 254,
     "enabled_by_default": false,
-    "style": "../../presentation/bubble-style.json",
-    "maximum_lines": 3,
+    "enable_setting": "SHOW_CAPTIONS",
+    "presets": "../../presentation/presets.json",
+    "preset_environment": "XRT_CAPTION_PRESET",
+    "default_preset": "horizontal",
+    "preset_projection": "wrapping-and-line-count",
+    "font": "viewer-native",
+    "background": "viewer-native",
     "maximum_lifetime_ms": 8000
+  },
+  "text_source": {
+    "api": "llMessageLinked",
+    "enabled_by_default": false,
+    "enable_setting": "PUBLISH_TEXT_SOURCE",
+    "target": "LINK_SET",
+    "message_number": 1481790465,
+    "id": "NULL_KEY",
+    "format": "json-object",
+    "fields": {
+      "text": "string: sanitized unwrapped source, preserving source line breaks",
+      "display_text": "string: native hover projection, at most 254 UTF-8 bytes",
+      "expires_ms": "integer: remaining lifetime from 0 to 8000 milliseconds"
+    },
+    "clear": { "text": "", "display_text": "", "expires_ms": 0 },
+    "relay_caption_frame_maximum_utf8_bytes": 2048,
+    "source_overflow": "grapheme-boundary truncation with ellipsis within the complete relay frame budget",
+    "receiver": "attachment/XRT-TextDisplay.lsl"
   },
   "entrypoint": "attachment/XRT.lsl",
   "host_bridge": "relay/host_bridge.mjs",
@@ -28,6 +51,8 @@
     "https://wiki.secondlife.com/wiki/Changed",
     "https://wiki.secondlife.com/wiki/Touch_start",
     "https://wiki.secondlife.com/wiki/LlSetText",
+    "https://wiki.secondlife.com/wiki/LlMessageLinked",
+    "https://wiki.secondlife.com/wiki/LlList2Json",
     "https://wiki.secondlife.com/wiki/LlDialog"
   ]
 }

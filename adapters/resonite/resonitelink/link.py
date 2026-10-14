@@ -48,37 +48,126 @@ class Link:
 
 
 OWNER_TAG = "XRT-Avatar-Plugin/resonitelink/v1"
+CAPTION_TAG = "XRT-Avatar-Plugin/resonite-caption/v1"
 BOOL_TYPE = "[FrooxEngine]FrooxEngine.ValueField<bool>"
 STRING_TYPE = "[FrooxEngine]FrooxEngine.ValueField<string>"
+TEXT_TYPE = "[FrooxEngine]FrooxEngine.TextRenderer"
+COPY_TYPE = "[FrooxEngine]FrooxEngine.ValueCopy<string>"
 
 
-async def install(link, parent_id):
+def reference(target_id):
+    return {"$type": "reference", "targetId": target_id}
+
+
+async def add_value(link, parent_id, prefix, name, kind, value, component_type):
+    slot_id = prefix + "_" + name
+    component_id = slot_id + "_value"
+    await link.request("addSlot", data={
+        "id": slot_id, "parent": reference(parent_id), "name": field("string", name),
+    })
+    try:
+        await link.request("addComponent", containerSlotId=slot_id, data={
+            "id": component_id, "componentType": component_type,
+            "members": {"Value": field(kind, value)},
+        })
+    except BaseException:
+        await link.request("removeSlot", slotId=slot_id)
+        raise
+    return component_id
+
+
+def template_members(component):
+    """Reuse only the selected text object's asset references and appearance."""
+    if component.get("componentType") != TEXT_TYPE:
+        raise ValueError("Choose a TextRenderer from a working Basic text object as the template")
+    members = component["members"]
+    font = members.get("Font", {})
+    materials = members.get("Materials", {})
+    if (font.get("$type") != "reference" or not font.get("targetId")
+            or materials.get("$type") != "list" or not materials.get("elements")
+            or any(item.get("$type") != "reference" or not item.get("targetId")
+                   for item in materials["elements"])):
+        raise ValueError("The template needs an assigned font and text material")
+    result = {
+        "Font": reference(font["targetId"]),
+        "Materials": {"$type": "list", "elements": [
+            reference(item["targetId"]) for item in materials["elements"]]},
+    }
+    for name in ("Profile", "Color", "LineHeight", "HorizontalAlign", "VerticalAlign",
+                 "BoundsAlignment", "AlignmentMode"):
+        member = members.get(name)
+        if member and "value" in member:
+            result[name] = {key: value for key, value in member.items()
+                            if key not in ("id", "targetType")}
+    return result
+
+
+async def add_preset(link, parent_id, prefix, source_id, preset, profile, members):
+    """Create a native editable renderer driven by the owned text field."""
+    slot_id = prefix + "_caption"
+    text_id = slot_id + "_renderer"
+    driver_id = slot_id + "_copy"
+    await link.request("addSlot", data={
+        "id": slot_id, "parent": reference(parent_id),
+        "name": field("string", "Caption (" + preset.title() + ")"),
+        "tag": field("string", CAPTION_TAG),
+    })
+    await link.request("addComponent", containerSlotId=slot_id, data={
+        "componentType": "[FrooxEngine]FrooxEngine.AvatarDestroyOnDequip",
+    })
+    members.update({
+        "Text": field("string", ""), "ParseRichText": field("bool", False),
+        "Size": field("float", profile["lineHeight"]),
+        "Bounded": field("bool", True),
+        "BoundsSize": field("float2", {"x": profile["width"], "y": profile["height"]}),
+        "HorizontalAutoSize": field("bool", False), "VerticalAutoSize": field("bool", False),
+    })
+    await link.request("addComponent", containerSlotId=slot_id, data={
+        "id": text_id, "componentType": TEXT_TYPE, "members": members,
+    })
+    source = (await link.component(source_id))["members"]["Value"]
+    target = (await link.component(text_id))["members"]["Text"]
+    if source.get("$type") != "string" or target.get("$type") != "string" or not source.get("id") or not target.get("id"):
+        raise ValueError("The text fields could not be resolved for the caption binding")
+    await link.request("addComponent", containerSlotId=slot_id, data={
+        "id": driver_id, "componentType": COPY_TYPE,
+    })
+    driver = (await link.component(driver_id))["members"]
+    if any(driver.get(name, {}).get("$type") != "reference" for name in ("Source", "Target")):
+        raise ValueError("This Resonite version does not expose the expected native text binding")
+    await link.write(driver_id, Source=reference(source["id"]), Target=reference(target["id"]),
+                     WriteBack=field("bool", False))
+
+
+async def install(link, parent_id, preset=None, template_id=None, profile=None):
     """Create one owned subtree; never modify existing Avatar components."""
     import uuid
 
     await link.slot(parent_id, 0)
+    members = None
+    if preset:
+        if not template_id or profile is None:
+            raise ValueError("Choose a TextRenderer template for the caption preset")
+        members = template_members(await link.component(template_id))
     prefix = "XRT_" + uuid.uuid4().hex
     slot_id = prefix + "_root"
     await link.request("addSlot", data={
-        "id": slot_id, "parent": {"$type": "reference", "targetId": parent_id},
+        "id": slot_id, "parent": reference(parent_id),
         "name": field("string", "XRT"), "tag": field("string", OWNER_TAG),
     })
     try:
         await link.request("addComponent", containerSlotId=slot_id, data={
             "componentType": "[FrooxEngine]FrooxEngine.AvatarDestroyOnDequip",
         })
+        values = {}
         for name, kind, value, component_type in (
             ("Enabled", "bool", False, BOOL_TYPE),
             ("Status", "string", "Off", STRING_TYPE),
+            ("Text", "string", "", STRING_TYPE),
         ):
-            child_id = prefix + "_" + name
-            await link.request("addSlot", data={
-                "id": child_id, "parent": {"$type": "reference", "targetId": slot_id},
-                "name": field("string", name),
-            })
-            await link.request("addComponent", containerSlotId=child_id, data={
-                "componentType": component_type, "members": {"Value": field(kind, value)},
-            })
+            values[name] = await add_value(link, slot_id, prefix, name, kind, value, component_type)
+        if preset:
+            await add_preset(link, slot_id, prefix, values["Text"], preset, profile, members)
     except BaseException:
         # This subtree was created by this invocation and has not been handed off.
         await link.request("removeSlot", slotId=slot_id)
@@ -86,14 +175,20 @@ async def install(link, parent_id):
     return await link.slot(slot_id)
 
 
-async def controls(link, slot_id):
+async def controls(link, slot_id, ensure_text=False):
     root = await link.slot(slot_id)
     if root.get("tag", {}).get("value") != OWNER_TAG:
         raise ValueError("Select the XRT slot created by the install command")
     result = {}
-    for name, component_type in (("Enabled", BOOL_TYPE), ("Status", STRING_TYPE)):
+    for name, component_type in (("Enabled", BOOL_TYPE), ("Status", STRING_TYPE), ("Text", STRING_TYPE)):
         children = [child for child in root.get("children", [])
                     if child.get("name", {}).get("value") == name]
+        if name == "Text" and not children:
+            if ensure_text:
+                import uuid
+                result[name] = await add_value(link, slot_id, "XRT_" + uuid.uuid4().hex,
+                                                "Text", "string", "", STRING_TYPE)
+            continue
         if len(children) != 1:
             raise ValueError("XRT control slot is missing or ambiguous: " + name)
         components = [component for component in children[0].get("components", [])

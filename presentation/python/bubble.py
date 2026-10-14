@@ -4,7 +4,24 @@ import math
 from pathlib import Path
 import re
 
-STYLE = json.loads((Path(__file__).resolve().parents[1] / 'bubble-style.json').read_text())
+ROOT = Path(__file__).resolve().parents[1]
+STYLE = json.loads((ROOT / 'bubble-style.json').read_text())
+PROFILES = {name: dict(STYLE, **preset) for name, preset in json.loads((ROOT / 'presets.json').read_text()).items()}
+
+
+def source_text(value, max_bytes=None):
+    source = '' if value is None else str(value)
+    text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f\u200b\u200e\u200f\u202a-\u202e\u2066-\u2069\ud800-\udfff]', '', source[:8192]).strip()
+    if type(max_bytes) in (int, float) and math.isfinite(max_bytes):
+        used, kept = 0, []
+        for cluster, _ in _clusters(text):
+            size = len(cluster.encode('utf-8'))
+            if used + size > max(0, max_bytes):
+                break
+            kept.append(cluster)
+            used += size
+        return ''.join(kept)
+    return text
 
 
 def _mark(code):
@@ -57,13 +74,13 @@ def _trim(line):
     return line
 
 
-def layout(value, max_bytes=None, max_columns=None):
-    columns = (max(1, min(STYLE['maxColumns'], math.floor(max_columns)))
+def layout(value, max_bytes=None, max_columns=None, profile='horizontal', max_lines=None):
+    selected = PROFILES.get(profile, PROFILES['horizontal'])
+    row_limit = max(1, min(12, math.floor(max_lines))) if type(max_lines) in (int, float) and math.isfinite(max_lines) else selected['maxLines']
+    columns = (max(1, min(120, math.floor(max_columns)))
                if isinstance(max_columns, (int, float)) and math.isfinite(max_columns)
-               else STYLE['maxColumns'])
-    source = '' if value is None else str(value)
-    source = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f\u200b\u200e\u200f\u202a-\u202e\u2066-\u2069]', '', source[:8192])
-    source = re.sub(r'\s+', ' ', source).strip()
+               else selected['maxColumns'])
+    source = re.sub(r'\s+', ' ', source_text(value))
     queue, lines, line = _clusters(source), [], []
     clipped = False
     while queue:
@@ -81,12 +98,12 @@ def layout(value, max_bytes=None, max_columns=None):
             lines.append(_trim(line))
             line = []
             queue = carry + [item] + queue
-            if len(lines) == STYLE['maxLines']:
+            if len(lines) == row_limit:
                 clipped = True
                 break
         elif line or item[0] != ' ':
             line.append(item)
-    if line and len(lines) < STYLE['maxLines']:
+    if line and len(lines) < row_limit:
         lines.append(_trim(line))
     if clipped:
         if not lines:
@@ -115,10 +132,46 @@ def layout(value, max_bytes=None, max_columns=None):
     rendered = text.split('\n') if text else []
     widest = max((_width(_clusters(row)) for row in rendered), default=0)
     return {'text': text, 'lines': len(rendered),
-            'width': min(STYLE['maxWidth'], max(STYLE['minWidth'], widest * STYLE['columnWidth'] + STYLE['padding'] * 2)),
-            'height': len(rendered) * STYLE['lineHeight'] * STYLE['lineSpacing'] + STYLE['padding'] * 2}
+            'width': min(selected['width'], max(min(STYLE['minWidth'], selected['width']), widest * selected['columnWidth'] + selected['padding'] * 2)),
+            'height': len(rendered) * selected['lineHeight'] * selected['lineSpacing'] + selected['padding'] * 2}
 
 
 def lifetime(message):
     value = message.get('expires_ms') if isinstance(message, dict) else None
     return max(0, min(STYLE['maxLifetimeMs'], value)) if type(value) in (int, float) and math.isfinite(value) else 0
+
+
+class CaptionSource:
+    """Current plain-text result, independent of a display's layout and placement."""
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.revisions = {}
+        self.identity = None
+        self.value = None
+
+    def clear(self):
+        self.value = None
+
+    def accept(self, message, now):
+        if (not isinstance(message, dict) or not all(isinstance(message.get(k), str) for k in ('text', 'stream', 'id'))
+                or type(message.get('revision')) is not int or message['revision'] < 0
+                or type(now) not in (int, float) or not math.isfinite(now)):
+            return False
+        key = (message['stream'], message['id'])
+        if key in self.revisions and (key != self.identity or message['revision'] <= self.revisions[key]):
+            return False
+        self.revisions[key] = message['revision']
+        self.identity = key
+        if len(self.revisions) > 64:
+            del self.revisions[next(iter(self.revisions))]
+        text, duration = source_text(message['text']), lifetime(message)
+        self.value = dict(text=text, stream=message['stream'], id=message['id'],
+                          revision=message['revision'], expiresAt=now + duration) if text and duration > 0 else None
+        return True
+
+    def snapshot(self, now):
+        if self.value and now >= self.value['expiresAt']:
+            self.clear()
+        return dict(self.value) if self.value else None

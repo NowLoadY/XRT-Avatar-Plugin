@@ -4,7 +4,30 @@ import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { setTimeout as delay } from 'node:timers/promises';
 
-const { layout, lifetime } = createRequire(import.meta.url)('../../../presentation/javascript/bubble.js');
+const { layout, lifetime, sourceText, profiles } = createRequire(import.meta.url)('../../../presentation/javascript/bubble.js');
+
+const preset = process.env.XRT_CAPTION_PRESET || 'horizontal';
+if (!Object.hasOwn(profiles, preset)) throw new Error('Choose horizontal, vertical or board for XRT_CAPTION_PRESET.');
+
+// Preserve an unwrapped source alongside the native hover-text projection.
+function captionFrame(frame) {
+  const text = sourceText(frame.text);
+  const project = value => ({
+    ...frame, text: value, display_text: layout(value, { profile: preset, maxBytes: 254 }).text,
+    expires_ms: Math.floor(lifetime(frame)),
+  });
+  const fits = value => Buffer.byteLength(JSON.stringify(value)) <= 2048;
+  const complete = project(text);
+  if (fits(complete)) return complete;
+  if (!fits(project('…'))) throw new Error('Caption metadata exceeds the relay frame limit.');
+  let low = 0, high = Buffer.byteLength(text);
+  while (low < high) {
+    const middle = Math.ceil((low + high) / 2);
+    if (fits(project(sourceText(text, middle) + '…'))) low = middle;
+    else high = middle - 1;
+  }
+  return project(sourceText(text, low) + '…');
+}
 
 const relay = new URL(process.env.XRT_RELAY_URL || 'https://invalid.example');
 const host = new URL(process.env.XRT_CONNECTOR_URL || 'ws://127.0.0.1:0');
@@ -47,12 +70,11 @@ async function openSocket(hello) {
     if (socket !== websocket) return;
     try {
       if (typeof event.data !== 'string' || event.data.length > 32768) throw new Error();
-      const frame = JSON.parse(event.data);
+      let frame = JSON.parse(event.data);
       if (!frame || typeof frame !== 'object' || Array.isArray(frame)) throw new Error();
       let expiresAt = null;
       if (frame.type === 'caption') {
-        frame.text = layout(frame.text, { maxBytes: 254 }).text;
-        frame.expires_ms = lifetime(frame);
+        frame = captionFrame(frame);
         expiresAt = performance.now() + frame.expires_ms;
         outgoing = outgoing.filter(item => item.frame.type !== 'caption');
       } else if (frame.type === 'clear' || frame.type === 'reset' ||

@@ -7,10 +7,18 @@
   "minWidth": 0.44,
   "maxWidth": 0.9,
   "columnWidth": 0.019,
-  "textColor": { "red": 238, "green": 240, "blue": 243 },
-  "textAlpha": 0.94,
-  "backgroundColor": { "red": 23, "green": 27, "blue": 34 },
-  "backgroundAlpha": 0.72,
+  "textColor": {
+    "red": 30,
+    "green": 36,
+    "blue": 40
+  },
+  "textAlpha": 1,
+  "backgroundColor": {
+    "red": 242,
+    "green": 244,
+    "blue": 244
+  },
+  "backgroundAlpha": 0.9,
   "fadeInMs": 160,
   "fadeOutMs": 220,
   "maxLifetimeMs": 8000

@@ -34,7 +34,7 @@ lifecycle and remain independently pinned by the host.
 2. Commit the source and create its version tag. Use a clean checkout to build:
 
    ```sh
-   python3 tools/build_release.py --version 0.1.0-preview.2 \
+   python3 tools/build_release.py --version 0.1.0-preview.3 \
      --output dist/release --require-clean
    ```
 
@@ -69,7 +69,7 @@ own package manifest.
 
 The builder reads tracked files from explicit platform subtrees and checks
 metadata, paths and GUID uniqueness. It includes licenses and the Overte setup
-guide, shared presentation helper and toolbar icons. It excludes local runtime data and third-party SDK binaries. ZIP timestamps
+guide, shared text source, object designer and toolbar icons. It excludes local runtime data and third-party SDK binaries. ZIP timestamps
 and Unity archive metadata are deterministic so the same inputs produce identical
 install packages.
 

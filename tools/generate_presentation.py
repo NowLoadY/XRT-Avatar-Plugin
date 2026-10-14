@@ -14,6 +14,12 @@ path = root / 'presentation/javascript/bubble.js'
 source = path.read_text()
 pattern = r'/\* style:start \*/.*?/\* style:end \*/'
 updated, count = re.subn(pattern, lambda _: '/* style:start */' + json.dumps(style, separators=(',', ':')) + '/* style:end */', source, flags=re.S)
+presets = json.loads((root / 'presentation/presets.json').read_text())
+profiles = {name: dict(style, **preset) for name, preset in presets.items()}
+updated, profile_count = re.subn(r'/\* profiles:start \*/.*?/\* profiles:end \*/',
+    lambda _: '/* profiles:start */' + json.dumps(profiles, separators=(',', ':')) + '/* profiles:end */', updated, flags=re.S)
+if profile_count != 1:
+    raise SystemExit('Expected one generated caption profile block')
 if count != 1:
     raise SystemExit('Expected one generated bubble style block')
 if args.check:

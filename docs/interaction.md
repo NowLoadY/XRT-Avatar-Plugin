@@ -17,6 +17,21 @@ status and a compact tool row. Add and remove act on the selected avatar. Status
 refresh is nonmutating. In-game setup instructions are collapsed; help opens the
 full guide. Changes that need saving expose a save action.
 
+## Caption objects
+
+Object creation and text binding are separate from the translation switch.
+Offer a small visual preset chooser and a picker for existing editable objects.
+Creation selects the new object; binding changes only its text and explicitly
+chosen visibility. Move, resize, rotate and decorate through the native editor.
+
+An eye action toggles authoring sample text until it is dismissed or live
+translation starts. Preview text never becomes a translation result. Unbinding
+keeps the object and restores owned fields. Connection and status messages stay
+outside the caption object.
+
+Owned design surfaces use XRTranslate's light palette and shared icon treatment.
+They must remain readable independently of the surrounding editor's theme.
+
 ## Translation state
 
 | State | Presentation | Available action |

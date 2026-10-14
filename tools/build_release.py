@@ -226,8 +226,10 @@ def main() -> None:
 
     overte = {name: read_source(name, tracked) for name in (
         "adapters/overte/scripts/xrt-avatar.js", "connectors/websocket/javascript/xrt_connector.js",
-        "presentation/javascript/bubble.js", "LICENSE")}
-    for icon in ("connect", "start", "stop", "stop-active", "waiting", "retry"):
+        "presentation/javascript/bubble.js", "presentation/designer/theme.css",
+        "adapters/overte/scripts/caption-display.js", "adapters/overte/scripts/designer.html",
+        "adapters/overte/examples/caption-source.js", "LICENSE")}
+    for icon in ("connect", "start", "stop", "stop-active", "waiting", "retry", "display"):
         name = f"adapters/overte/scripts/icons/{icon}.svg"
         overte[name] = read_source(name, tracked)
     overte["START-HERE.md"] = read_source("docs/adapters/overte/installation.md", tracked)

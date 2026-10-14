@@ -17,6 +17,42 @@ The shared transport encodes accepted updates; installed Avatar assets render
 those updates. Adding presentation does not change the control state machine or
 create another OSC listener.
 
+## Runtime representation
+
+VRChat's [Avatar component allowlist](https://creators.vrchat.com/avatars/whitelisted-avatar-components/whitelisted-avatar-components/)
+permits meshes, materials, animators and supported constraints. It does not
+provide an Avatar TextMeshPro component, Udon runtime or custom MonoBehaviour
+runtime. The world's TextMeshPro API is not an Avatar text binding.
+
+An Avatar presentation backend must compile an authoring layout into supported
+assets: a bounded glyph mesh, font atlas, material/shader and animator bindings.
+XRTranslate performs text layout and encodes glyph updates through the existing
+OSC owner. The installed Avatar consumes numeric values. A source binding in
+the editor denotes that complete route; it cannot be implemented by serializing
+a string field on an editor-only component.
+
+Horizontal, vertical and board presets describe geometry, placement and layout.
+They share the same text source and lifecycle. A preset is installable only when
+its generated assets and its host encoder implement the same renderer contract.
+Changing the preset does not create a second translation session.
+
+## Resource accounting
+
+The renderer declares its font coverage, visible glyph count, material and
+texture requirements, animator cost and parameter use. Editor preview and host
+encoding use the same glyph mapping and layout bounds. Missing glyphs use a
+specified replacement; the package must not claim arbitrary Unicode coverage
+from a fixed atlas.
+
+Local OSC float values retain 32-bit precision in animators. Synchronized floats
+are quantized, and all custom synchronized parameters share a 256-bit budget.
+Local and shared renderers therefore require separate encoding and cost checks;
+simply enabling parameter synchronization does not make a local renderer a
+shared renderer. A 32-slot, one-byte-per-slot shared buffer alone uses all
+256 bits, before any framing or visibility state. Standard custom parameter
+synchronization is not a reliable ordered text stream. See the official
+[parameter types and synchronization rules](https://creators.vrchat.com/avatars/animator-parameters/).
+
 ## Target and visibility
 
 The initial bubble target is the wearer's own Avatar. It is not an API for

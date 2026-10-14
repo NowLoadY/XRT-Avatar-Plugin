@@ -1,104 +1,144 @@
 # Install in Resonite
 
-Add translation controls and an optional caption display to your Avatar.
+Add translation controls and a live text source to your Avatar. Use a supplied
+caption shape or connect the source to a text object you have already designed.
 
 ## Requirements
 
-Use a Resonite session that exposes ResoniteLink. The official enablement rules
-require that you host the session, have at least Builder permissions and that
-the world's ResoniteLink permissions allow access. Enable it in the Dash's
-**Session** tab and copy the local address it displays.
+Use a Resonite session that exposes ResoniteLink. Host the session, have at least
+Builder permissions and enable ResoniteLink in the Dash's **Session** tab. The
+world's ResoniteLink permissions must allow access. Copy the local address shown.
 
-The bridge runs on the same computer as Resonite and XRTranslate, using Python
-3.10+ and `websockets`. Install its dependency in a virtual environment:
+The bridge runs on the same computer as Resonite and XRTranslate. Install its
+Python 3.10+ dependency in a virtual environment:
 
 ```sh
 python3 -m venv .venv
 .venv/bin/python -m pip install -r adapters/resonite/resonitelink/requirements.txt
 ```
 
-## Install controls
+## Add the source and controls
 
-1. Use the Inspector to locate the current Avatar slot. To inspect IDs through
-   the API, run the `inspect` command with the local ResoniteLink URL:
+1. Locate your Avatar's slot in the Inspector. To inspect IDs through the API:
 
    ```sh
    .venv/bin/python adapters/resonite/resonitelink/bridge.py \
      --link ws://127.0.0.1:PORT inspect --slot Root --depth 1
    ```
 
-   Continue inspecting a child slot until the intended Avatar is located.
-2. Create the XRT control subtree under that slot:
+   Continue inspecting child slots until the intended Avatar is located.
+2. Create the XRT source and controls under that slot:
 
    ```sh
    .venv/bin/python adapters/resonite/resonitelink/bridge.py \
      --link ws://127.0.0.1:PORT install --parent AVATAR_SLOT_ID
    ```
 
-   The installer creates `XRT/Enabled` with a `ValueField<bool>` and `XRT/Status`
-   with a `ValueField<string>`. Its `AvatarDestroyOnDequip` component removes this
-   owned control subtree when the Avatar is unequipped. It prints the new XRT
-   slot ID. Save the Avatar with the controls off before using the bridge.
-3. In the Inspector, set `XRT/Enabled → Value` to control translation. For Avatar
-   buttons, add `ButtonValueSet<bool>` to each native TouchButton or UIX Button
-   slot; point `TargetValue` at the `Enabled` component's **Value field**. Set one
-   button's `SetValue` to true (start), and the other's to false (stop). Use a
-   play symbol and a stop square on the two button surfaces.
-4. For captions, use **Create New → Text → Basic** to create a complete native
-   text object, position it on the Avatar and note its `TextRenderer` component
-   ID. Keep the object close to your Avatar without covering its face or hands.
-   Choose a readable font and adjust its scale to a compact caption width, about
-   0.45–0.9 m at normal Avatar scale. The bridge preserves this placement and font.
+   The result includes the new XRT slot ID. Its fields are:
+
+   | Field | Use |
+   |---|---|
+   | `Enabled → Value` | Start or stop translation |
+   | `Status → Value` | Current translation status |
+   | `Text → Value` | Current plain-text translation |
+
+3. To make Avatar buttons, add `ButtonValueSet<bool>` to native TouchButton or
+   UIX Button slots. Point each `TargetValue` at the **Value field** of `Enabled`.
+   Use a play symbol with `SetValue = true` and a stop square with
+   `SetValue = false`. You can also change the field directly in the Inspector.
+4. Save the Avatar with `Enabled` off and `Text` empty.
+
+Existing XRT installations keep their controls. The bridge adds the `Text` field
+when it first runs against an installation that does not have one.
+
+## Add a caption object
+
+The three starting shapes are **Horizontal**, **Vertical** and **Board**.
+Vertical is a narrow portrait layout. Board provides text that you can place on
+your own board object. All three remain ordinary editable native text objects.
+
+1. Under your Avatar, use **Create New → Text → Basic** to make a working text
+   template. Choose its font, material, color and alignment in the Inspector.
+   For a handwritten board, choose the handwritten font here.
+2. Note that object's `TextRenderer` component ID and include it when installing:
+
+   ```sh
+   .venv/bin/python adapters/resonite/resonitelink/bridge.py \
+     --link ws://127.0.0.1:PORT install --parent AVATAR_SLOT_ID \
+     --preset horizontal --template TEXT_RENDERER_COMPONENT_ID
+   ```
+
+   Replace `horizontal` with `vertical` or `board` for the other shapes. Use this
+   command in place of the source-only installation above.
+3. Select the new **Caption** object in the Inspector. Move, rotate and scale it
+   where you want, then adjust font, color, size, alignment or bounds directly.
+   Its text is already connected to `XRT/Text` through a native `ValueCopy<string>`.
+   Keep rich-text parsing off for translated content.
+
+The preset reuses the template's font and material providers. Keep those providers
+with the Avatar; their references remain editable. The template's displayed text
+can be cleared. The bridge changes the text source, so it does not overwrite your
+caption styling or position when a new translation arrives.
+
+## Use your own object
+
+Drag `XRT/Text → Value` onto a text object's **Text field** in the Inspector and
+choose a one-way ValueCopy. Keep `WriteBack` off. You can connect several objects
+to the same source, or read the Value field from ProtoFlux. Choose fonts, wrapping,
+colors and placement on each object separately.
+
+The source contains the current plain text without display wrapping.
+Your object determines how to display it. Keep its rich-text parsing
+off when binding translated text.
+
+For an existing unbound TextRenderer, the bridge also supports the direct
+`--text TEXT_RENDERER_COMPONENT_ID` option. It preserves the object's font,
+material, color, size and placement. Do not also bind that same Text field with a
+ValueCopy. On exit, the bridge restores the previous text and rich-text setting
+if they have not been edited while it was running.
 
 ## Run
 
-In XRTranslate Avatar translation controls, select **Resonite** and enable the
-plugin. Enable **Send captions to the game component** when using a text renderer,
-then run:
+In XRTranslate, enable Avatar translation controls, select **Resonite**, and enable
+**Send captions to the game component**. Then run:
 
 ```sh
 .venv/bin/python adapters/resonite/resonitelink/bridge.py \
   --link ws://127.0.0.1:PORT run --slot XRT_SLOT_ID \
-  --host ws://127.0.0.1:HOST_PORT/xrt --text TEXT_RENDERER_COMPONENT_ID
+  --host ws://127.0.0.1:HOST_PORT/xrt
 ```
 
-Enter the pairing token at the local prompt. Omit `--text` to use controls alone.
-The bridge resets `Enabled` to false on connection. Press Start after it reports
-**Off**. **Starting…** and **On** show the current translation state. Stop
-cancels startup or active translation and clears captions.
+Enter the pairing token at the local prompt. The bridge resets `Enabled` to false
+on connection. Press Start after **Off** appears. **Starting…** and **On** show
+the current translation state. Stop clears the text source and cancels translation.
+Wait for stopping to finish before starting again.
 
-## Captions
+The source is empty between captions. Each result disappears within eight seconds,
+and repeated delivery does not keep it visible. Captions are synchronized world
+content: use objects whose visibility matches the intended audience.
 
-The display shows the latest translation in soft white text, with up to three
-short lines. Long results end with an ellipsis. A caption disappears within eight
-seconds; repeated delivery does not keep it visible. There is no idle label or
-connection status above the Avatar.
+Stop the bridge with Ctrl+C. It stops translation and clears its text source.
+If the process is forcibly terminated or ResoniteLink is lost, clear `XRT/Text →
+Value` in the Inspector, and the Text field of any directly connected `--text`
+object. The bridge provides expiry while it is running.
 
-TextRenderer captions are synchronized world content. Use a caption object whose
-visibility matches the intended audience. On exit, the bridge restores the text,
-color and rich-text setting it found, preserving edits made while it was running.
-
-Expiry is performed by the bridge. If that process is forcibly terminated or the
-ResoniteLink connection is lost, clear the TextRenderer's Text field in the
-Inspector; the component does not provide an independent caption expiry timer.
-
-Stop with Ctrl+C. The bridge cancels its owned host session and resets its control
-fields. It exits on loss of either connection; it does not reuse old scene IDs
-in another world. ResoniteLink IDs are session-local, so inspect the current
-scene again after loading a saved Avatar. To remove the installation, delete its
-XRT slot and remove references from any buttons you connected to it.
+ResoniteLink IDs belong to the current session. Inspect the current scene again
+after loading a saved Avatar. To remove the installation, stop the bridge, delete
+its XRT slot and any caption objects you moved elsewhere, then remove references
+from your buttons or text bindings. Created XRT and Caption slots also carry
+`AvatarDestroyOnDequip` for Avatar unequip cleanup.
 
 ## Compatibility
 
 The bridge uses the official ResoniteLink API, currently documented as beta.
-The installed controls and rendering still require an acceptance run in Resonite.
-TextRenderer supplies text color, font and placement; this integration uses its
-native text surface. Background panels and animation are not added to the Avatar.
+Native object installation, field binding and rendering still need an acceptance
+run in Resonite. Presets use native TextRenderer objects; add your own board or
+background object when desired.
 
 - [ResoniteLink activation](https://wiki.resonite.com/ResoniteLink)
-- [Official protocol and data-model examples](https://github.com/Yellow-Dog-Man/ResoniteLink)
+- [Official data model and examples](https://github.com/Yellow-Dog-Man/ResoniteLink)
 - [ValueField](https://wiki.resonite.com/Component:ValueField)
+- [ValueCopy](https://wiki.resonite.com/Component:ValueCopy)
 - [ButtonValueSet](https://wiki.resonite.com/Component:ButtonValueSet)
 - [AvatarDestroyOnDequip](https://wiki.resonite.com/Component:AvatarDestroyOnDequip)
 - [TextRenderer](https://wiki.resonite.com/Component:TextRenderer)
-- [Color profiles](https://wiki.resonite.com/Type:ColorProfile)

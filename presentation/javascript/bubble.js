@@ -5,8 +5,25 @@
 }(this, function () {
     "use strict";
     // Generated style: edit presentation/bubble-style.json.
-    var style = /* style:start */{"maxLines":3,"maxColumns":42,"lineHeight":0.043,"lineSpacing":1.25,"padding":0.025,"minWidth":0.44,"maxWidth":0.9,"columnWidth":0.019,"textColor":{"red":238,"green":240,"blue":243},"textAlpha":0.94,"backgroundColor":{"red":23,"green":27,"blue":34},"backgroundAlpha":0.72,"fadeInMs":160,"fadeOutMs":220,"maxLifetimeMs":8000}/* style:end */;
+    var style = /* style:start */{"maxLines":3,"maxColumns":42,"lineHeight":0.043,"lineSpacing":1.25,"padding":0.025,"minWidth":0.44,"maxWidth":0.9,"columnWidth":0.019,"textColor":{"red":30,"green":36,"blue":40},"textAlpha":1,"backgroundColor":{"red":242,"green":244,"blue":244},"backgroundAlpha":0.9,"fadeInMs":160,"fadeOutMs":220,"maxLifetimeMs":8000}/* style:end */;
 
+    var profiles = /* profiles:start */{"horizontal":{"maxLines":3,"maxColumns":42,"lineHeight":0.043,"lineSpacing":1.25,"padding":0.025,"minWidth":0.44,"maxWidth":0.9,"columnWidth":0.019,"textColor":{"red":30,"green":36,"blue":40},"textAlpha":1,"backgroundColor":{"red":242,"green":244,"blue":244},"backgroundAlpha":0.9,"fadeInMs":160,"fadeOutMs":220,"maxLifetimeMs":8000,"label":"Bubble","width":0.9,"height":0.24,"fontFamily":"sans"},"vertical":{"maxLines":8,"maxColumns":16,"lineHeight":0.043,"lineSpacing":1.25,"padding":0.025,"minWidth":0.44,"maxWidth":0.9,"columnWidth":0.019,"textColor":{"red":30,"green":36,"blue":40},"textAlpha":1,"backgroundColor":{"red":242,"green":244,"blue":244},"backgroundAlpha":0.9,"fadeInMs":160,"fadeOutMs":220,"maxLifetimeMs":8000,"label":"Vertical","width":0.36,"height":0.56,"fontFamily":"sans"},"board":{"maxLines":5,"maxColumns":36,"lineHeight":0.043,"lineSpacing":1.25,"padding":0.025,"minWidth":0.44,"maxWidth":0.9,"columnWidth":0.019,"textColor":{"red":30,"green":36,"blue":40},"textAlpha":1,"backgroundColor":{"red":242,"green":244,"blue":244},"backgroundAlpha":0,"fadeInMs":160,"fadeOutMs":220,"maxLifetimeMs":8000,"label":"Board","width":0.8,"height":0.38,"fontFamily":"handwritten"}}/* profiles:end */;
+
+    function sourceText(value, maxBytes) {
+        var text = points(String(value == null ? "" : value).slice(0, 8192)
+            .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u200B\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, ""))
+            .map(function (item) { return item.text; }).join("").trim();
+        if (typeof maxBytes === "number" && isFinite(maxBytes) && bytes(text) > maxBytes) {
+            var used = 0, kept = [];
+            clusters(text).some(function (item) {
+                var size = bytes(item.text);
+                if (used + size > Math.max(0, maxBytes)) { return true; }
+                kept.push(item.text); used += size; return false;
+            });
+            return kept.join("");
+        }
+        return text;
+    }
     function points(text) {
         var result = [], i, first, second;
         for (i = 0; i < text.length; i++) {
@@ -66,11 +83,12 @@
     }
     function layout(value, options) {
         options = options || {};
+        var selected = profiles[options.profile || "horizontal"] || profiles.horizontal;
+        var maxLines = typeof options.maxLines === "number" && isFinite(options.maxLines)
+            ? Math.max(1, Math.min(12, Math.floor(options.maxLines))) : selected.maxLines;
         var columns = typeof options.maxColumns === "number" && isFinite(options.maxColumns)
-            ? Math.max(1, Math.min(style.maxColumns, Math.floor(options.maxColumns))) : style.maxColumns;
-        var source = String(value == null ? "" : value).slice(0, 8192)
-            .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u200B\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, "")
-            .replace(/\s+/g, " ").trim();
+            ? Math.max(1, Math.min(120, Math.floor(options.maxColumns))) : selected.maxColumns;
+        var source = sourceText(value).replace(/\s+/g, " ");
         var queue = clusters(source), lines = [], line = [], clipped = false;
         while (queue.length) {
             var item = queue.shift();
@@ -84,10 +102,10 @@
                 var carry = boundary > 0 ? line.splice(boundary + 1) : [];
                 lines.push(trim(line)); line = [];
                 queue = carry.concat([item], queue);
-                if (lines.length === style.maxLines) { clipped = true; break; }
+                if (lines.length === maxLines) { clipped = true; break; }
             } else if (line.length || item.text !== " ") { line.push(item); }
         }
-        if (line.length && lines.length < style.maxLines) { lines.push(trim(line)); }
+        if (line.length && lines.length < maxLines) { lines.push(trim(line)); }
         if (clipped) {
             if (!lines.length) { lines.push([]); }
             line = lines[lines.length - 1];
@@ -112,12 +130,41 @@
         var rendered = text ? text.split("\n") : [];
         var widest = rendered.reduce(function (size, row) { return Math.max(size, width(clusters(row))); }, 0);
         return { text: text, lines: rendered.length,
-            width: Math.min(style.maxWidth, Math.max(style.minWidth, widest * style.columnWidth + style.padding * 2)),
-            height: rendered.length * style.lineHeight * style.lineSpacing + style.padding * 2 };
+            width: Math.min(selected.width, Math.max(Math.min(style.minWidth, selected.width), widest * selected.columnWidth + selected.padding * 2)),
+            height: rendered.length * selected.lineHeight * selected.lineSpacing + selected.padding * 2 };
     }
     function lifetime(message) {
         return message && typeof message.expires_ms === "number" && isFinite(message.expires_ms)
             ? Math.max(0, Math.min(style.maxLifetimeMs, message.expires_ms)) : 0;
     }
-    return { style: style, layout: layout, lifetime: lifetime };
+    function CaptionSource() { this.reset(); }
+    CaptionSource.prototype.reset = function () {
+        this.revisions = Object.create(null); this.order = []; this.identity = null; this.value = null;
+    };
+    CaptionSource.prototype.clear = function () { this.value = null; };
+    CaptionSource.prototype.accept = function (message, now) {
+        if (!message || typeof message.text !== "string" || typeof message.stream !== "string" ||
+                typeof message.id !== "string" || typeof message.revision !== "number" ||
+                !isFinite(message.revision) || message.revision < 0 || message.revision % 1 ||
+                typeof now !== "number" || !isFinite(now)) { return false; }
+        var key = JSON.stringify([message.stream, message.id]);
+        if (this.revisions[key] !== undefined &&
+                (key !== this.identity || message.revision <= this.revisions[key])) { return false; }
+        if (this.revisions[key] === undefined) { this.order.push(key); }
+        this.revisions[key] = message.revision; this.identity = key;
+        if (this.order.length > 64) { delete this.revisions[this.order.shift()]; }
+        var text = sourceText(message.text), duration = lifetime(message);
+        this.value = text && duration > 0 ? { text: text, stream: message.stream, id: message.id,
+            revision: message.revision, expiresAt: now + duration } : null;
+        return true;
+    };
+    CaptionSource.prototype.snapshot = function (now) {
+        if (this.value && now >= this.value.expiresAt) { this.clear(); }
+        if (!this.value) { return null; }
+        var copy = {}, value = this.value;
+        Object.keys(value).forEach(function (key) { copy[key] = value[key]; });
+        return copy;
+    };
+    return { style: style, profiles: profiles, layout: layout, lifetime: lifetime,
+        sourceText: sourceText, CaptionSource: CaptionSource };
 }));

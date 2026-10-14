@@ -11,15 +11,17 @@ Game components share XRTranslate's audio, translation and output settings.
 
 | Platform | Download | Setup |
 |---|---|---|
-| VRChat | [Unity package](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.2/XRT-Avatar-Plugin-VRChat-0.1.0-preview.2.unitypackage) | [Import or install through VCC](docs/adapters/vrchat/installation.md) |
-| ChilloutVR | [Unity package](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.2/XRT-Avatar-Plugin-ChilloutVR-0.1.0-preview.2.unitypackage) | [Install on your avatar](docs/adapters/chilloutvr/installation.md) |
-| Overte | [Script bundle](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.2/XRT-Avatar-Plugin-Overte-0.1.0-preview.2.zip) | [Load and pair](docs/adapters/overte/installation.md) |
+| VRChat | [Unity package](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.3/XRT-Avatar-Plugin-VRChat-0.1.0-preview.3.unitypackage) | [Import or install through VCC](docs/adapters/vrchat/installation.md) |
+| ChilloutVR | [Unity package](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.3/XRT-Avatar-Plugin-ChilloutVR-0.1.0-preview.3.unitypackage) | [Install on your avatar](docs/adapters/chilloutvr/installation.md) |
+| Overte | [Script bundle](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.3/XRT-Avatar-Plugin-Overte-0.1.0-preview.3.zip) | [Load and pair](docs/adapters/overte/installation.md) |
 
 For VRChat, import the package into your Avatar project, then open **Tools → XRT-Avatar-Plugin → Avatar Controls**.
-Select your avatar and add its translation menu. [View all release files](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/tag/v0.1.0-preview.2).
+Select your avatar and add its translation menu. [View all release files](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/tag/v0.1.0-preview.3).
 
 [Resonite](docs/adapters/resonite/installation.md) and [Second Life](docs/adapters/secondlife/installation.md) provide bridge-based connectors with separate setup.
-Overte, Resonite and Second Life display captions through their native text features.
+Overte and Resonite provide editable caption objects and a text source for custom displays.
+Choose a horizontal, portrait or board layout, or bind your own text object.
+Second Life exposes a linkset text source and an optional hover-text receiver.
 ResoniteLink requires a session you host with the appropriate permissions; Second Life requires an HTTPS relay.
 
 This is a development preview. Package checks are complete; Unity import and game-client acceptance remain pending.

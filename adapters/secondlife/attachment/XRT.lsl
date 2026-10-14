@@ -3,6 +3,10 @@ string RELAY_URL = "";       // HTTPS origin, without trailing slash.
 string RELAY_CLIENT_TOKEN = "";
 key PAIRED_OWNER = NULL_KEY;  // The avatar UUID permitted to use this copy.
 integer SHOW_CAPTIONS = FALSE;
+integer PUBLISH_TEXT_SOURCE = FALSE; // Makes translated text available to scripts in this linkset.
+integer XRT_TEXT_SOURCE = 1481790465;
+vector CAPTION_COLOR = <0.933333, 0.941176, 0.952941>;
+float CAPTION_ALPHA = 0.94;
 
 string instance;
 string generation;
@@ -24,6 +28,11 @@ float requestStarted;
 float lastResponse;
 float lastHostMessage;
 string caption;
+string captionDisplay;
+string publishedText;
+string publishedDisplay;
+float publishedUntil;
+integer publishReset;
 string captionIdentity;
 integer captionRevision;
 float captionUntil;
@@ -67,12 +76,41 @@ showControls()
     llDialog(llGetOwner(), "Translation: " + label, buttons, dialogChannel);
 }
 
+string jsonString(string value)
+{
+    // llList2Json interprets JSON-looking strings unless they are explicitly quoted.
+    value = llDumpList2String(llParseStringKeepNulls(value, ["\\"], []), "\\\\");
+    value = llDumpList2String(llParseStringKeepNulls(value, ["\""], []), "\\\"");
+    value = llDumpList2String(llParseStringKeepNulls(value, ["\n"], []), "\\n");
+    value = llDumpList2String(llParseStringKeepNulls(value, [llUnescapeURL("%0D")], []), "\\r");
+    value = llDumpList2String(llParseStringKeepNulls(value, ["\t"], []), "\\t");
+    return "\"" + value + "\"";
+}
+
 showCaption()
 {
-    if (llGetAttached() && SHOW_CAPTIONS && caption != "" && llGetTime() < captionUntil)
-        // Native hover text uses the shared presentation text color and opacity.
-        llSetText(caption, <0.933333, 0.941176, 0.952941>, 0.94);
-    else llSetText("", ZERO_VECTOR, 0.0);
+    string text = "";
+    if (llGetAttached() && caption != "" && llGetTime() < captionUntil) text = caption;
+    if (SHOW_CAPTIONS && text != "") llSetText(captionDisplay, CAPTION_COLOR, CAPTION_ALPHA);
+    else if (SHOW_CAPTIONS) llSetText("", ZERO_VECTOR, 0.0);
+    if (PUBLISH_TEXT_SOURCE && (publishReset || text != publishedText ||
+        (text != "" && (captionUntil != publishedUntil || captionDisplay != publishedDisplay))))
+    {
+        integer remaining = 0;
+        string display = "";
+        if (text != "")
+        {
+            remaining = (integer)((captionUntil - llGetTime()) * 1000.0);
+            display = captionDisplay;
+        }
+        llMessageLinked(LINK_SET, XRT_TEXT_SOURCE,
+            llList2Json(JSON_OBJECT, ["text", jsonString(text), "display_text", jsonString(display),
+                "expires_ms", remaining]), NULL_KEY);
+        publishedText = text;
+        publishedDisplay = display;
+        publishedUntil = captionUntil;
+        publishReset = FALSE;
+    }
 }
 
 clearControl()
@@ -86,7 +124,9 @@ clearControl()
     ready = FALSE;
     helloSent = FALSE;
     caption = "";
+    captionDisplay = "";
     captionUntil = 0.0;
+    publishReset = TRUE;
     captionIdentity = "";
     captionRevision = -1;
     retiredCaptions = [];
@@ -120,7 +160,7 @@ sendHello()
 {
     if (helloSent) return;
     string capabilities = "[]";
-    if (SHOW_CAPTIONS) capabilities = "[\"captions\"]";
+    if (SHOW_CAPTIONS || PUBLISH_TEXT_SOURCE) capabilities = "[\"captions\"]";
     queueFrame(llList2Json(JSON_OBJECT, [
         "type", "hello", "protocol", 1, "connector", "secondlife", "token", "",
         "client_id", (string)llGetOwner() + ":" + instance,
@@ -197,7 +237,9 @@ receiveFrame(string frame)
         stopPending = FALSE;
         ready = TRUE;
         caption = "";
+        captionDisplay = "";
         captionUntil = 0.0;
+        publishReset = TRUE;
         captionIdentity = "";
         captionRevision = -1;
         retiredCaptions = [];
@@ -217,7 +259,7 @@ receiveFrame(string frame)
         }
         // Status reports never overwrite a newer touch request.
     }
-    else if (kind == "caption" && SHOW_CAPTIONS && requested && status == "active")
+    else if (kind == "caption" && (SHOW_CAPTIONS || PUBLISH_TEXT_SOURCE) && requested && status == "active")
     {
         if (llJsonValueType(frame, ["text"]) != JSON_STRING ||
             llJsonValueType(frame, ["stream"]) != JSON_STRING ||
@@ -245,6 +287,8 @@ receiveFrame(string frame)
         if (text != "" && lifetime > 0)
         {
             caption = text;
+            captionDisplay = llJsonGetValue(frame, ["display_text"]);
+            if (llJsonValueType(frame, ["display_text"]) != JSON_STRING) captionDisplay = text;
             captionUntil = llGetTime() + (float)lifetime / 1000.0;
         }
     }
@@ -255,7 +299,7 @@ receiveFrame(string frame)
 startAttachment()
 {
     newConnection(2.0);
-    llSetText("", ZERO_VECTOR, 0.0);
+    if (SHOW_CAPTIONS) llSetText("", ZERO_VECTOR, 0.0);
     if (llGetOwner() != PAIRED_OWNER || llStringLength(RELAY_CLIENT_TOKEN) < 32 ||
         llSubStringIndex(RELAY_URL, "https://") != 0)
     {
@@ -282,7 +326,7 @@ default
             nextRequest = 0.0;
             sendExchange();
             llSetTimerEvent(0.0);
-            llSetText("", ZERO_VECTOR, 0.0);
+            if (SHOW_CAPTIONS) llSetText("", ZERO_VECTOR, 0.0);
         }
     }
     changed(integer change)
@@ -318,7 +362,7 @@ default
         if (!llGetAttached() || llGetOwner() != PAIRED_OWNER)
         {
             llSetTimerEvent(0.0);
-            llSetText("", ZERO_VECTOR, 0.0);
+            clearControl();
             return;
         }
         if (caption != "" && llGetTime() >= captionUntil)

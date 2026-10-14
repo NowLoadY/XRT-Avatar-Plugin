@@ -5,7 +5,7 @@
 1. Open your ChilloutVR CCK project and finish the avatar's normal animator
    setup. The CCK's **Create Animator** and **Attach created Override to Avatar**
    controls provide this setup for an avatar using generated settings.
-2. Download [the ChilloutVR Unity package](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.2/XRT-Avatar-Plugin-ChilloutVR-0.1.0-preview.2.unitypackage).
+2. Download [the ChilloutVR Unity package](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.3/XRT-Avatar-Plugin-ChilloutVR-0.1.0-preview.3.unitypackage).
    In Unity, choose **Assets → Import Package → Custom Package** and import it.
 3. Open **Tools → XRT-Avatar-Plugin → ChilloutVR → Avatar Controls**. Save the
    scene, then drag the avatar into the **Avatar** field. You can also select it

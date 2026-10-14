@@ -14,7 +14,8 @@ by each platform. XRTranslate provides the translation runtime.
 | XRTranslate host adapter | Validate requests, compose host capabilities and return actual operation state |
 | XRTranslate session infrastructure | Session ownership, input acquisition, cancellation and resource cleanup |
 | XRTranslate translation infrastructure | Audio, recognition, translation, scheduling and normalized results |
-| Presentation adapter | Consume results and render within its declared visibility and platform capabilities |
+| Caption source | Expose current plain text and result lifetime independently of its display |
+| Presentation adapter | Bind native fields and create editable objects within platform permissions |
 
 ```mermaid
 flowchart LR
@@ -24,7 +25,8 @@ flowchart LR
     Session --> Pipeline[Audio and translation]
     Pipeline --> Results[Normalized results]
     Results --> Outputs[Host outputs]
-    Results -.-> Presentation[Presentation adapter]
+    Results -.-> Source[Caption source]
+    Source --> Presentation[Bound text objects]
 ```
 
 Host adapters use existing session and output contracts. Resource owners manage
@@ -42,7 +44,7 @@ defines shared appearance, result lifetime and native rendering ownership.
 | `docs/` | Repository architecture and common host contracts |
 | `crates/connector-core/` | I/O-free lifecycle shared by every platform |
 | `connectors/websocket/` | Common JavaScript and Python wire clients |
-| `presentation/` | Shared caption style and plain-text layout helpers |
+| `presentation/` | Text source, optional layout, preset profiles and authoring styles |
 | `tools/` | Generated bindings, release packaging and visual preview |
 
 The host selects one connector and retains one lifecycle controller across

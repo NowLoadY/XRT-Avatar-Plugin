@@ -1,56 +1,18 @@
 <!doctype html>
-<html lang="en">
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Caption preview</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Caption objects</title>
+<link rel="stylesheet" href="../presentation/designer/theme.css">
 <style>
-:root{color-scheme:dark;font:14px/1.5 system-ui,sans-serif;color:#e8ebee;background:#171b21}*{box-sizing:border-box}body{margin:0;padding:32px}main{max-width:1080px;margin:auto;display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:24px}h1{font-size:16px;font-weight:550;margin:0 0 20px}label{display:block;font-size:12px;color:#c1c6ce;margin:16px 0 7px}textarea,select{font:inherit;width:100%;border:1px solid #454c56;border-radius:7px;background:#242a32;color:inherit;padding:10px}textarea{height:158px;resize:vertical}button{display:inline-grid;place-items:center;border:1px solid #4a525e;border-radius:7px;background:#2b323b;color:#eef0f3;min-width:40px;height:40px;cursor:pointer}button:hover{background:#39434f}button:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid #a2b9c8;outline-offset:3px}svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.toolbar{display:flex;gap:8px;margin-top:16px}.stage{position:relative;overflow:hidden;border:1px solid #40464f;border-radius:12px;min-height:480px;background:linear-gradient(180deg,#363b46 0%,#3a3b3e 64%,#222a30 64%,#222930 100%)}.stage:before{content:"";position:absolute;left:10%;top:17%;width:26%;height:40%;border:1px solid #ffffff08;border-radius:2px;background:linear-gradient(120deg,#ffffff06,#ffffff01)}.stage:after{content:"";position:absolute;width:22%;height:1px;left:58%;top:64%;background:#ffffff16;transform:rotate(34deg);transform-origin:left}.focus{position:absolute;left:50%;top:34%;width:4px;height:4px;border:1px solid #e2e6ed55;border-radius:50%}.caption{position:absolute;left:50%;top:49%;transform:translateX(-50%);z-index:1;border-radius:8px;white-space:pre;overflow-wrap:normal;font-weight:400;opacity:0;transition:opacity 160ms linear;text-align:left}.caption.native{background:transparent!important;text-align:center;text-shadow:0 1px 3px #0009}.hint{color:#a4acb7;font-size:12px;margin:18px 0 0}.stage-label{position:absolute;left:16px;top:12px;font-size:11px;color:#ccd3dd80}@media(max-width:800px){body{padding:16px}main{grid-template-columns:1fr}.stage{min-height:380px}aside{max-width:560px}}
-</style>
-<main>
-<section><h1>Caption preview</h1><div class="stage" id="stage"><span class="stage-label">Layout preview</span><span class="focus"></span><div class="caption" id="caption"></div></div></section>
-<aside>
-<label for="sample">Sample</label><select id="sample"><option value="en">English</option><option value="zh">中文</option><option value="ja">日本語</option><option value="mixed">Mixed text</option></select>
-<label for="text">Text</label><textarea id="text"></textarea>
-<label for="display">Display</label><select id="display"><option value="bubble">Text with background</option><option value="native">Native text</option></select>
-<label><input type="checkbox" id="hold" checked> Hold preview</label>
-<div class="toolbar"><button id="show" title="Show caption" aria-label="Show caption"><svg viewBox="0 0 24 24"><path d="m8 5 11 7-11 7z"/></svg></button><button id="clear" title="Clear caption" aria-label="Clear caption"><svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
-<p class="hint">Shared layout and colors. Native font and placement are provided by each game.</p>
-</aside>
-</main>
-<script src="../presentation/javascript/bubble.js"></script>
-<script>
-(function(){
-const text=document.querySelector('#text'),caption=document.querySelector('#caption'),stage=document.querySelector('#stage'),sample=document.querySelector('#sample'),display=document.querySelector('#display'),hold=document.querySelector('#hold');
-const samples={en:"The entrance is on the right. We'll wait near the stairs.",zh:"入口在右边，我们会在楼梯旁边等你。",ja:"入口は右側です。階段の近くで待っています。",mixed:"到二楼集合，we'll meet upstairs. 👋"};
-let hideTimer,fadeTimer;
-function clear(){clearTimeout(hideTimer);clearTimeout(fadeTimer);caption.style.opacity=0;caption.textContent='';}
-function show(){
-  clear();
-  const b=XrtBubble.style,scale=Math.min(500,(stage.clientWidth-44)/b.maxWidth);
-  const fontSize=b.lineHeight*scale,measure=document.createElement('canvas').getContext('2d');
-  measure.font=fontSize+'px system-ui, sans-serif';
-  let columns=b.maxColumns,p,width;
-  do {
-    p=XrtBubble.layout(text.value,{maxColumns:columns});
-    width=Math.max(...p.text.split('\n').map(line=>measure.measureText(line).width))+2*b.padding*scale;
-    columns--;
-  } while(width>b.maxWidth*scale && columns>0);
-  if(!p.text)return;
-  caption.classList.toggle('native',display.value==='native');
-  caption.textContent=p.text;
-  caption.style.width=Math.max(b.minWidth*scale,Math.min(b.maxWidth*scale,Math.ceil(width)))+'px';
-  caption.style.padding=(b.padding*scale)+'px';
-  caption.style.fontSize=fontSize+'px';
-  caption.style.lineHeight=b.lineSpacing;
-  caption.style.color=`rgba(${b.textColor.red},${b.textColor.green},${b.textColor.blue},${b.textAlpha})`;
-  caption.style.background=`rgba(${b.backgroundColor.red},${b.backgroundColor.green},${b.backgroundColor.blue},${b.backgroundAlpha})`;
-  if(hold.checked){caption.style.transitionDuration='0ms';caption.style.opacity=1;return;}
-  caption.style.transitionDuration=b.fadeInMs+'ms';
-  requestAnimationFrame(()=>caption.style.opacity=1);
-  fadeTimer=setTimeout(()=>{caption.style.transitionDuration=b.fadeOutMs+'ms';caption.style.opacity=0;},b.maxLifetimeMs-b.fadeOutMs);
-  hideTimer=setTimeout(clear,b.maxLifetimeMs);
-}
-sample.onchange=()=>{text.value=samples[sample.value];show();};display.onchange=show;hold.onchange=show;document.querySelector('#show').onclick=show;document.querySelector('#clear').onclick=clear;window.addEventListener('resize',show);text.value=samples.en;show();
-}());
-</script>
-</html>
+body{margin:0;padding:28px}main{max-width:1120px;margin:auto;display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:24px}h1{font-size:21px;font-weight:600;margin:0 0 22px}h2{font-size:14px;font-weight:600;margin:0 0 12px}aside{padding-top:4px}label{display:block;font-size:12px;margin:16px 0 6px}textarea,select{width:100%;padding:10px}textarea{height:130px;resize:vertical}header{display:flex;align-items:center;justify-content:space-between}.stage{height:500px;position:relative;overflow:hidden;border:1px solid var(--xrt-border);border-radius:20px;background-color:#e9eded;background-image:radial-gradient(#adb7b638 .8px,transparent .8px);background-size:20px 20px}.caption{display:flex;flex-direction:column;justify-content:center;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);border-radius:12px;white-space:pre;cursor:move;touch-action:none;font-weight:400;outline:1px solid #b9c4c43d;outline-offset:5px}.caption.board{outline:1px dashed #a7b4b49c;outline-offset:12px}.caption:focus-visible{outline:2px solid var(--xrt-accent)}.stage-label{position:absolute;top:14px;left:18px;font-size:11px;color:var(--xrt-muted);pointer-events:none}.presets{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:22px}.preset{padding:12px 5px;font-size:12px;display:grid;justify-items:center;gap:8px}.preset svg{height:40px;width:58px;stroke:var(--xrt-normal);fill:none;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}.row{display:flex;gap:8px;align-items:center}.toolbar{display:flex;gap:8px;margin-top:16px}.hint{font-size:12px;color:var(--xrt-muted);margin:12px 0}.check{display:flex;gap:8px;align-items:center;font-size:12px}.check input{accent-color:var(--xrt-selected)}.source{padding:12px;max-height:130px;overflow:auto;font-size:12px;white-space:pre-wrap;border-radius:8px;background:#ffffff80;color:var(--xrt-muted)}details{margin-top:22px}summary{font-size:12px;color:var(--xrt-normal);cursor:pointer}#state{font-size:12px;color:var(--xrt-muted)}@media(max-width:800px){body{padding:16px}main{grid-template-columns:1fr}.stage{height:460px}aside{max-width:560px}}
+</style></head><body class="xrt-ui">
+<main><section><header><h1>Caption objects</h1><span id="state">Preview</span></header><div class="stage" id="stage"><span class="stage-label">Drag to position · Arrow keys to move</span><div class="caption" id="caption" tabindex="0" aria-label="Caption object"></div></div><p class="hint">Choose a shape, then place and style the object in your game.</p></section>
+<aside><h2>Object</h2><div class="presets">
+<button class="preset" data-preset="horizontal" aria-label="Horizontal bubble" aria-pressed="true" title="Horizontal bubble"><svg viewBox="0 0 64 44"><rect x="3" y="10" width="58" height="27" rx="5"/><path d="M11 19h39M11 28h29"/></svg>Horizontal</button>
+<button class="preset" data-preset="vertical" aria-label="Portrait bubble" aria-pressed="false" title="Portrait bubble"><svg viewBox="0 0 64 44"><rect x="20" y="2" width="25" height="40" rx="5"/><path d="M26 11h13M26 18h13M26 25h13M26 32h9"/></svg>Portrait</button>
+<button class="preset" data-preset="board" aria-label="Board lettering" aria-pressed="false" title="Board lettering"><svg viewBox="0 0 64 44"><path d="m5 7 54 3-3 31-53-5z" stroke-dasharray="3 3"/><path d="M13 20q5-6 9-1t8-1 8 0 8-1M12 29q7-5 13 0t13 0"/></svg>Board</button>
+</div><label for="sample">Sample</label><select id="sample"><option value="mixed">Mixed text</option><option value="en">English</option><option value="zh">中文</option><option value="ja">日本語</option></select>
+<label for="text">Preview text</label><textarea id="text"></textarea>
+<label class="check"><input type="checkbox" id="hold" checked> Hold preview</label>
+<div class="toolbar"><button class="icon-button" id="show" title="Show text" aria-label="Show text"><svg class="icon" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7z"/></svg></button><button class="icon-button" id="clear" title="Clear text" aria-label="Clear text"><svg class="icon" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg></button><button class="icon-button" id="center" title="Center object" aria-label="Center object"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/></svg></button></div>
+<details><summary>Text source</summary><p class="source" id="source"></p></details>
+</aside></main><script src="../presentation/javascript/bubble.js"></script><script src="../presentation/designer/preview.js"></script></body></html>

@@ -1,73 +1,92 @@
 # Presentation architecture
 
-Presentation adapters turn XRTranslate caption results into game-supported text.
-The shared presentation policy owns layout, color and lifetime. Each platform
-adapter owns placement, visibility, rendering and cleanup of its native objects.
+A caption source provides the current translation. A display binds that source
+to an editable game object. Presets create useful starting objects; users own
+placement, shape, typography and decoration after creation.
 
-## Shared appearance
+## Text source
 
-[`presentation/bubble-style.json`](../presentation/bubble-style.json) is the
-style source. JavaScript and Python helpers apply the same plain-text layout.
-`tools/generate_presentation.py` updates the JavaScript style binding.
-Open [`tools/preview-presentation.html`](../tools/preview-presentation.html) to
-inspect wrapping, colors and timing without a game client. The preview uses the
-same layout helper; native fonts and placement are verified in each platform.
+The shared JavaScript and Python `CaptionSource` implementations live under
+`presentation/`. They accept normalized connector results and expose current
+plain text independently of wrapping, surface dimensions or font choice.
+A source snapshot contains `text`, `stream`, `id`, `revision` and `expiresAt` in
+milliseconds. A missing snapshot means the source is empty.
 
-| Property | Default |
+`(stream, id, revision)` identifies an update. A bounded history rejects duplicate
+and retired results. Clearing a display does not erase this history; session
+reset does. Expiry uses the host's remaining lifetime, capped at eight seconds.
+A local Stop or observed reset/disconnection clears the source and its consumers.
+Native connection loss follows the platform's detection deadline. Relays deduct
+buffering time, including cached-response retries.
+
+Text sources preserve line breaks and are not preformatted to fit a bubble.
+Native transport budgets can shorten the source; adapters document those budgets.
+A view may wrap, clip, orient or decorate the text without changing the source.
+One source can drive several user-selected objects. Presentation never starts
+translation, acquires audio or infers another player's identity.
+
+## Display binding
+
+An adapter binds to a specific object selected or created by the user. Live
+updates change the text field and, when explicitly enabled, visibility. They do
+not reset transforms, dimensions, colors, fonts, materials or parentage.
+
+The same object can be mounted on an avatar, a handheld sign, a board or an
+editable world object, subject to native permissions. No anchor or head position
+is part of the source contract. Platform adapters own native field binding and
+object access; the shared layer does not emulate unsupported game APIs.
+
+Bindings to existing objects record the original values they change. Unbinding
+restores only fields still owned by that binding and preserves the object.
+Objects handed to the user after creation are editable assets rather than
+per-message resources. Preview text is explicit authoring state and never enters
+the live translation source.
+
+## Presets and appearance
+
+[`presentation/presets.json`](../presentation/presets.json) defines three starting
+layouts over [`bubble-style.json`](../presentation/bubble-style.json). The
+binding generator publishes the same profiles to JavaScript and Python.
+
+| Preset | Starting object |
 |---|---|
-| Content | One current translation, up to three lines |
-| Text | Soft white, regular weight; left-aligned where supported |
-| Surface | Dark neutral background at 72% opacity where supported |
-| Spacing | 1.25 line spacing and even padding |
-| Width | 0.44–0.90 m reference width; native font measurement may reduce line length |
-| Placement | Stable, below the main sightline; no following other players |
-| Motion | 160 ms fade in, 220 ms fade out where supported; no bounce or scale animation |
-| Lifetime | No longer than the host expiry or eight seconds |
-| Idle | No visible surface, logo, status label or placeholder text |
+| Horizontal | Wide text surface with a light neutral background |
+| Portrait | Narrow, taller surface with normal readable line wrapping |
+| Board | Transparent lettering that can sit over the user's artwork or board |
 
-Text wraps at word or CJK punctuation boundaries when possible. Wide characters count as two visual
-columns; combining accents, surrogate pairs and emoji sequences stay together.
-Overflow ends with an ellipsis rather than scrolling, shrinking the font or
-adding pages. Full translation history remains in XRTranslate. Platform byte
-limits are applied without cutting UTF-8 characters.
+Portrait specifies a surface shape, not top-to-bottom glyph writing. Custom
+renderers can use the unwrapped source for vertical typesetting, curved lettering
+or other arrangements. Board objects use native or user-provided fonts; they do
+not promise a bundled handwriting font or paint arbitrary textures by themselves.
 
-Adapters that control surface dimensions use native font metrics to fit text
-without shrinking its size or exceeding the reference width. Adapters that edit
-a selected native text component preserve its font, bounds and placement. Background, rounding and alpha animation are applied
-only through supported native features. A native text-only display uses the
-same text treatment and expiry without simulating a separate panel.
+Preset creation applies initial dimensions and supported appearance once. A
+native renderer may derive a fitted projection from the object's current font
+metrics and available area. Shared wrapping supports word/CJK punctuation
+boundaries, combined accents and emoji sequences. Limits belong to the selected
+view, not a universal three-line source restriction. Plain-text receivers disable
+rich-text parsing rather than treating translated text as markup.
 
-## Result lifetime
+The authoring interface follows XRTranslate's light surfaces, dark gray text,
+8 px corner radii and restrained blue interaction feedback. Shared browser styles
+live in `presentation/designer/theme.css`. Theme changes are scoped to the tool;
+they do not change the user's game or editor theme. The
+[layout preview](../tools/preview-presentation.html) uses the same source and
+profiles and supports positioning without a game client.
 
-`(stream, id, revision)` identifies an update. Older or duplicate revisions cannot
-replace visible text or restart its lifetime. Expiry and display clearing retain
-a bounded revision history; a new session/reset retires that history. One result
-replaces the previous display, with no stacked queue of bubbles.
+## Native integration
 
-A local Stop clears visible and pending content. Observed resets, disconnections
-and avatar changes also clear the display. Normal expiry may fade; cancellation
-skips the fade. Native connection loss is handled within the platform's detection
-or heartbeat deadline. Relay adapters deduct buffering time from the remaining
-lifetime. Reconnection cannot restore a previous caption.
+| Adapter | Text source and display |
+|---|---|
+| Overte | Local `XRT/CaptionSource` messages; editable native Text objects and a tablet object picker |
+| Resonite | `XRT/Text.Value`; native `ValueCopy<string>` binding to template-based TextRenderer presets or custom objects |
+| Second Life | Opt-in linkset messages; separate native hover-text receiver or a creator's renderer |
+| VRChat / ChilloutVR | Avatar menu controls; parameter-driven glyph rendering has a platform-specific implementation contract |
 
-## Ownership and visibility
+Visibility follows the chosen object: Overte presets are local; Resonite objects
+follow session permissions; Second Life world attachments are visible nearby
+while HUDs are personal. Shared objects require an explicit user selection.
+Platform guides own assembly steps, font setup, visibility and native limits.
 
-Presentation consumes results through the [connector protocol](connector-protocol.md).
-It does not request audio, start translation or reinterpret text from another UI.
-Platform objects are created or selected explicitly and never attached to
-unrelated players. Editing an existing text component records its original
-properties and restores only values still owned by the adapter.
-
-| Adapter | Display | Visibility |
-|---|---|---|
-| Overte | Locally owned text entity with background and alpha fade | Local wearer |
-| Resonite | Selected native TextRenderer | Follows the selected object's session visibility |
-| Second Life | Native attachment hover text | Nearby residents for world attachments; wearer for HUD placement |
-| VRChat / ChilloutVR | Menu control packages | Avatar bubble renderer requires a platform-specific implementation |
-
-Shared output requires an explicit display choice. Captions contain only results
-from the selected translation owner; mixed audio does not identify individual
-speakers. Platform setup guides own their placement and visibility instructions.
-
-[Interaction](interaction.md) defines control behavior. Platform details remain
-in each adapter's documentation, including [VRChat presentation](adapters/vrchat/presentation.md).
+See [interaction](interaction.md), [connector protocol](connector-protocol.md),
+[VRChat rendering](adapters/vrchat/presentation.md) and
+[ChilloutVR rendering](adapters/chilloutvr/presentation.md).

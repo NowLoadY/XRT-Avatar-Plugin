@@ -7,7 +7,7 @@ with Avatar controls. XRTranslate 0.3.3 does not contain the Avatar connector.
 
 ## Import the Unity package
 
-1. Download [XRT-Avatar-Plugin-VRChat-0.1.0-preview.2.unitypackage](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.2/XRT-Avatar-Plugin-VRChat-0.1.0-preview.2.unitypackage).
+1. Download [XRT-Avatar-Plugin-VRChat-0.1.0-preview.3.unitypackage](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.3/XRT-Avatar-Plugin-VRChat-0.1.0-preview.3.unitypackage).
 2. Open your Avatar project through VCC. In Unity, choose **Assets → Import
    Package → Custom Package**, select the downloaded file and import its contents.
 3. Open **Tools → XRT-Avatar-Plugin → Avatar Controls**.
