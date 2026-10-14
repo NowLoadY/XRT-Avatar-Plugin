@@ -1,6 +1,6 @@
 {
   "name": "dev.nowloady.xrt-avatar",
-  "displayName": "XRT-Avatar-Plugin",
+  "displayName": "XRT-Avatar-Plugin (VRChat)",
   "version": "0.1.0-dev.1",
   "unity": "2022.3",
   "description": "Editor-only VRChat avatar controls for the XRTranslate companion integration. Development preview.",

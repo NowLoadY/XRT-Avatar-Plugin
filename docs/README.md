@@ -1,23 +1,18 @@
-# Documentation map
+# Documentation
 
-Architecture documents define current ownership, dependency direction, shared
-contracts and resource lifetimes. Keep them short and update the owning rule
-when a boundary changes. Wire fields belong in the protocol manifest; build,
-installation and release procedures belong in operational guides. Do not put
-design discussions, work logs or duplicated implementation details here.
+XRT-Avatar-Plugin connects virtual social platforms to XRTranslate. Project
+contracts define ownership and host integration; each platform adapter owns its
+interaction, transport mapping, installation and compatibility documentation.
 
-## Contracts
+## Project contracts
 
-- [Architecture](architecture.md): module ownership and dependency direction.
-- [Control protocol](control-protocol.md): request, acknowledgement and lifecycle.
-- [Presentation architecture](presentation-architecture.md): result consumption
-  and the boundary for future Avatar bubbles.
-- [Refactoring contract](refactoring-contract.md): compatibility and verification.
+- [Architecture](architecture.md): repository layout and component ownership.
+- [Host integration](host-integration.md): session acquisition, results and cleanup.
+- [Presentation architecture](presentation-architecture.md): result rendering and visibility.
+- [Refactoring contract](refactoring-contract.md): stable interfaces and verification.
 
-## Integration and operations
+## Platform adapters
 
-- [Host integration](host-integration.md): XRTranslate implementation, composition and
-  lifecycle contracts.
-- [Installation](installation.md): editor package, Avatar installation and removal.
-- [Compatibility](compatibility.md): delivery status, supported targets and the
-  requirements for a runnable release.
+| Adapter | Documentation | Source |
+|---|---|---|
+| VRChat | [Overview and setup](adapters/vrchat/README.md) | [`adapters/vrchat`](../adapters/vrchat/README.md) |

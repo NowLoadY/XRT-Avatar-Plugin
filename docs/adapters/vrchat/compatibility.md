@@ -1,4 +1,4 @@
-# Compatibility and delivery status
+# VRChat compatibility
 
 This source preview implements protocol version 1 in the Avatar package, Rust
 control core and companion XRTranslate host source. Use a host build containing
@@ -59,4 +59,4 @@ versions and verify the following in that environment:
    listing only when its URL and checksum refer to a real release artifact.
 
 Source implementation and local checks do not substitute for these checks.
-Future bubble rendering has its own [presentation boundary](presentation-architecture.md).
+Future bubble rendering has its own [presentation boundary](presentation.md).

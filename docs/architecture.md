@@ -1,74 +1,55 @@
 # Architecture
 
-XRT-Avatar-Plugin connects Avatar interaction to host capabilities. The Avatar
-package is an authoring extension; it does not execute arbitrary C# inside
-VRChat. XRTranslate remains the runtime host.
+XRT-Avatar-Plugin connects Avatar interaction in virtual social platforms to
+XRTranslate. Platform adapters implement the interaction and control supported
+by each platform. XRTranslate provides the translation runtime.
 
 ## Ownership
 
 | Owner | Responsibility |
 |---|---|
-| Avatar editor package | Validate installation, preserve existing assets, generate menu/parameters, restore owned changes |
-| Control core | Request state, binding generations, operation identity, typed effects and actual-state transitions |
-| XRTranslate Avatar adapter | Compose the core, validate host readiness, map actions to owned sessions, return runtime outcomes |
-| XRTranslate OSC capability | Discovery, one receive transport, decoded events, snapshots, parameter writes and connection lifetime |
-| Shared XRTranslate infrastructure | Audio graph, language policy, recognition, translation, model scheduling, history and TTS |
-| Presentation adapters | Consume normalized results and render within their declared visibility and platform capabilities |
+| Platform adapter | SDK integration, installation assets, transport contract and control lifecycle |
+| XRTranslate host adapter | Validate requests, compose host capabilities and return actual operation state |
+| XRTranslate session infrastructure | Session ownership, input acquisition, cancellation and resource cleanup |
+| XRTranslate translation infrastructure | Audio, recognition, translation, scheduling and normalized results |
+| Presentation adapter | Consume results and render within its declared visibility and platform capabilities |
 
 ```mermaid
 flowchart LR
-    Menu[Avatar Expressions Menu] <-->|numeric parameters| OSC[Host OSC capability]
-    OSC <--> Adapter[XRTranslate Avatar adapter]
-    Adapter <--> Core[Control core]
-    Adapter -->|owned task| Session[Shared session coordinator]
-    Session --> Pipeline[Audio and translation infrastructure]
-    Session --> Results[Normalized results]
-    Results --> Outputs[Existing host outputs]
-    Results -. future .-> Bubble[Avatar bubble adapter]
-    Bubble -. encoded display updates .-> OSC
+    Interaction[Platform interaction] <--> Adapter[Platform adapter]
+    Adapter <--> Host[XRTranslate host adapter]
+    Host --> Session[Owned session]
+    Session --> Pipeline[Audio and translation]
+    Pipeline --> Results[Normalized results]
+    Results --> Outputs[Host outputs]
+    Results -.-> Presentation[Presentation adapter]
 ```
 
-The core has no sockets, threads, clocks, persistence, UI, audio devices or
-model dependencies. It returns effects; it never receives the root application
-object. The host executes those effects in order and supplies actual outcomes.
-Shared recognition and protocol code must not branch on the Avatar plugin name.
+Host adapters use existing session and output contracts. Resource owners manage
+their lifetimes; translation infrastructure stays independent of platform
+implementations. The [host integration contract](host-integration.md) defines
+request ownership and cleanup. The [presentation contract](presentation-architecture.md)
+defines the boundary for result consumers.
 
-XRTranslate uses statically linked built-in plugins. Source in this repository
-is not a dynamically loaded desktop plugin. Its host adapter is registered and
-released with XRTranslate, using a pinned version or revision of the core.
-Unity package and host adapter releases declare protocol compatibility separately.
+## Repository layout
 
-## Resource lifetime
+| Path | Contents |
+|---|---|
+| `adapters/<platform>/` | Platform code, packages, protocol definitions, tools and examples |
+| `docs/adapters/<platform>/` | Platform installation, protocol, compatibility and host integration |
+| `docs/` | Repository architecture and common host contracts |
 
-Registration, user permission to accept Avatar control, transport availability
-and an active translation session are separate states. Disabling Chatbox output
-does not revoke the control transport while another consumer needs it.
+The current adapter is [VRChat](adapters/vrchat/installation.md). Its
+`xrt-avatar-control` crate is an I/O-free controller for the VRChat protocol.
+It is maintained within `adapters/vrchat/control/`; its crate name remains the
+host dependency identifier. The corresponding host implementation is a
+statically linked XRTranslate plugin, with a pinned source dependency.
 
-The host owns resource acquisition. A plugin session has an opaque operation
-owner that survives asynchronous startup and cancellation. Its exclusive live
-input lease rejects overlapping work without taking over another session.
-Cancellation stops that owner's input and invalidates its pending output; the
-owner and lease remain until its workers have exited. Unrelated tasks retain
-their resources. Shutdown cleanup belongs to each resource owner. No adapter
-creates a second model pool or duplicate audio pipeline.
+Each adapter declares its supported platform capabilities, installation method,
+protocol and compatible host versions. SDK and transport details remain within
+that adapter. Shared abstractions follow concrete contracts established by
+implemented adapters.
 
-The desktop plugin owns control state; the host's `avatar_host` module composes
-sessions through neutral coordinator contracts. The OSC capability owns the
-shared receive transport for all consumers. See [host integration](host-integration.md)
-for the implementation boundary and [control protocol](control-protocol.md) for
-binding and reset semantics.
-
-Installation creates project-local assets and leaves source Avatar assets
-intact. Removal restores original descriptor references only when ownership is
-still verifiable. Changes made by the Avatar author take precedence over cleanup.
-
-## Extension
-
-Control and presentation have separate contracts. Adding a bubble renderer
-does not change translation startup or transport ownership. Adding another game
-requires a concrete game adapter for its official capabilities; it does not
-justify game-specific branches in recognition or a new generic plugin framework.
-
-Official boundaries: [allowed Avatar components](https://creators.vrchat.com/avatars/whitelisted-avatar-components/whitelisted-avatar-components/),
-[OSC](https://docs.vrchat.com/docs/osc-overview),
-[VPM packages](https://vcc.docs.vrchat.com/vpm/packages/).
+Installation preserves user-authored assets and records ownership of generated
+changes. Removal restores references only while that ownership remains
+verifiable. Platform-specific installation rules belong to the adapter guide.

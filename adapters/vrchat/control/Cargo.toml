@@ -4,8 +4,8 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Transport-independent lifecycle control for XRT Avatar integration"
+description = "I/O-free lifecycle control for the XRT VRChat adapter"
 
 [[example]]
 name = "lifecycle"
-path = "../../examples/lifecycle.rs"
+path = "../examples/lifecycle.rs"

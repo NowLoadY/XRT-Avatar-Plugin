@@ -1,4 +1,4 @@
-# Installation and removal
+# VRChat installation and removal
 
 This guide uses the editor package with the compatible XRTranslate host source.
 Use an existing VRChat Avatar authoring environment; this guide does not install
@@ -13,7 +13,7 @@ assets does not install or launch XRTranslate.
 1. Use an existing VCC Avatar project with its supported Unity and Avatar SDK.
    Consult the target versions in [compatibility](compatibility.md).
 2. Clone this repository outside the Unity project. In VCC settings, add
-   `packages/dev.nowloady.xrt-avatar` as a **User Package**, then add it to the
+   `adapters/vrchat/packages/dev.nowloady.xrt-avatar` as a **User Package**, then add it to the
    Avatar project. There is no hosted VCC listing in this source preview.
 3. Open the existing project. Treat any import/compile error as an unverified
    compatibility issue; do not proceed to uploading an Avatar with broken scripts.

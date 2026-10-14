@@ -1,8 +1,8 @@
-# Control protocol
+# VRChat control protocol
 
-[`avatar-parameters.json`](../protocol/avatar-parameters.json) owns names, wire
+[`avatar-parameters.json`](../../../adapters/vrchat/protocol/avatar-parameters.json) owns names, wire
 types, defaults, directions and status codes. Generated bindings must stay in
-sync through `tools/generate_protocol.py`. A change to parameter meaning or
+sync through `adapters/vrchat/tools/generate_protocol.py`. A change to parameter meaning or
 required fields requires a new protocol version. Unknown versions are unavailable.
 
 ## Parameters and interaction
