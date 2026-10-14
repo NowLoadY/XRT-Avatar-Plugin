@@ -5,7 +5,7 @@ Game components share XRTranslate's audio, translation and output settings.
 
 ## Get started
 
-1. Download and extract [XRTranslate 0.3.4-preview.1](https://github.com/NowLoadY/XRTranslate/releases/tag/v0.3.4-preview.1) for Windows or Linux.
+1. Set up an [XRTranslate development build with Avatar controls](https://github.com/NowLoadY/XRTranslate/blob/main/docs/avatar-connectors.md). Support is planned for XRTranslate **0.3.4**; the current 0.3.3 release does not include this connector.
 2. Install the component for your platform below.
 3. In XRTranslate, open **Settings → Plugins → Avatar translation controls**, select your game and enable the plugin.
 

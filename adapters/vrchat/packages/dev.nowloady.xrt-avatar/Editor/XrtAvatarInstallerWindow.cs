@@ -99,8 +99,8 @@ namespace XrtAvatarPlugin.Editor
             {
                 if (GUILayout.Button("Setup Guide"))
                     Application.OpenURL("https://github.com/NowLoadY/XRT-Avatar-Plugin/blob/main/docs/adapters/vrchat/installation.md");
-                if (GUILayout.Button("Get XRTranslate"))
-                    Application.OpenURL("https://github.com/NowLoadY/XRTranslate/releases/tag/v0.3.4-preview.1");
+                if (GUILayout.Button("XRTranslate Setup"))
+                    Application.OpenURL("https://github.com/NowLoadY/XRTranslate/blob/main/docs/avatar-connectors.md");
             }
             EditorGUILayout.Space();
             EditorGUILayout.HelpBox("Preview release. Unity and in-game verification are pending.", MessageType.None);

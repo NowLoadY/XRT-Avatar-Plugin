@@ -23,7 +23,7 @@ to restore the original controller and remove the owned menu entry.
 
 ## Connect XRTranslate
 
-1. Run [XRTranslate 0.3.4-preview.1](https://github.com/NowLoadY/XRTranslate/releases/tag/v0.3.4-preview.1). Enable OSC in **Settings → Implementation → OSC** in ChilloutVR.
+1. Run an [XRTranslate development build](https://github.com/NowLoadY/XRTranslate/blob/main/docs/avatar-connectors.md) with Avatar controls (planned for XRTranslate 0.3.4). Enable OSC in **Settings → Implementation → OSC** in ChilloutVR.
 2. In XRTranslate, enable Avatar translation controls and select **ChilloutVR**.
 3. Wear the installed avatar and wait for the connection to show **Off**.
 4. Enable **XRT Translation** in Advanced Avatar Settings to start. Disable it

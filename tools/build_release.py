@@ -180,8 +180,10 @@ def main() -> None:
     host = compatibility["host"]
     if host.get("name") != "XRTranslate" or not SEMVER.fullmatch(host.get("minimum_version", "")):
         parser.error("Invalid minimum host version in release/compatibility.json")
-    if host.get("release_url") != "https://github.com/NowLoadY/XRTranslate/releases/tag/v" + host["minimum_version"]:
-        parser.error("Host release URL must match the minimum host version")
+    if not re.fullmatch(r"[0-9a-f]{40}", host.get("development_revision", "")):
+        parser.error("Host development_revision must be a full Git commit ID")
+    if host.get("documentation_url") != "https://github.com/NowLoadY/XRTranslate/blob/main/docs/avatar-connectors.md":
+        parser.error("Host documentation_url must point to the Avatar connectors guide")
     vrc = unity_sources(VRC_ROOT, tracked)
     manifest = json.loads(vrc["package.json"])
     vpm_name = f"{PACKAGE}-{args.version}.zip"

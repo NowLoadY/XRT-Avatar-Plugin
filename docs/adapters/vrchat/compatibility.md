@@ -1,7 +1,8 @@
 # VRChat compatibility
 
-The installable preview pairs **XRT-Avatar-Plugin 0.1.0-preview.1** with
-[XRTranslate 0.3.4-preview.1](https://github.com/NowLoadY/XRTranslate/releases/tag/v0.3.4-preview.1).
+**XRT-Avatar-Plugin 0.1.0-preview.1** targets XRTranslate **0.3.4**. Until that release is available, the host integration is
+usable from the XRTranslate development branch; see
+[host requirements](../../host-integration.md).
 Select **VRChat** in **Settings → Plugins → Avatar translation controls**.
 XRTranslate 0.3.3 does not include this connector.
 

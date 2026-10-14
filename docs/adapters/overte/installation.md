@@ -6,7 +6,7 @@ caption panel. XRTranslate provides capture, translation and session ownership.
 ## Install
 
 1. Download and extract [the Overte script bundle](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.1/XRT-Avatar-Plugin-Overte-0.1.0-preview.1.zip).
-   Start [XRTranslate 0.3.4-preview.1](https://github.com/NowLoadY/XRTranslate/releases/tag/v0.3.4-preview.1).
+   Start an [XRTranslate development build](https://github.com/NowLoadY/XRTranslate/blob/main/docs/avatar-connectors.md) with Avatar controls (planned for XRTranslate 0.3.4).
    In Avatar translation controls, select **Overte**, enable the
    plugin, and copy its connection address and pairing token. Enable **Send
    captions to the game component** to display translated text.

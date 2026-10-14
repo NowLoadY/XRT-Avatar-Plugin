@@ -1,7 +1,7 @@
 # Release packaging
 
-Releases provide installable platform components and a compatible XRTranslate
-host. The primary user entry is the root README and each platform's installation
+Releases provide installable platform components with explicit XRTranslate
+host requirements. The primary user entry is the root README and each platform's installation
 guide. Source archives are for development.
 
 ## Artifacts
@@ -16,7 +16,8 @@ guide. Source archives are for development.
 | `release-manifest.json` | Source commit, compatible host and artifact checksums |
 | `SHA256SUMS` | Checksums for the other release files |
 
-`release/compatibility.json` owns the minimum host version and download URL.
+`release/compatibility.json` owns the target host version, development revision
+and setup guide. Host releases follow XRTranslate's own release cycle.
 The Unity package's `package.json` owns its package version and SDK range. Release
 tags use `v<package version>`. Connector-core crate versions follow their Rust API
 lifecycle and remain independently pinned by the host.
@@ -38,10 +39,10 @@ lifecycle and remain independently pinned by the host.
    verifies the checkout, builds the archives and attaches them to a draft
    prerelease. A rerun accepts identical assets; different bytes require a new
    version. Keep published files immutable.
-4. Inspect the draft's files and checksums and verify that the compatible host
-   downloads are available. Record archive checks and actual Unity/game testing
-   separately in the release notes. Publish the preview when the downloads and
-   stated compatibility are ready.
+4. Inspect the draft's files and checksums. State whether the compatible host
+   is a released version or requires a development build. Record archive checks
+   and actual Unity/game testing separately in the release notes. Publish the
+   preview when the plugin downloads and stated compatibility are ready.
 5. Merge the generated `index.json` into `vpm/index.json` on `main`, retaining
    earlier versions. Publish the listing after its download URLs are available.
    The tool's `--listing-input` and `--listing-output` options support this update.

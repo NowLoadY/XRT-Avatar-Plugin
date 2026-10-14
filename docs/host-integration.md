@@ -58,3 +58,11 @@ pending presentation; a new connection receives no previous-session history.
 See the [connector protocol](connector-protocol.md) and platform guides for
 transport mappings and installation. The [VRChat host guide](adapters/vrchat/host-integration.md)
 records its OSCQuery mapping and setting lifetimes.
+
+## Host availability
+
+The installable plugin preview targets XRTranslate **0.3.4**. Until that version
+is released, use a development build containing the Avatar connector integration.
+The required development revision and setup guide are recorded in
+[`release/compatibility.json`](../release/compatibility.json). XRTranslate 0.3.3
+does not include this integration.

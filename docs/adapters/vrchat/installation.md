@@ -1,9 +1,9 @@
 # Install for VRChat
 
 Use your existing VRChat Avatar project in Creator Companion (VCC), with Unity
-2022.3.22f1 and Avatar SDK 3.10.x. Download the companion
-[XRTranslate 0.3.4-preview.1](https://github.com/NowLoadY/XRTranslate/releases/tag/v0.3.4-preview.1)
-for Windows or Linux. XRTranslate 0.3.3 does not contain the Avatar connector.
+2022.3.22f1 and Avatar SDK 3.10.x. This plugin targets XRTranslate **0.3.4**.
+Until that host release is available, use an [XRTranslate development build](https://github.com/NowLoadY/XRTranslate/blob/main/docs/avatar-connectors.md)
+with Avatar controls. XRTranslate 0.3.3 does not contain the Avatar connector.
 
 ## Import the Unity package
 
@@ -77,7 +77,7 @@ its controls and does not replace the Action animator.
 
 ## Start translation in VRChat
 
-1. Extract and start XRTranslate. Complete audio and model setup, then choose
+1. Start a compatible XRTranslate development build. Complete audio and model setup, then choose
    your input, languages and desired outputs.
 2. In **Settings → Plugins → Avatar translation controls**, select **VRChat**
    and enable the plugin.
