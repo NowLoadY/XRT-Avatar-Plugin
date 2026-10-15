@@ -31,6 +31,8 @@ Copy a fresh pairing token from XRTranslate when needed.
 Open **Caption objects** using the tablet's display icon. Select a card to create
 and connect an object:
 
+![Caption objects page](images/caption-page.jpg)
+
 | Object | Appearance |
 | --- | --- |
 | Horizontal | A wide, light caption panel. |

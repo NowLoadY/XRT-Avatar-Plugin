@@ -6,7 +6,35 @@
   <a href="docs/README.md">Guides</a>
 </p>
 
-Start and stop [XRTranslate](https://github.com/NowLoadY/XRTranslate) from your avatar's menu or in-game controls. Set your audio input, languages and translation output in XRTranslate, then use the controls while you play.
+Start and stop [XRTranslate](https://github.com/NowLoadY/XRTranslate) from your avatar's menu or in-game controls. Display translations on editable text objects in Overte and Resonite, or on attachments in Second Life.
+
+## Preview
+
+*AI-generated illustrations.*
+
+**Unity · VRChat avatar setup**
+
+Select your avatar, add the translation menu and upload through the VRChat SDK.
+
+<p align="center">
+  <img src="assets/previews/vrchat-unity-illustration.jpg" alt="AI-generated illustration of the Unity avatar installer with the translation menu added" width="900" />
+</p>
+
+**VRChat · Translation switch**
+
+Open **Expressions → XRT → Translation** to start or stop translation while you play.
+
+<p align="center">
+  <img src="assets/previews/vrchat-menu-illustration.jpg" alt="AI-generated illustration of the Translation toggle in VRChat's XRT radial submenu" width="900" />
+</p>
+
+**Overte · Caption objects**
+
+Create a horizontal or portrait text object, or place the text on your own board or artwork. Use Overte's Create tools to position it and adjust its appearance.
+
+<p align="center">
+  <img src="assets/previews/overte-captions-illustration.jpg" alt="AI-generated illustration of three separate Overte caption layouts: horizontal, portrait and text on a custom board" width="900" />
+</p>
 
 ## Install
 
@@ -22,15 +50,7 @@ Choose your game and follow its setup guide:
 | Resonite | Avatar controls and caption objects | [Source archive](https://github.com/NowLoadY/XRT-Avatar-Plugin/archive/refs/tags/v0.1.0-preview.4.zip) | [ResoniteLink](docs/adapters/resonite/installation.md) |
 | Second Life | Attachment controls and captions | [Source archive](https://github.com/NowLoadY/XRT-Avatar-Plugin/archive/refs/tags/v0.1.0-preview.4.zip) | [Attachment / relay](docs/adapters/secondlife/installation.md) |
 
-In XRTranslate, open **Settings → Plugins → Avatar translation controls**, select your game and enable the plugin. Your game's guide walks through connecting it and using the translation switch.
-
-## Overte caption objects
-
-Load the plugin and select **Caption objects** on Overte's tablet. Create a horizontal, portrait or board text object, or choose one you have already designed. Use Create to position it and adjust its font, colors and appearance.
-
-<p align="center">
-  <img src="assets/overte/caption-designer.jpg" alt="Overte tablet caption page with object presets and selection controls" width="900" />
-</p>
+In XRTranslate, set your audio input, languages and outputs. Open **Settings → Plugins → Avatar translation controls**, select your game and enable the plugin. Follow your game's guide to connect it and use the translation switch.
 
 ## Help
 
