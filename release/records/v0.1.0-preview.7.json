@@ -1,0 +1,35 @@
+{
+  "version": "0.1.0-preview.7",
+  "tag": "v0.1.0-preview.7",
+  "source_commit": "3252f98c5d8dcdfcb937ba7761aeb038dd5b6f20",
+  "source_tree_dirty": false,
+  "host": {
+    "name": "XRTranslate",
+    "minimum_version": "0.3.4",
+    "development_revision": "cffc6caf6643bd8bc17925d691645b98568b403e",
+    "documentation_url": "https://github.com/NowLoadY/XRTranslate/blob/main/docs/avatar-connectors.md"
+  },
+  "connector_protocol": 1,
+  "artifacts": [
+    {
+      "name": "XRT-Avatar-Plugin-VRChat-VCC-0.1.0-preview.7.zip",
+      "sha256": "e5f31e23c6ea5a9e387cae176cbafb45bae0eb48d7f4a38aaafea28f4fb2a13e",
+      "bytes": 5571263
+    },
+    {
+      "name": "XRT-Avatar-Plugin-VRChat-0.1.0-preview.7.unitypackage",
+      "sha256": "c94ff07265b5da4130ae14902d30b807e1246dd88c5579e67120339a1e18e219",
+      "bytes": 5562508
+    },
+    {
+      "name": "XRT-Avatar-Plugin-ChilloutVR-0.1.0-preview.7.unitypackage",
+      "sha256": "b6a28121ffc402b3c223a7561d95eec9155276df8db88eeed00bdae32f4fd07c",
+      "bytes": 5550361
+    },
+    {
+      "name": "XRT-Avatar-Plugin-Overte-0.1.0-preview.7.zip",
+      "sha256": "841f3003b97b8ebad790e97677c03e7e28abc83af40dc6fd772645ce6d70d587",
+      "bytes": 20200939
+    }
+  ]
+}
