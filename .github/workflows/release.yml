@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing release tag (for example v0.1.0-preview.6)
+        description: Existing release tag (for example v0.1.0-preview.7)
         required: true
         type: string
 
@@ -75,8 +75,8 @@ jobs:
                        'For VRChat, import the .unitypackage into your Avatar project, then open '
                        'Tools > XRT-Avatar-Plugin > Avatar Controls. Select your avatar and add its translation menu.\n\n'
                        'See [installation and setup](https://github.com/NowLoadY/XRT-Avatar-Plugin#install) '
-                       'for your game. VRChat and ChilloutVR provide avatar translation controls; '
-                       'VRChat (PC) and Overte also provide editable caption objects.')
+                       'for your game. VRChat (PC) and ChilloutVR provide avatar menus and caption boards. '
+                       'Overte provides tablet controls and wearable native text objects.')
               checksums = '\n'.join(item['sha256'] + '  ' + item['name'] for item in manifest['artifacts'])
               notes += '\n\n<details>\n<summary>SHA-256 checksums</summary>\n\n```text\n' + checksums + '\n```\n</details>'
               gh('release', 'create', tag, '--verify-tag', '--draft', '--prerelease',

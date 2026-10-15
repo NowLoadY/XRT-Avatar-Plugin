@@ -6,7 +6,8 @@
     var CaptionDisplay = Script.require(Script.resolvePath("caption-display.js"));
     var source = new Bubble.CaptionSource();
     var display = new CaptionDisplay({ Entities: Entities, MyAvatar: MyAvatar, Vec3: Vec3, Quat: Quat,
-        Settings: Settings, Picks: Picks, Uuid: Uuid }, Bubble);
+        Settings: Settings, Picks: Picks, Uuid: Uuid,
+        fontUrl: "https://raw.githubusercontent.com/NowLoadY/XRT-Avatar-Plugin/v0.1.0-preview.7/adapters/overte/fonts/XrtNotoCaption.arfont" }, Bubble);
     var tablet = Tablet.getTablet("com.highfidelity.interface.tablet.system");
     var button = tablet.addButton({ text: "", sortOrder: 100 });
     var connector = null;
@@ -103,7 +104,7 @@
         if (message.app !== "xrt-caption-designer") { return; }
         if (message.action === "ready" || message.action === "refresh") { panelItems = display.list(); }
         else if (message.action === "create") {
-            display.create(message.profile);
+            display.create(message.profile, message.audience === "local" ? "local" : "avatar");
             panelItems = display.list();
         } else if (message.action === "bind") {
             var allowed = display.list().some(function (item) { return item.id === message.id; });

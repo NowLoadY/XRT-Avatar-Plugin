@@ -5,7 +5,7 @@ place and style yourself.
 
 ## Install and connect
 
-1. Download and extract [the Overte script bundle](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.6/XRT-Avatar-Plugin-Overte-0.1.0-preview.6.zip).
+1. Download and extract [the Overte script bundle](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.7/XRT-Avatar-Plugin-Overte-0.1.0-preview.7.zip).
 2. Start XRTranslate on the same computer. In **Avatar translation controls**,
    select **Overte**, enable the plugin and **Send captions to the game component**.
    Keep the connection address and pairing token available.
@@ -28,10 +28,11 @@ Copy a fresh pairing token from XRTranslate when needed.
 
 ## Add captions
 
-Open **Caption objects** using the tablet's display icon. Select a card to create
-and connect an object:
+Open **Caption objects** using the tablet's display icon. Choose **Wear with
+Avatar** for a caption others can see, or **Only me** for a personal object. Select
+a card to create and connect it:
 
-![Caption objects page](images/caption-page.jpg)
+![Caption objects authoring page — HTML preview](images/caption-page.jpg)
 
 | Object | Appearance |
 | --- | --- |
@@ -39,10 +40,11 @@ and connect an object:
 | Portrait | A narrow panel with horizontal lines of text. |
 | Board | Transparent text to place on your own board or drawing surface. |
 
-The object appears in front of you. Open **Create → Entity List**, enable
-**Local entities** and choose the object by name. Use Create to move, rotate and
-resize it, then change its font, colors, margins and background in Properties.
-The object stays where you place it. Work in a location where Create is available.
+The object appears in front of your Avatar. In **Create → Entity List**, choose
+it by name; enable **Local entities** to find personal objects. Use Create to
+move, rotate and resize it, then edit its font, colors, margins and background.
+Avatar objects move with you; personal objects stay where you place them. Work in
+a location where Create is available.
 
 To use an existing object, choose it from the **Text object** list and select the
 **link icon**. The list shows editable Text objects within 30 meters and whether
@@ -53,9 +55,10 @@ to end the preview; starting translation also ends it. **Hide when empty** hides
 the object between captions. The **broken-link icon** disconnects the object and
 restores its previous text and visibility while keeping your design.
 
-New objects are visible only to you. An existing shared object shows captions
-to the people who can see that object. Export objects from Create to keep a
-reusable copy; local objects last for the current Interface session.
+The audience selector applies to new objects. Binding an existing object keeps
+its placement and audience. Avatar objects use the domain's Avatar-object
+permission. Export from Create to keep a reusable design; personal objects last
+for the current Interface session.
 
 ## Appearance
 
@@ -63,8 +66,10 @@ Translation preserves the object's position, size, font and colors. Text wraps t
 fit, with an ellipsis when it is too long, and clears within eight seconds or when
 translation stops.
 
-For a handwritten or illustrated sign, place the Board text on your own artwork
-and choose its font in Create.
+New objects use the included Noto caption font, loaded over HTTPS, for common
+Chinese, Japanese, Korean, Latin, Greek and Cyrillic text. For a handwritten or
+illustrated sign, place Board text on your artwork and choose a compatible font
+in Create.
 
 ## Remove and restore
 

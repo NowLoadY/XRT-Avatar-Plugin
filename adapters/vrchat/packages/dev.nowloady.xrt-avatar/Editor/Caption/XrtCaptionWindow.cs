@@ -14,9 +14,7 @@ namespace XrtAvatarPlugin.Editor
         [SerializeField] private XrtCaptionInstaller.Preset preset;
         [SerializeField] private string previewText = "The entrance is on the right.\nWe'll wait near the stairs.";
         private string error;
-        private PreviewRenderUtility preview;
-        private Material previewMaterial;
-        private Mesh previewMesh;
+        private CaptionPreview preview;
         private XrtCaptionInstaller.Status status;
 
         [MenuItem("Tools/XRT-Avatar-Plugin/Caption Objects")]
@@ -47,10 +45,8 @@ namespace XrtAvatarPlugin.Editor
         {
             Undo.undoRedoPerformed -= Refresh;
             EditorApplication.playModeStateChanged -= OnPlayMode;
-            preview?.Cleanup();
+            preview?.Dispose();
             preview = null;
-            if (previewMaterial != null) DestroyImmediate(previewMaterial);
-            if (previewMesh != null) DestroyImmediate(previewMesh);
         }
         private void OnSelectionChange() { FollowSelection(); Refresh(); }
         private void OnHierarchyChange() => Refresh();
@@ -106,7 +102,7 @@ namespace XrtAvatarPlugin.Editor
             {
                 attachment = (Transform)EditorGUILayout.ObjectField("Attach to", attachment, typeof(Transform), true);
                 GUILayout.Space(8);
-                DrawPresets();
+                preset = (XrtCaptionInstaller.Preset)CaptionAuthoring.DrawPresets((int)preset);
             }
             GUILayout.Space(8);
             DrawPreview();
@@ -137,76 +133,11 @@ namespace XrtAvatarPlugin.Editor
             if (!string.IsNullOrEmpty(error)) EditorGUILayout.HelpBox(error, MessageType.Error);
         }
 
-        private void DrawPresets()
-        {
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                for (int i = 0; i < 3; i++)
-                {
-                    var value = (XrtCaptionInstaller.Preset)i;
-                    Rect area = GUILayoutUtility.GetRect(80, 66, GUILayout.ExpandWidth(true));
-                    bool selected = preset == value;
-                    if (GUI.Toggle(area, selected, GUIContent.none, "Button") && !selected) preset = value;
-                    var shape = value == XrtCaptionInstaller.Preset.Portrait
-                        ? new Rect(area.center.x - 8, area.y + 9, 16, 25)
-                        : new Rect(area.center.x - 20, area.y + 15, 40, 15);
-                    Handles.BeginGUI();
-                    Handles.color = EditorGUIUtility.isProSkin ? new Color(.8f, .8f, .8f) : new Color(.35f, .4f, .42f);
-                    Handles.DrawAAPolyLine(1.5f, new Vector3(shape.x, shape.y), new Vector3(shape.xMax, shape.y),
-                        new Vector3(shape.xMax, shape.yMax), new Vector3(shape.x, shape.yMax), new Vector3(shape.x, shape.y));
-                    for (int row = 0; row < (value == XrtCaptionInstaller.Preset.Portrait ? 4 : 2); row++)
-                    {
-                        float y = shape.y + 5 + row * 4;
-                        Handles.DrawAAPolyLine(1, new Vector3(shape.x + 4, y), new Vector3(shape.xMax - 4, y));
-                    }
-                    if (value == XrtCaptionInstaller.Preset.Board)
-                        Handles.DrawAAPolyLine(1.5f, new Vector3(shape.x + 7, shape.yMax + 3),
-                            new Vector3(shape.x + 12, shape.yMax - 2), new Vector3(shape.x + 18, shape.yMax + 3));
-                    Handles.EndGUI();
-                    GUI.Label(new Rect(area.x, area.yMax - 23, area.width, 18), value.ToString(),
-                        new GUIStyle(EditorStyles.miniLabel) { alignment = TextAnchor.MiddleCenter });
-                }
-            }
-        }
-
         private void DrawPreview()
         {
             Rect rect = GUILayoutUtility.GetRect(80, 145, GUILayout.ExpandWidth(true));
-            if (Event.current.type != EventType.Repaint) return;
-            try
-            {
-                if (preview == null) preview = new PreviewRenderUtility();
-                if (previewMesh == null) previewMesh = CaptionAssets.CreateMesh();
-                if (previewMaterial == null) previewMaterial = CaptionAssets.CreateMaterial();
-                int columns = status.Record != null ? status.Record.columns :
-                    preset == XrtCaptionInstaller.Preset.Portrait ? 8 : 32;
-                if (status.Record != null && status.Record.material != null)
-                    previewMaterial.CopyPropertiesFromMaterial(status.Record.material);
-                else
-                {
-                    previewMaterial.SetColor("_BackgroundColor", preset == XrtCaptionInstaller.Preset.Board
-                        ? Color.clear : new Color(.98f, .98f, .98f, .92f));
-                }
-                previewMaterial.SetFloat("_Columns", columns);
-                XrtCaptionInstaller.SetPreview(previewMaterial, previewText, columns);
-                preview.BeginPreview(rect, GUIStyle.none);
-                var camera = preview.camera;
-                camera.orthographic = true;
-                Vector3 size = columns == 8 ? new Vector3(.24f, .60f, 1) : new Vector3(.64f, .10f, 1);
-                camera.aspect = rect.width / rect.height;
-                camera.orthographicSize = Mathf.Max(size.y * .5f, size.x * .5f / camera.aspect) * 1.15f;
-                camera.transform.position = new Vector3(0, 0, -2);
-                camera.transform.rotation = Quaternion.identity;
-                camera.clearFlags = CameraClearFlags.Color;
-                camera.backgroundColor = new Color(.91f, .94f, .94f);
-                preview.DrawMesh(previewMesh, Matrix4x4.TRS(Vector3.zero, Quaternion.identity, size), previewMaterial, 0);
-                camera.Render();
-                GUI.DrawTexture(rect, preview.EndPreview(), ScaleMode.StretchToFill, false);
-            }
-            catch (Exception failure)
-            {
-                GUI.Label(rect, failure.Message, EditorStyles.wordWrappedMiniLabel);
-            }
+            if (preview == null) preview = new CaptionPreview();
+            preview.Draw(rect, preset.ToString(), previewText, status.Record?.material);
         }
 
         private static bool Icon(string name, string tooltip, GUIStyle style = null)

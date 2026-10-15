@@ -1,0 +1,149 @@
+using System;
+using ABI.CCK.Components;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using XrtAvatarPlugin.Presentation;
+
+namespace XrtAvatarPlugin.ChilloutVR.Editor
+{
+    internal sealed class XrtChilloutCaptionWindow : EditorWindow
+    {
+        private static readonly string[] Presets = { "horizontal", "portrait", "board" };
+        [SerializeField] private CVRAvatar avatar;
+        [SerializeField] private Transform attachment;
+        [SerializeField] private int preset;
+        [SerializeField] private string previewText = "The entrance is on the right.\nWe'll wait near the stairs.";
+        private XrtChilloutCaptionInstaller.Status status;
+        private CaptionPreview preview;
+        private string error;
+
+        [MenuItem("Tools/XRT-Avatar-Plugin/ChilloutVR/Caption Objects")]
+        internal static void Open()
+        {
+            var window = GetWindow<XrtChilloutCaptionWindow>();
+            window.titleContent = new GUIContent("XRT · Captions");
+            window.minSize = new Vector2(360, 430);
+            window.Show();
+        }
+
+        [MenuItem("CONTEXT/CVRAvatar/XRT Caption Objects")]
+        private static void OpenFromAvatar(MenuCommand command)
+        {
+            Open();
+            GetWindow<XrtChilloutCaptionWindow>().SelectAvatar(command.context as CVRAvatar);
+        }
+
+        private void OnEnable()
+        {
+            Undo.undoRedoPerformed += Refresh;
+            EditorApplication.playModeStateChanged += OnPlayMode;
+            FollowSelection();
+            Refresh();
+        }
+        private void OnDisable()
+        {
+            Undo.undoRedoPerformed -= Refresh;
+            EditorApplication.playModeStateChanged -= OnPlayMode;
+            preview?.Dispose();
+            preview = null;
+        }
+        private void OnSelectionChange() { FollowSelection(); Refresh(); }
+        private void OnHierarchyChange() => Refresh();
+        private void OnProjectChange() => Refresh();
+        private void OnFocus() => Refresh();
+        private void OnPlayMode(PlayModeStateChange _) => Refresh();
+        private void Refresh()
+        {
+            error = null;
+            status = XrtChilloutCaptionInstaller.Inspect(avatar);
+            if (status.Record != null)
+            {
+                preset = status.Record.columns == 8 ? 1 : status.Record.material != null &&
+                    status.Record.material.GetColor("_BackgroundColor").a == 0 ? 2 : 0;
+                if (status.Renderer != null) attachment = status.Renderer.transform.parent;
+            }
+            Repaint();
+        }
+        private void FollowSelection()
+        {
+            var selected = Selection.activeGameObject == null ? null :
+                Selection.activeGameObject.GetComponentInParent<CVRAvatar>();
+            if (selected != null && selected != avatar) SelectAvatar(selected);
+        }
+        private void SelectAvatar(CVRAvatar selected)
+        {
+            avatar = selected;
+            attachment = avatar == null ? null : avatar.transform;
+            Refresh();
+        }
+
+        private void OnGUI()
+        {
+            if (status == null) status = XrtChilloutCaptionInstaller.Inspect(avatar);
+            using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
+            {
+                GUILayout.Label("ChilloutVR", EditorStyles.miniLabel);
+                GUILayout.FlexibleSpace();
+                if (Icon("Refresh", "Refresh", EditorStyles.toolbarButton)) Refresh();
+                using (new EditorGUI.DisabledScope(avatar == null || !avatar.gameObject.scene.isDirty))
+                    if (Icon("SaveActive", "Save scene", EditorStyles.toolbarButton))
+                        Run(() => EditorSceneManager.SaveScene(avatar.gameObject.scene));
+                if (Icon("_Help", "Open guide", EditorStyles.toolbarButton))
+                    Application.OpenURL("https://github.com/NowLoadY/XRT-Avatar-Plugin/blob/main/docs/adapters/chilloutvr/installation.md");
+            }
+            GUILayout.Space(8);
+            EditorGUI.BeginChangeCheck();
+            var selected = (CVRAvatar)EditorGUILayout.ObjectField("Avatar", avatar, typeof(CVRAvatar), true);
+            if (EditorGUI.EndChangeCheck()) SelectAvatar(selected);
+            using (new EditorGUI.DisabledScope(status.Record != null))
+            {
+                attachment = (Transform)EditorGUILayout.ObjectField("Attach to", attachment, typeof(Transform), true);
+                GUILayout.Space(8);
+                preset = CaptionAuthoring.DrawPresets(preset);
+            }
+            GUILayout.Space(8);
+            if (preview == null) preview = new CaptionPreview();
+            preview.Draw(GUILayoutUtility.GetRect(80, 145, GUILayout.ExpandWidth(true)),
+                Presets[Mathf.Clamp(preset, 0, 2)], previewText, status.Record?.material);
+            GUILayout.Label("Preview text", EditorStyles.miniLabel);
+            previewText = EditorGUILayout.TextArea(previewText, GUILayout.Height(48));
+            GUILayout.Space(8);
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    GUILayout.Label(status.Title, EditorStyles.boldLabel);
+                    GUILayout.FlexibleSpace();
+                    using (new EditorGUI.DisabledScope(!status.CanAdd))
+                        if (Icon("Toolbar Plus", "Add caption object"))
+                            Run(() => XrtChilloutCaptionInstaller.Install(avatar, attachment, Presets[Mathf.Clamp(preset, 0, 2)]));
+                    using (new EditorGUI.DisabledScope(!status.CanRemove))
+                        if (Icon("Toolbar Minus", "Remove caption object"))
+                            Run(() => XrtChilloutCaptionInstaller.Remove(avatar));
+                    using (new EditorGUI.DisabledScope(status.Renderer == null))
+                        if (Icon("ViewToolZoom", "Select caption object"))
+                        {
+                            Selection.activeGameObject = status.Renderer.gameObject;
+                            SceneView.lastActiveSceneView?.FrameSelected();
+                        }
+                }
+                GUILayout.Label(status.Detail, EditorStyles.wordWrappedMiniLabel);
+            }
+            if (!string.IsNullOrEmpty(error)) EditorGUILayout.HelpBox(error, MessageType.Error);
+        }
+
+        private static bool Icon(string name, string tooltip, GUIStyle style = null)
+        {
+            var content = EditorGUIUtility.IconContent(name);
+            content.tooltip = tooltip;
+            return GUILayout.Button(content, style ?? GUI.skin.button, GUILayout.Width(28), GUILayout.Height(24));
+        }
+        private void Run(Action operation)
+        {
+            try { operation(); Refresh(); }
+            catch (Exception failure) { error = failure.Message; }
+            GUIUtility.ExitGUI();
+        }
+    }
+}

@@ -84,6 +84,9 @@ reconnecting, open a fresh dialog and choose **Start** again.
 
 ## 3. Choose a caption display
 
+The included displays use native text floating above a prim. Letters drawn on a
+board surface use a custom renderer connected to the dynamic text source.
+
 Enable **Send captions to the game component** in XRTranslate, then choose one
 option before starting translation:
 

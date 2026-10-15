@@ -3,16 +3,39 @@
 
 import argparse
 from pathlib import Path
+import uuid
 
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "presentation/unity"
-PACKAGE = ROOT / "adapters/vrchat/packages/dev.nowloady.xrt-avatar"
 # Only adapters with a concrete renderer integration receive these resources.
-TARGETS = {
-    SOURCE / "Runtime/Caption": PACKAGE / "Runtime/Caption",
-    SOURCE / "Editor/Rendering": PACKAGE / "Editor/Caption/Rendering",
-}
+PACKAGES = (
+    ROOT / "adapters/vrchat/packages/dev.nowloady.xrt-avatar",
+    ROOT / "adapters/chilloutvr/Assets/XRT-Avatar-Plugin",
+)
+
+
+def outputs():
+    for package in PACKAGES:
+        for source, target in (
+            (SOURCE / "Runtime/Caption", package / "Runtime/Caption"),
+            (SOURCE / "Editor/Rendering", package / "Editor/Caption/Rendering"),
+        ):
+            if not source.is_dir() or not source.with_suffix(".meta").is_file():
+                raise SystemExit(f"Shared asset folder is incomplete: {source}")
+            expected = {target.with_suffix(".meta"): source.with_suffix(".meta").read_bytes()}
+            expected.update({target / path.relative_to(source): path.read_bytes()
+                             for path in sorted(source.rglob("*")) if path.is_file()})
+            yield target, expected
+        target = package / "Editor/Caption/Authoring"
+        guid = uuid.uuid5(uuid.NAMESPACE_URL, "xrt-avatar/shared-caption-authoring").hex
+        expected = {target.with_suffix(".meta"): (
+            f"fileFormatVersion: 2\nguid: {guid}\nfolderAsset: yes\nDefaultImporter:\n"
+            "  externalObjects: {}\n  userData:\n  assetBundleName:\n  assetBundleVariant:\n").encode()}
+        for suffix in ("", ".meta"):
+            path = ROOT / ("authoring/unity/CaptionAuthoring.cs" + suffix)
+            expected[target / path.name] = path.read_bytes()
+        yield target, expected
 
 
 def main():
@@ -20,13 +43,7 @@ def main():
     parser.add_argument("--check", action="store_true", help="Check without writing")
     args = parser.parse_args()
     stale = []
-    for source, target in TARGETS.items():
-        if not source.is_dir() or not source.with_suffix(".meta").is_file():
-            raise SystemExit(f"Shared asset folder is incomplete: {source}")
-        expected = {target.with_suffix(".meta"): source.with_suffix(".meta").read_bytes()}
-        for path in sorted(source.rglob("*")):
-            if path.is_file():
-                expected[target / path.relative_to(source)] = path.read_bytes()
+    for target, expected in outputs():
         for path, content in expected.items():
             if path.exists() and path.read_bytes() == content:
                 continue

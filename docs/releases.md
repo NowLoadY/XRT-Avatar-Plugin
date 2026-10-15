@@ -37,7 +37,7 @@ lifecycle and remain independently pinned by the host.
 2. Commit the source and create its version tag. Use a clean checkout to build:
 
    ```sh
-   python3 tools/build_release.py --version 0.1.0-preview.6 \
+   python3 tools/build_release.py --version 0.1.0-preview.7 \
      --output dist/release --require-clean
    ```
 

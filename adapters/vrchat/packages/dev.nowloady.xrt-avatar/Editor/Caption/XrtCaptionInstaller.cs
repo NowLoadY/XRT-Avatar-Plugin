@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
-using System.Text;
-using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEditor.SceneManagement;
@@ -98,14 +96,8 @@ namespace XrtAvatarPlugin.Editor
 
                 var material = CaptionAssets.CreateMaterial();
                 material.name = "XRT Caption";
-                material.SetFloat("_Columns", columns);
-                if (preset == Preset.Board)
-                {
-                    Color color = material.GetColor("_BackgroundColor");
-                    color.a = 0;
-                    material.SetColor("_BackgroundColor", color);
-                }
-                SetPreview(material, preview, columns);
+                CaptionAuthoring.ConfigureMaterial(material, preset.ToString());
+                CaptionAuthoring.SetPreview(material, preview, columns);
                 Save(material, folder + "/Caption.mat", paths);
                 var mesh = CaptionAssets.CreateMesh();
                 Save(mesh, folder + "/Caption.asset", paths);
@@ -117,8 +109,7 @@ namespace XrtAvatarPlugin.Editor
                     ? new Vector3(0, Mathf.Max(0.5f, avatar.ViewPosition.y * 0.65f), 0.3f)
                     : Vector3.zero;
                 board.transform.localRotation = Quaternion.identity;
-                board.transform.localScale = preset == Preset.Portrait
-                    ? new Vector3(0.24f, 0.60f, 1) : new Vector3(0.64f, 0.10f, 1);
+                board.transform.localScale = CaptionAuthoring.Dimensions(columns);
                 board.AddComponent<MeshFilter>().sharedMesh = mesh;
                 var renderer = board.AddComponent<MeshRenderer>();
                 renderer.sharedMaterial = material;
@@ -221,71 +212,6 @@ namespace XrtAvatarPlugin.Editor
         }
 
         internal static bool IsInstalled(VRCAvatarDescriptor avatar) => FindRecord(avatar) != null;
-
-        internal static void SetPreview(Material material, string text, int columns)
-        {
-            var glyphs = PreviewGlyphs(text, columns);
-            for (int i = 0; i < CaptionAssets.SlotCount; i++)
-            {
-                int code = i < glyphs.Count ? glyphs[i] : 0;
-                material.SetFloat(CaptionAssets.ByteProperty(i * 2), code >> 8);
-                material.SetFloat(CaptionAssets.ByteProperty(i * 2 + 1), code & 255);
-            }
-        }
-
-        private static List<char> PreviewGlyphs(string text, int columns)
-        {
-            var input = new StringBuilder();
-            string value = text ?? string.Empty;
-            for (int i = 0; i < value.Length; i++)
-            {
-                char character = value[i];
-                if (char.IsHighSurrogate(character) && i + 1 < value.Length && char.IsLowSurrogate(value[i + 1]))
-                { input.Append('\uFFFD'); i++; }
-                else if (char.IsSurrogate(character)) input.Append('\uFFFD');
-                else input.Append(char.IsControl(character) && character != '\n' ? ' ' : character);
-            }
-            var glyphs = new List<char>();
-            string[] lines = input.ToString().Normalize(NormalizationForm.FormC).Trim().Split('\n');
-            bool previousEmpty = false;
-            for (int lineIndex = 0; lineIndex < lines.Length && glyphs.Count <= CaptionAssets.SlotCount; lineIndex++)
-            {
-                if (lineIndex > 0)
-                {
-                    int remaining = columns - glyphs.Count % columns;
-                    if (remaining != columns || previousEmpty) Pad(glyphs, remaining);
-                }
-                string line = lines[lineIndex].Trim();
-                previousEmpty = line.Length == 0;
-                if (previousEmpty) continue;
-                string[] words = Regex.Split(line, @"\s+");
-                for (int wordIndex = 0; wordIndex < words.Length && glyphs.Count <= CaptionAssets.SlotCount; wordIndex++)
-                {
-                    string word = words[wordIndex];
-                    int column = glyphs.Count % columns;
-                    if (wordIndex > 0 && column != 0)
-                    {
-                        if (word.Length <= columns && column + word.Length + 1 > columns) Pad(glyphs, columns - column);
-                        else glyphs.Add(' ');
-                    }
-                    foreach (char character in word)
-                    {
-                        if (glyphs.Count > CaptionAssets.SlotCount) break;
-                        glyphs.Add(character);
-                    }
-                }
-            }
-            if (glyphs.Count > CaptionAssets.SlotCount)
-            {
-                glyphs.RemoveRange(CaptionAssets.SlotCount, glyphs.Count - CaptionAssets.SlotCount);
-                glyphs[CaptionAssets.SlotCount - 1] = '\u2026';
-            }
-            return glyphs;
-        }
-        private static void Pad(List<char> glyphs, int count)
-        {
-            for (int i = 0; i < count && glyphs.Count <= CaptionAssets.SlotCount; i++) glyphs.Add('\0');
-        }
 
         internal static void RefreshPlacement(VRCAvatarDescriptor avatar)
         {

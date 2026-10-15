@@ -40,7 +40,7 @@ VCC manages later updates. These steps follow its
 
 ### Or import the download
 
-Download [XRT-Avatar-Plugin for VRChat](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.6/XRT-Avatar-Plugin-VRChat-0.1.0-preview.6.unitypackage).
+Download [XRT-Avatar-Plugin for VRChat](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.7/XRT-Avatar-Plugin-VRChat-0.1.0-preview.7.unitypackage).
 In your avatar project, choose **Assets → Import Package → Custom Package**,
 select the downloaded `.unitypackage` and import all its contents. Use one
 installation method for the project.

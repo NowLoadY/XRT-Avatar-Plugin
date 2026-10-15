@@ -2,12 +2,18 @@
 
 `presentation/unity/` owns the SDK-independent caption mesh, SDF shader, font
 resources and editor resource loader. Adapters own transport parameters,
-Animator construction, installation and object attachment. A game can use this
+receiver construction, installation and object attachment. A game can use this
 renderer without adopting VRChat's transport or Animator setup.
 
-`tools/sync_unity_presentation.py` copies the shared files into the VRChat Unity
-package. Edit the shared source, then run that script; package copies retain the
-same asset GUIDs. Other adapters opt in when their native binding is implemented.
+`tools/sync_unity_presentation.py` copies shared rendering assets and
+`authoring/unity/CaptionAuthoring.cs` into the VRChat and ChilloutVR packages.
+Edit the shared source, then run that script; package copies retain the same
+asset GUIDs. The authoring helper owns preset tiles, material defaults and
+preview text, and renders the real mesh through `PreviewRenderUtility`.
+
+VRChat fills the material through its Animator buffer. ChilloutVR uses an Avatar
+Lua receiver and two packed integer words. Both consume the same 128-slot BMP
+layout and reuse the host's pacing, replacement and cancellation logic.
 
 ## Surface and text
 

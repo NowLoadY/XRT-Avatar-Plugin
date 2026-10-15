@@ -47,8 +47,9 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
                     {
                         Title = "Added",
                         Detail = avatar.gameObject.scene.isDirty ? "Save the scene before uploading." :
-                            "XRT Translation is ready. Upload this avatar with the CCK.",
-                        CanRemove = true
+                            (XrtChilloutCaptionInstaller.IsInstalled(avatar) ? "Remove the caption object before removing translation controls." :
+                            "XRT Translation is ready. Upload this avatar with the CCK."),
+                        CanRemove = !XrtChilloutCaptionInstaller.IsInstalled(avatar)
                     };
                 }
                 ValidateSource(avatar, out _);
@@ -172,6 +173,8 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
         internal static string Remove(CVRAvatar avatar)
         {
             string id = ValidateAvatar(avatar);
+            if (XrtChilloutCaptionInstaller.IsInstalled(avatar))
+                throw new InvalidOperationException("Remove the caption object before removing translation controls.");
             XrtChilloutInstallationRecord record = FindInstalled(avatar, id);
             if (record == null) return "No XRT installation is registered for this avatar.";
             ValidateInstallation(avatar, record);
@@ -213,7 +216,7 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
             return controller;
         }
 
-        private static string ValidateAvatar(CVRAvatar avatar)
+        internal static string ValidateAvatar(CVRAvatar avatar)
         {
             if (avatar == null) throw new InvalidOperationException("Choose a ChilloutVR avatar from the Hierarchy.");
             if (EditorApplication.isPlayingOrWillChangePlaymode || EditorUtility.IsPersistent(avatar) ||
@@ -226,7 +229,7 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
             return id.ToString();
         }
 
-        private static AnimatorController BaseController(RuntimeAnimatorController source)
+        internal static AnimatorController BaseController(RuntimeAnimatorController source)
         {
             var visited = new HashSet<RuntimeAnimatorController>();
             while (source is AnimatorOverrideController overrides)
@@ -237,7 +240,7 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
             return source as AnimatorController;
         }
 
-        private static void ApplyOverrideChain(RuntimeAnimatorController source, AnimatorOverrideController destination,
+        internal static void ApplyOverrideChain(RuntimeAnimatorController source, AnimatorOverrideController destination,
             AnimatorController originalController, AnimatorController copiedController)
         {
             var chain = new Stack<AnimatorOverrideController>();
@@ -280,7 +283,7 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
             var records = AssetDatabase.FindAssets("t:XrtChilloutInstallationRecord")
                 .Select(g => AssetDatabase.LoadAssetAtPath<XrtChilloutInstallationRecord>(AssetDatabase.GUIDToAssetPath(g)))
                 .Where(r => r != null && r.avatarGlobalId == id && r.installedOverride != null &&
-                    avatar.overrides == r.installedOverride).ToArray();
+                    XrtChilloutCaptionInstaller.OverrideBeforeCaption(avatar) == r.installedOverride).ToArray();
             if (records.Length > 1) throw new InvalidOperationException("More than one XRT setup was found for this avatar. Follow the recovery steps in the setup guide.");
             return records.FirstOrDefault();
         }
@@ -290,7 +293,7 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
             var entries = avatar.avatarSettings?.settings?.Where(e => e != null && e.machineName == XrtChilloutProtocol.Enabled).ToArray();
             if (record.recordVersion != 1 || record.installedController == null || record.installedOverride == null ||
                 (record.hadOriginalOverride && record.originalOverride == null) ||
-                avatar.overrides != record.installedOverride || entries == null || entries.Length != 1 ||
+                XrtChilloutCaptionInstaller.OverrideBeforeCaption(avatar) != record.installedOverride || entries == null || entries.Length != 1 ||
                 !IsControlEntry(entries[0]) ||
                 !Unchanged(record.installedController, record.controllerHash) ||
                 !Unchanged(record.installedOverride, record.overrideHash))
@@ -307,7 +310,7 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
                 (toggle.gameObjectTargets == null || toggle.gameObjectTargets.Count == 0);
         }
 
-        private static string Hash(Object asset)
+        internal static string Hash(Object asset)
         {
             string path = AssetDatabase.GetAssetPath(asset);
             if (string.IsNullOrEmpty(path) || !File.Exists(path)) return string.Empty;
@@ -315,13 +318,13 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
                 return BitConverter.ToString(hash.ComputeHash(File.ReadAllBytes(path))).Replace("-", string.Empty);
         }
 
-        private static bool Unchanged(Object asset, string expectedHash) => asset != null &&
+        internal static bool Unchanged(Object asset, string expectedHash) => asset != null &&
             !HasUnsavedChanges(asset) && !string.IsNullOrEmpty(expectedHash) && Hash(asset) == expectedHash;
 
-        private static bool HasUnsavedChanges(Object asset) => EditorUtility.IsDirty(asset) ||
+        internal static bool HasUnsavedChanges(Object asset) => EditorUtility.IsDirty(asset) ||
             AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GetAssetPath(asset)).Any(EditorUtility.IsDirty);
 
-        private static void EnsureFolder(string path)
+        internal static void EnsureFolder(string path)
         {
             if (AssetDatabase.IsValidFolder(path)) return;
             string parent = Path.GetDirectoryName(path).Replace('\\', '/');
@@ -329,7 +332,7 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
                 throw new IOException("Could not create " + path);
         }
 
-        private static void MarkChanged(CVRAvatar avatar)
+        internal static void MarkChanged(CVRAvatar avatar)
         {
             EditorUtility.SetDirty(avatar);
             PrefabUtility.RecordPrefabInstancePropertyModifications(avatar);

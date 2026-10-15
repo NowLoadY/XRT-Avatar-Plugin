@@ -73,17 +73,47 @@ and binds the selected ID. It does not depend on Create's internal selection sta
 Create's Entity List includes local objects when its **Local entities** filter is
 enabled. Users can then edit normal entity properties or export a reusable object.
 
+New objects use an avatar host and `MyAvatar.SELF_ID` parent when **Wear with
+Avatar** is selected. The adapter checks `Entities.canRezAvatarEntities()` before
+creation; **Only me** creates a local entity. Existing bindings never change the
+entity's host, parent or transform.
+
 Live updates write the bound object's text and, when selected, its visibility.
 Native `Entities.textSize` measurements determine wrapping without resizing the
-object or changing its font. Unbinding restores fields still controlled by the
+object or changing its font. Full layout measurements are cached until text, font, dimensions
+or margins change. A small metric probe detects asynchronous font loading; an
+unloaded font is retried on the next update. Unbinding restores fields still controlled by the
 adapter and leaves the object in the scene. The Board preset uses transparent
 text; its native font and any board artwork are authored separately.
+
+## Font resource
+
+New caption objects use [`XrtNotoCaption.arfont`](../../../adapters/overte/fonts/XrtNotoCaption.arfont),
+a native PNG MTSDF font generated from the pinned OFL Noto source. The native Text
+renderer supports built-in fonts and HTTPS `.arfont` URLs; it does not provide an
+operating-system font fallback. The script uses a versioned repository URL so
+other viewers can load the same resource. Changing an existing object's font is
+an authoring action, never a caption update.
+
+[`font.json`](../../../adapters/overte/fonts/font.json) records exact coverage,
+atlas dimensions, GPU bytes and source/output hashes. The build uses the shared
+font repertoire in `tools/build_caption_font.py`. To regenerate with
+[msdf-atlas-gen 1.4](https://github.com/Chlumsky/msdf-atlas-gen/tree/v1.4):
+
+```sh
+python adapters/overte/fonts/build_font.py --font /path/to/NotoSansCJKsc-Regular.otf --generator /path/to/msdf-atlas-gen
+```
+
+The generator and original font are development inputs; players receive the
+native font and its OFL notice. The selected repertoire covers common CJK text
+and the font's Latin, Greek and Cyrillic glyphs. Missing glyphs use Overte's native
+replacement glyph.
 
 ## Verification
 
 Source and simulated checks do not establish client compatibility. An Overte
 acceptance run must cover loading and pairing, controller hover states, Create's
-local-object editing, multilingual font coverage, native text measurements,
+local/Avatar-object editing and visibility, multilingual font coverage, native text measurements,
 parented objects, restoration and Avatar/domain changes.
 
 Official references:
@@ -94,5 +124,7 @@ Official references:
 - [Tablet API](https://apidocs.overte.org/TabletProxy.html)
 - [Tablet button icons and states](https://apidocs.overte.org/TabletButtonProxy.html)
 - [Text entities and editable properties](https://apidocs.overte.org/Entities.html#EntityProperties-Text)
+- [Avatar entity creation and permissions](https://apidocs.overte.org/Entities.html#.canRezAvatarEntities)
+- [Native font loading and glyph fallback](https://github.com/overte-org/overte/blob/master/libraries/render-utils/src/text/Font.cpp)
 - [Native text measurement](https://apidocs.overte.org/Entities.html#.textSize)
 - [Create entity list and local-object filter](https://github.com/overte-org/overte/blob/master/scripts/system/create/entityList/entityList.js)

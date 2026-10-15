@@ -44,7 +44,7 @@ defines shared appearance, result lifetime and native rendering ownership.
 | `docs/` | Repository architecture and common host contracts |
 | `crates/connector-core/` | I/O-free lifecycle shared by every platform |
 | `connectors/websocket/` | Common JavaScript and Python wire clients |
-| `authoring/unity/` | Shared Unity window template; SDK-specific installers remain in adapters |
+| `authoring/unity/` | Shared Unity controls window, caption presets and material preview; SDK installers remain in adapters |
 | `presentation/` | Text sources, layouts, authoring styles and SDK-independent Unity glyph rendering |
 | `tools/` | Generated bindings, shared asset synchronization, release packaging and visual preview |
 | `third_party/` | Pinned reference source with upstream provenance and licenses |
@@ -77,7 +77,8 @@ The Unity window template shares selection, status, save and Undo interaction.
 `adapters/<platform>/unity-editor.json` supplies SDK bindings and labels.
 `tools/generate_unity_editor.py` emits the two SDK-specific windows; release
 packaging checks that these copies match. Each installer owns its validation,
-asset creation and restoration.
+asset creation and restoration. Caption windows reuse `CaptionAuthoring` and
+`CaptionPreview` while retaining their platform-specific selection and install actions.
 
 The Unity caption renderer is shared source under `presentation/unity/`. An
 installable adapter receives a checked resource copy and provides its own

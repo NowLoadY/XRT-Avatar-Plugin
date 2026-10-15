@@ -53,7 +53,9 @@ font, material, color, size and position, and restores the original managed
 values on exit only when they still match its last writes. Do not also drive the
 same Text field with ValueCopy. The owned Text source is available in this mode.
 
-Stop and reset clear the source. Expiry is enforced by the running bridge. A
+Publication serializes source and direct-renderer writes, resolving the latest
+caption after waiting for the native connection. A queued update cannot restore
+text that Stop, reset or expiry has cleared. Stop and reset clear the source. Expiry is enforced by the running bridge. A
 forcibly terminated process or unavailable ResoniteLink connection cannot clear
 native fields; recovery requires clearing the source and any directly managed
 TextRenderer in Resonite. Scene IDs are session-local and must be rediscovered

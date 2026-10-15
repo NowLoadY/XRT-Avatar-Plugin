@@ -34,6 +34,7 @@ class ResoniteAdapter:
         self.text_id = text_id
         self.source_id = components.get("Text")
         self.last_source = None
+        self.publish_lock = asyncio.Lock()
         self.original_fields = {}
         self.applied_fields = {}
         self.captions = CaptionSource()
@@ -59,14 +60,19 @@ class ResoniteAdapter:
                 for name in ("Text", "ParseRichText")
             }
             await self.write_text(Text=field("string", ""), ParseRichText=field("bool", False))
-        await self.publish_text("")
+        await self.publish_text()
 
-    async def publish_text(self, text):
-        if self.source_id and self.last_source != text:
-            await self.link.write(self.source_id, Value=field("string", text))
-            self.last_source = text
-        if self.text_id and self.applied_fields.get("Text", {}).get("value") != text:
-            await self.write_text(Text=field("string", text))
+    async def publish_text(self):
+        # Resolve after acquiring the lock: a queued update must not revive text
+        # cleared by Stop, expiry or a connection reset while native writes wait.
+        async with self.publish_lock:
+            value = self.captions.snapshot(time.monotonic() * 1000)
+            text = value["text"] if value else ""
+            if self.source_id and self.last_source != text:
+                await self.link.write(self.source_id, Value=field("string", text))
+                self.last_source = text
+            if self.text_id and self.applied_fields.get("Text", {}).get("value") != text:
+                await self.write_text(Text=field("string", text))
 
     async def write_text(self, **fields):
         await self.link.write(self.text_id, **fields)
@@ -101,12 +107,11 @@ class ResoniteAdapter:
             return
         now = time.monotonic() * 1000
         if self.captions.accept(message, now):
-            value = self.captions.snapshot(now)
-            await self.publish_text(value["text"] if value else "")
+            await self.publish_text()
 
     async def clear(self, _message):
         self.captions.clear()
-        await self.publish_text("")
+        await self.publish_text()
 
     async def poll(self):
         while True:
@@ -129,7 +134,7 @@ class ResoniteAdapter:
                             await self.show_status()
                         await self.connector.set_enabled(enabled)
             if self.captions.snapshot(time.monotonic() * 1000) is None:
-                await self.publish_text("")
+                await self.publish_text()
             await asyncio.sleep(0.25)
 
     async def finish(self):

@@ -66,6 +66,12 @@ boundaries, combined accents and emoji sequences. Limits belong to the selected
 view, not a universal three-line source restriction. Plain-text receivers disable
 rich-text parsing rather than treating translated text as markup.
 
+The [Unity renderer](unity-caption-rendering.md) supplies one shared font and
+material surface for VRChat and ChilloutVR. The host owns its bounded glyph
+layout and transmission queue; each adapter owns its native receiver. Overte
+uses a native MTSDF font built from the same source and repertoire. Resonite
+uses native font collections, and Second Life uses the viewer's hover-text font.
+
 The authoring interface follows XRTranslate's light surfaces, dark gray text,
 8 px corner radii and restrained blue interaction feedback. Shared browser styles
 live in `presentation/designer/theme.css`. Theme changes are scoped to the tool;
@@ -81,12 +87,13 @@ profiles and supports positioning without a game client.
 | Resonite | `XRT/Text.Value`; native `ValueCopy<string>` binding to template-based TextRenderer presets or custom objects |
 | Second Life | Opt-in linkset messages; separate native hover-text receiver or a creator's renderer |
 | VRChat | Shared Unity SDF renderer; Avatar-specific buffered parameter receiver and editable mesh presets |
-| ChilloutVR | Avatar menu controls; native caption rendering remains an adapter contract |
+| ChilloutVR | Shared Unity SDF renderer; Avatar Lua buffer fed by packed numeric parameters |
 
 Visibility follows the chosen object: VRChat caption boards are part of the
-shared PC Avatar; Overte presets are local; Resonite objects
-follow session permissions; Second Life world attachments are visible nearby
-while HUDs are personal. Shared objects require an explicit user selection.
+shared PC Avatar; ChilloutVR uses shared Avatar parameters and per-viewer Lua;
+Overte creates wearable Avatar Text objects or local objects according to the
+audience selection; Resonite objects follow session permissions. Second Life
+world attachments show native hover text nearby while HUDs are personal.
 Platform guides own assembly steps, font setup, visibility and native limits.
 
 See [interaction](interaction.md), [connector protocol](connector-protocol.md),

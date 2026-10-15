@@ -12,12 +12,15 @@ function CaptionDisplay(runtime, Bubble) {
     this.profile = "horizontal";
     this.preview = false;
     this.message = "";
+    this.fontUrl = runtime.fontUrl;
+    this.fitKey = null;
+    this.fitted = "";
 }
 
 CaptionDisplay.prototype.properties = function (id) {
     return this.runtime.Entities.getEntityProperties(id, [
         "type", "name", "text", "locked", "visible", "entityHostType", "owningAvatarID",
-        "position", "dimensions", "lineHeight", "leftMargin", "rightMargin", "topMargin", "bottomMargin", "userData"
+        "position", "dimensions", "font", "lineHeight", "leftMargin", "rightMargin", "topMargin", "bottomMargin", "userData"
     ]);
 };
 
@@ -58,6 +61,7 @@ CaptionDisplay.prototype.unbind = function (keepSelection) {
     this.lastText = null;
     this.lastVisible = null;
     this.preview = false;
+    this.fitKey = null;
     if (!keepSelection) { this.runtime.Settings.setValue("XRT/captionTarget", ""); }
 };
 
@@ -81,18 +85,24 @@ CaptionDisplay.prototype.bind = function (id, hideWhenEmpty) {
     return true;
 };
 
-CaptionDisplay.prototype.create = function (profileName) {
+CaptionDisplay.prototype.create = function (profileName, audience) {
     if (["horizontal", "vertical", "board"].indexOf(profileName) === -1) { return false; }
     var profile = this.Bubble.profiles[profileName];
     if (!profile) { return false; }
     var r = this.runtime;
+    var wearable = audience === "avatar";
+    if (wearable && !r.Entities.canRezAvatarEntities()) {
+        this.message = "Avatar objects are unavailable here. Choose Only me or visit another domain.";
+        return false;
+    }
     var position = r.Vec3.sum(r.MyAvatar.getDefaultEyePosition(),
-        r.Vec3.multiplyQbyV(r.MyAvatar.orientation, { x: 0, y: -0.25, z: -1.5 }));
-    var id = r.Entities.addEntity({
+        r.Vec3.multiplyQbyV(r.MyAvatar.orientation, { x: 0, y: -0.25, z: wearable ? -0.6 : -1.5 }));
+    var properties = {
         type: "Text", name: "XRT " + profileName.charAt(0).toUpperCase() + profileName.slice(1),
-        position: position, rotation: r.MyAvatar.orientation,
+        position: position, rotation: wearable ? r.Quat.multiply(r.MyAvatar.orientation,
+            r.Quat.fromPitchYawRollDegrees(0, 180, 0)) : r.MyAvatar.orientation,
         dimensions: { x: profile.width, y: profile.height, z: 0.01 },
-        lineHeight: profile.lineHeight, text: "", textColor: profile.textColor,
+        lineHeight: profile.lineHeight, font: this.fontUrl, text: "", textColor: profile.textColor,
         textAlpha: profile.textAlpha, backgroundColor: profile.backgroundColor,
         backgroundAlpha: profile.backgroundAlpha,
         leftMargin: profile.padding, rightMargin: profile.padding,
@@ -100,19 +110,20 @@ CaptionDisplay.prototype.create = function (profileName) {
         alignment: "left", verticalAlignment: "center", unlit: true,
         billboardMode: "none", collisionless: true,
         userData: JSON.stringify({ xrt_caption: { profile: profileName } })
-    }, "local");
+    };
+    if (wearable) { properties.parentID = r.MyAvatar.SELF_ID; }
+    var id = r.Entities.addEntity(properties, wearable ? "avatar" : "local");
     if (!id || id === r.Uuid.NONE) { this.message = "Could not create the Text object."; return false; }
-    if (!this.bind(id, true)) { return false; }
+    if (!this.bind(id, true)) { r.Entities.deleteEntity(id); return false; }
     this.preview = true;
     return true;
 };
 
-CaptionDisplay.prototype.fit = function (text, properties) {
+CaptionDisplay.prototype.fit = function (text, properties, probe) {
     var Bubble = this.Bubble;
     var r = this.runtime;
     var width = properties.dimensions.x - properties.leftMargin - properties.rightMargin - 0.008;
     var height = properties.dimensions.y - properties.topMargin - properties.bottomMargin - 0.008;
-    var probe = r.Entities.textSize(this.target, "M");
     if (!probe || !isFinite(probe.width) || !isFinite(probe.height) || probe.width <= 0 || probe.height <= 0) { return null; }
     if (width <= 0 || height < probe.height) { return ""; }
     var columns = Math.max(1, Math.min(84, Math.floor(width / probe.width)));
@@ -138,8 +149,19 @@ CaptionDisplay.prototype.update = function (snapshot, now) {
     var properties = this.properties(this.target);
     if (!this.usable(properties)) { this.unbind(); this.message = "The Text object is no longer available."; return; }
     var text = snapshot ? snapshot.text : (this.preview ? "Your translation appears here." : "");
-    var rendered = text ? this.fit(text, properties) : "";
-    if (rendered === null) { return; }
+    // Native font loading is asynchronous; include a small metric probe so the
+    // full layout is refreshed when a new font finishes loading.
+    var probe = text ? this.runtime.Entities.textSize(this.target, "M") : null;
+    var fitKey = JSON.stringify([text, probe, this.profile, properties.font, properties.lineHeight,
+        properties.dimensions, properties.leftMargin, properties.rightMargin,
+        properties.topMargin, properties.bottomMargin]);
+    if (fitKey !== this.fitKey) {
+        var fitted = text ? this.fit(text, properties, probe) : "";
+        if (fitted === null) { return; }
+        this.fitted = fitted;
+        this.fitKey = fitKey;
+    }
+    var rendered = this.fitted;
     var changes = {};
     if (properties.text !== rendered) { changes.text = rendered; }
     this.lastText = rendered;

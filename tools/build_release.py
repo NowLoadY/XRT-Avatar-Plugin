@@ -26,9 +26,10 @@ VRC_ASSETS = "Assets/XRT-Avatar-Plugin/VRChat"
 # These identities are stable across releases and installation formats.
 VRC_FOLDER_GUID = "f481224d1ee34d72a4c4f24f7c44e91f"
 CVR_LICENSE_GUID = "58986b9148664c2f8874d2d255d6290a"
-UNITY_SUFFIXES = {".cs", ".asmdef", ".json", ".md", ".txt", ".meta", ".asset", ".prefab", ".mat", ".shader", ".hlsl", ".png", ".svg"}
+UNITY_SUFFIXES = {".cs", ".asmdef", ".json", ".md", ".txt", ".meta", ".asset", ".prefab", ".mat", ".shader", ".hlsl", ".png", ".svg", ".lua"}
 SEMVER = re.compile(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?\Z")
 GUID = re.compile(rb"^guid: ([0-9a-f]{32})\s*$", re.MULTILINE)
+OVERTE_FONT = "adapters/overte/fonts/XrtNotoCaption.arfont"
 
 
 def git(*args: str) -> bytes:
@@ -53,7 +54,8 @@ def read_source(name: str, tracked: set[str]) -> bytes:
     path = ROOT / name
     if path.is_symlink() or not path.is_file() or not path.resolve().is_relative_to(ROOT):
         raise ValueError(f"Release input must be a regular repository file: {name}")
-    if path.stat().st_size > 16 * 1024 * 1024:
+    size_limit = 24 * 1024 * 1024 if name == OVERTE_FONT else 16 * 1024 * 1024
+    if path.stat().st_size > size_limit:
         raise ValueError(f"Unexpectedly large release input: {name}")
     return path.read_bytes()
 
@@ -229,7 +231,8 @@ def main() -> None:
         "adapters/overte/scripts/xrt-avatar.js", "connectors/websocket/javascript/xrt_connector.js",
         "presentation/javascript/bubble.js", "presentation/designer/theme.css",
         "adapters/overte/scripts/caption-display.js", "adapters/overte/scripts/designer.html",
-        "adapters/overte/examples/caption-source.js", "LICENSE")}
+        "adapters/overte/examples/caption-source.js", OVERTE_FONT,
+        "adapters/overte/fonts/font.json", "adapters/overte/fonts/OFL.txt", "LICENSE")}
     for icon in ("connect", "start", "stop", "stop-active", "waiting", "retry", "display"):
         name = f"adapters/overte/scripts/icons/{icon}.svg"
         overte[name] = read_source(name, tracked)
