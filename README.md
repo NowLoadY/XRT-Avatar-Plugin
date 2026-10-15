@@ -12,22 +12,11 @@ In Overte, create a caption object or connect one you have designed. Place it on
 
 ## Previews
 
-Create a caption object, choose an existing one and preview its text in Overte's caption page.
+In Overte, load the plugin and select **Caption objects** on the tablet to create
+or choose a text object and preview its captions.
 
 <p align="center">
   <img src="assets/previews/caption-designer.jpg" alt="Overte caption page with horizontal, portrait and board presets and object selection controls" width="900" />
-</p>
-
-Horizontal layout:
-
-<p align="center">
-  <img src="assets/previews/caption-horizontal.jpg" alt="Horizontal caption layout in the positioning and text preview tool" width="900" />
-</p>
-
-Portrait layout. For a board, combine transparent lettering with your own fonts and artwork.
-
-<p align="center">
-  <img src="assets/previews/caption-portrait.jpg" alt="Portrait caption layout in the positioning and text preview tool" width="900" />
 </p>
 
 ## Install

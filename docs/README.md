@@ -24,7 +24,7 @@ and XRTranslate requirements.
 - [Interaction](interaction.md): control states, icons and wording.
 - [Refactoring contract](refactoring-contract.md): stable interfaces and focused verification.
 - [Release packaging](releases.md): package formats, building and publishing.
-- [README previews](previews.md): screenshot sources and capture steps.
+- [Interface and layout previews](previews.md): screenshot sources and capture steps.
 
 ## Platform reference
 

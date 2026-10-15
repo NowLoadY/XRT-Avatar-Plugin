@@ -1,6 +1,6 @@
-# README previews
+# Interface and layout previews
 
-Homepage images live in `assets/previews/`. Capture the checked-in interfaces
+Preview images live in `assets/previews/`. Capture the checked-in interfaces
 with the shared light theme. Keep labels legible at the README's display width
 and use ordinary sample text without personal information.
 
@@ -15,7 +15,25 @@ in a browser. Take ordinary viewport screenshots as JPEG at the default desktop
 size. Replace an image when its visible interface changes, and review its README
 caption at the same time.
 
-The designer image shows the actual browser interface. The two layout images
-come from the portable positioning tool using the shared caption profiles.
-They are interface and layout previews, not Unity or in-game acceptance evidence.
-Use captures from the corresponding game for any future game-specific gallery.
+The homepage uses the Overte designer image. It shows the actual HTML interface,
+captured in a browser. The plugin opens this page from the tablet's **Caption
+objects** button through `tablet.gotoWebScreen()`.
+
+## Standalone layout tool
+
+The two images below come from `tools/preview-presentation.html`, which uses the
+shared caption profiles for layout development. This tool is not included in the
+install packages and is not a Unity editor window.
+
+### Horizontal
+
+![Horizontal layout tool](../assets/previews/caption-horizontal.jpg)
+
+### Portrait
+
+![Portrait layout tool](../assets/previews/caption-portrait.jpg)
+
+Unity's current **Avatar Controls** windows use IMGUI for Avatar selection, menu
+installation and removal, saving and status feedback. Their implementation is
+separate from these browser interfaces. Add Unity screenshots to the homepage
+when captured from those windows in Unity.
