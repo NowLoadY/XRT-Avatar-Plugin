@@ -56,7 +56,7 @@ Choose your game and follow its setup guide:
 | Resonite | Avatar controls and caption objects | [Source archive](https://github.com/NowLoadY/XRT-Avatar-Plugin/archive/refs/tags/v0.1.0-preview.7.zip) | [ResoniteLink](docs/adapters/resonite/installation.md) |
 | Second Life | Attachment controls and floating captions | [Source archive](https://github.com/NowLoadY/XRT-Avatar-Plugin/archive/refs/tags/v0.1.0-preview.7.zip) | [Attachment / relay](docs/adapters/secondlife/installation.md) |
 
-In XRTranslate, set your audio input, languages and outputs. Open **Settings → Plugins → Avatar translation controls**, select your game and enable the plugin. Follow your game's guide to connect it and use the translation switch.
+In XRTranslate, set your audio input, languages and outputs. Open **Settings → Plugins → Avatar**, select your game and enable the plugin. Follow your game's guide to connect it and use the translation switch. Open **Avatar** in the sidebar to arrange your header, messages and footer.
 
 ## Help
 
