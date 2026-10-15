@@ -68,7 +68,10 @@ Exchanges carry at most four frames within a 12288-byte HTTP envelope.
 Native hover text keeps soft-white lettering and the viewer's font and background
 behavior. [`llSetText`](https://wiki.secondlife.com/wiki/LlSetText) provides text,
 color and opacity, with a 254-byte UTF-8 limit. Both included displays shorten
-long text at a character boundary and end it with an ellipsis. A dedicated
+the header and footer to leave room for messages, select the newest complete
+messages that fit, and display them in chronological order. A latest message
+that exceeds the remaining space ends with an ellipsis at a character boundary.
+Region-only bindings use the whole byte budget. A dedicated
 receiver can show the full display or just the header, messages or footer. Its prim remains editable in
 Build.
 

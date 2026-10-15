@@ -28,6 +28,12 @@ for the native hover projection. The receiver owns its geometry, font and layout
 Expire each message by `ttl_ms` and clear all regions when the `expires_ms`
 receiver lease ends.
 
+The included hover projection reserves up to one quarter of its 254-byte budget
+for each banner when both banners and messages are present; unused banner space
+returns to messages. It selects a recent consecutive suffix without changing the
+published source. The controller and receiver use the same small LSL projection
+helper because deployed LSL scripts do not share includes.
+
 Only the configured controller should supply text to a receiver. Handle empty
 text, message expiry, detach and region changes. Control resets preserve display
 regions; a source clear removes them. Keep native hover text on a dedicated

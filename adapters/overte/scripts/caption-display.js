@@ -79,7 +79,7 @@ TextBinding.prototype.resolve = function (properties) {
     return true;
 };
 
-TextBinding.prototype.fit = function (text, properties, probe) {
+TextBinding.prototype.fit = function (snapshot, properties, probe) {
     var Bubble = this.Bubble;
     var r = this.runtime;
     var width = properties.dimensions.x - properties.leftMargin - properties.rightMargin - 0.008;
@@ -90,7 +90,8 @@ TextBinding.prototype.fit = function (text, properties, probe) {
     var lines = Math.max(1, Math.min(12, Math.floor(height / probe.height)));
     var layout;
     for (var attempt = 0; attempt < 8; attempt += 1) {
-        layout = Bubble.layout(text, { profile: this.profile, maxColumns: columns, maxLines: lines });
+        layout = Bubble.layoutDisplay(snapshot, { profile: this.profile, region: this.region,
+            maxColumns: columns, maxLines: lines });
         var metrics = r.Entities.textSize(this.target, layout.text);
         if (!metrics || !isFinite(metrics.width) || !isFinite(metrics.height) || metrics.height <= 0) { return null; }
         if (metrics.width <= width && metrics.height <= height) { return layout.text; }
@@ -110,14 +111,17 @@ TextBinding.prototype.update = function (snapshot, now) {
     if (!this.resolve(properties)) { this.retryAt = now + 1000; return; }
     this.retryAt = 0;
     var text = snapshot && snapshot.text ? snapshot.text : (this.preview ? "Your text appears here." : "");
+    var value = snapshot && snapshot.text ? snapshot : { text: text };
     // Native font loading is asynchronous; include a small metric probe so the
     // full layout is refreshed when a new font finishes loading.
     var probe = text ? this.runtime.Entities.textSize(this.target, "M") : null;
-    var fitKey = JSON.stringify([text, probe, this.profile, properties.font, properties.lineHeight,
+    var fitKey = JSON.stringify([text, value.header, value.footer,
+        value.messages && value.messages.map(function (item) { return item.text; }),
+        this.region, probe, this.profile, properties.font, properties.lineHeight,
         properties.dimensions, properties.leftMargin, properties.rightMargin,
         properties.topMargin, properties.bottomMargin]);
     if (fitKey !== this.fitKey) {
-        var fitted = text ? this.fit(text, properties, probe) : "";
+        var fitted = text ? this.fit(value, properties, probe) : "";
         if (fitted === null) { return; }
         this.fitted = fitted;
         this.fitKey = fitKey;

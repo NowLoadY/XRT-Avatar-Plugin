@@ -103,15 +103,15 @@ integer utf8Bytes(string text)
     return length;
 }
 
-string hoverText(string text)
+string hoverText(string text, integer limit)
 {
-    if (utf8Bytes(text) <= 254) return text;
+    if (utf8Bytes(text) <= limit) return text;
     integer low = 0;
     integer high = llStringLength(text);
     while (low < high)
     {
         integer middle = (low + high + 1) / 2;
-        if (utf8Bytes(llGetSubString(text, 0, middle - 1)) <= 251) low = middle;
+        if (utf8Bytes(llGetSubString(text, 0, middle - 1)) <= limit - 3) low = middle;
         else high = middle - 1;
     }
     if (!low) return "…";
@@ -125,11 +125,37 @@ string joinText(string first, string second)
     return first + "\n" + second;
 }
 
+// Keep a recent complete suffix; banners share the remaining native text budget.
+string hoverDisplay(string header, list entries, string footer)
+{
+    integer count = llGetListLength(entries);
+    integer banners = 0;
+    if (header != "") ++banners;
+    if (footer != "") ++banners;
+    integer parts = banners + (count > 0);
+    if (!parts) return "";
+    integer bannerBudget = (254 - parts + 1) / (banners + 2 * (count > 0));
+    header = hoverText(llDumpList2String(llParseStringKeepNulls(header, ["\n"], []), " "), bannerBudget);
+    footer = hoverText(llDumpList2String(llParseStringKeepNulls(footer, ["\n"], []), " "), bannerBudget);
+    if (!count) return joinText(header, footer);
+    integer budget = 254 - utf8Bytes(header) - utf8Bytes(footer) - banners;
+    string body = "";
+    integer index;
+    for (index = count - 1; index >= 0; --index)
+    {
+        string candidate = joinText(llList2String(entries, index), body);
+        if (body == "" || utf8Bytes(candidate) <= budget) body = candidate;
+        else index = -1;
+    }
+    return joinText(joinText(header, hoverText(body, budget)), footer);
+}
+
 showCaption()
 {
     string text = "";
     string display = "";
     list messages = [];
+    list entries = [];
     integer index;
     float now = llGetTime();
     if (displayMode)
@@ -141,12 +167,13 @@ showCaption()
         {
             string content = llList2String(displayMessages, index + 1);
             text = joinText(text, content);
+            entries += [content];
             messages += [llList2Json(JSON_OBJECT, [
                 "id", jsonString(llList2String(displayMessages, index)), "text", jsonString(content),
                 "ttl_ms", (integer)((llList2Float(displayMessages, index + 2) - now) * 1000.0)])];
         }
         text = joinText(joinText(headerText, text), footerText);
-        display = hoverText(text);
+        display = hoverDisplay(headerText, entries, footerText);
     }
     else if (caption != "" && now < captionUntil)
     {

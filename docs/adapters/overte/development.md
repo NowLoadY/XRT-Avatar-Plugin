@@ -93,7 +93,12 @@ connection; availability changes do not write preferences.
 
 Live updates write each bound object's text and, when selected, its visibility.
 Native `Entities.textSize` measurements determine wrapping without resizing the
-object or changing its font. Full layout measurements are cached until text, font, dimensions
+object or changing its font. Shared `layoutDisplay` reserves a row for each
+banner when space permits and fills the body with the newest complete messages
+that fit. At least one body row is available while messages are present; an
+oversized latest message is shortened with an ellipsis. Region-only bindings use
+the whole object. Raw local text-source messages retain all candidate content.
+Full layout measurements are cached until text, font, dimensions
 or margins change. A small metric probe detects asynchronous font loading; an
 unloaded font is retried on the next update. Unbinding restores fields still controlled by the
 adapter and leaves the object in the scene. Translation control resets preserve

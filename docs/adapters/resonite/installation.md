@@ -74,7 +74,8 @@ Choose one starting shape:
 Keep the new **XRT** slot ID printed by the installer. Select the new
 **Caption (Horizontal)** object in the Inspector to move, rotate or resize it.
 Font, color, alignment and bounds remain editable. Keep the template's font and
-material providers with the Avatar; you can clear its displayed text.
+material providers with the Avatar; you can clear its displayed text. The new
+caption keeps the template's native auto-sizing settings.
 
 For controls and a text source without a new caption, omit both `--preset` and
 `--template`. If an XRT installation already exists, use that installation's slot
@@ -115,6 +116,9 @@ ValueCopy. Keep `WriteBack` and rich-text parsing off. Several objects can share
 a source while keeping their own font, wrapping, color and placement. Add
 `--source header`, `messages` or `footer` to the installation command to bind a
 new preset directly to that region.
+
+For an existing bounded TextRenderer, enable **HorizontalAutoSize** and
+**VerticalAutoSize** to fit longer content inside its bounds.
 
 Each message follows its display time in XRTranslate. Stopping translation removes
 its messages while independent header and footer content remains. The objects

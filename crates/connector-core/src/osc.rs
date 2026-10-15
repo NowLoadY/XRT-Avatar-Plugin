@@ -223,8 +223,16 @@ impl CaptionLayout {
         values
     }
 
-    fn canvas(self, snapshot: &DisplaySnapshot) -> (Vec<Vec<i32>>, Range<usize>) {
-        let snapshot = snapshot.normalized();
+    /// Preview the content selected for this layout, including its rendered line breaks.
+    pub fn project(self, snapshot: &DisplaySnapshot) -> DisplaySnapshot {
+        self.project_cells(snapshot).0
+    }
+
+    fn project_cells(
+        self,
+        snapshot: &DisplaySnapshot,
+    ) -> (DisplaySnapshot, Vec<u16>, Range<usize>) {
+        let mut snapshot = snapshot.normalized();
         let start = if snapshot.header.is_some() {
             self.columns
         } else {
@@ -238,7 +246,8 @@ impl CaptionLayout {
             };
         let capacity = end - start;
         let mut body = String::new();
-        for message in snapshot.messages.iter().rev() {
+        let mut first = snapshot.messages.len();
+        for (index, message) in snapshot.messages.iter().enumerate().rev() {
             let candidate = if body.is_empty() {
                 message.text.clone()
             } else {
@@ -247,6 +256,7 @@ impl CaptionLayout {
             if body.is_empty() || self.glyphs_with_limit(&candidate, capacity + 1).len() <= capacity
             {
                 body = candidate;
+                first = index;
             } else {
                 break;
             }
@@ -263,10 +273,47 @@ impl CaptionLayout {
             let glyphs = self.glyphs_with_limit(text, capacity);
             cells[offset..offset + glyphs.len()].copy_from_slice(&glyphs);
         }
+        snapshot.messages.drain(..first);
+        let preview_text = |glyphs: &[u16]| {
+            glyphs
+                .chunks(self.columns)
+                .map(|line| {
+                    line.iter()
+                        .map(|glyph| {
+                            if *glyph == 0 {
+                                ' '
+                            } else {
+                                char::from_u32(u32::from(*glyph)).unwrap_or('\u{fffd}')
+                            }
+                        })
+                        .collect::<String>()
+                        .trim_end()
+                        .to_owned()
+                })
+                .collect::<Vec<_>>()
+                .join("\n")
+                .trim()
+                .to_owned()
+        };
+        if let Some(header) = &mut snapshot.header {
+            *header = preview_text(&cells[..self.columns]);
+        }
+        if let Some(footer) = &mut snapshot.footer {
+            *footer = preview_text(&cells[end..]);
+        }
+        for message in &mut snapshot.messages {
+            message.text = preview_text(&self.glyphs_with_limit(&message.text, capacity));
+        }
+        (snapshot, cells, start..end)
+    }
+
+    fn canvas(self, snapshot: &DisplaySnapshot) -> (Vec<Vec<i32>>, Range<usize>) {
+        // Keep original cell padding: reparsing preview whitespace would change placement.
+        let (_, cells, body) = self.project_cells(snapshot);
         let size = self.bytes / 2;
         (
             cells.chunks(size).map(|chunk| self.pack(chunk)).collect(),
-            start / size..end / size,
+            body.start / size..body.end / size,
         )
     }
 }
@@ -488,6 +535,67 @@ mod tests {
         let truncated = layout.glyphs(&"文".repeat(130));
         assert_eq!(truncated.len(), layout.contract.slots);
         assert_eq!(truncated[layout.contract.slots - 1], 0x2026);
+    }
+
+    #[test]
+    fn projection_fits_recent_messages_and_preserves_truncated_cell_padding() {
+        let layout = CaptionLayout {
+            contract: &Connector::Vrchat.osc().unwrap().caption,
+            columns: 32,
+            bytes: 2,
+        };
+        let message = |id: &str, text: String| crate::DisplayMessage {
+            id: id.into(),
+            text,
+            ttl_ms: 8000,
+        };
+        let mut snapshot = DisplaySnapshot {
+            header: Some("H".repeat(40)),
+            footer: Some("Footer".into()),
+            messages: vec![
+                message("old", "Old ".repeat(30)),
+                message("middle", "Older message".into()),
+                message("new", "文🙂".into()),
+            ],
+        };
+        let projected = layout.project(&snapshot);
+        assert_eq!(projected.messages.len(), 2);
+        assert_eq!(projected.messages[0].id, "middle");
+        assert_eq!(projected.messages[1].text, "文\u{fffd}");
+        assert_eq!(projected.messages[1].ttl_ms, 8000);
+        assert_eq!(projected.header, Some(format!("{}…", "H".repeat(31))));
+        assert_eq!(projected.footer, snapshot.footer);
+        let cells = |snapshot: &DisplaySnapshot| {
+            layout
+                .canvas(snapshot)
+                .0
+                .iter()
+                .map(|chunk| ((chunk[0] << 8) | chunk[1]) as u16)
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(cells(&snapshot)[32], 'O' as u16);
+        assert_eq!(&cells(&snapshot)[64..66], &[0x6587, 0xfffd]);
+
+        snapshot.messages.push(message(
+            "long",
+            format!("{}\n{} abcdef", "A".repeat(32), "B".repeat(29)),
+        ));
+        let projected = layout.project(&snapshot);
+        assert_eq!(projected.messages.len(), 1);
+        assert_eq!(projected.messages[0].id, "long");
+        assert_eq!(
+            projected.messages[0].text,
+            format!("{}\n{}  …", "A".repeat(32), "B".repeat(29))
+        );
+        let rendered = cells(&snapshot);
+        assert!(rendered[32..64].iter().all(|glyph| *glyph == 'A' as u16));
+        assert!(rendered[64..93].iter().all(|glyph| *glyph == 'B' as u16));
+        assert_eq!(&rendered[93..96], &[0, 0, 0x2026]);
+        assert_eq!(rendered[96], 'F' as u16);
+        assert_eq!(
+            layout.project(&DisplaySnapshot::default()),
+            DisplaySnapshot::default()
+        );
     }
 
     #[test]

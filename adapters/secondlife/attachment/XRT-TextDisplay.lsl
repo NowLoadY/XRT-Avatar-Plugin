@@ -20,15 +20,15 @@ integer utf8Bytes(string text)
     return length;
 }
 
-string hoverText(string text)
+string hoverText(string text, integer limit)
 {
-    if (utf8Bytes(text) <= 254) return text;
+    if (utf8Bytes(text) <= limit) return text;
     integer low = 0;
     integer high = llStringLength(text);
     while (low < high)
     {
         integer middle = (low + high + 1) / 2;
-        if (utf8Bytes(llGetSubString(text, 0, middle - 1)) <= 251) low = middle;
+        if (utf8Bytes(llGetSubString(text, 0, middle - 1)) <= limit - 3) low = middle;
         else high = middle - 1;
     }
     if (!low) return "…";
@@ -40,6 +40,31 @@ string joinText(string first, string second)
     if (first == "") return second;
     if (second == "") return first;
     return first + "\n" + second;
+}
+
+// Keep a recent complete suffix; banners share the remaining native text budget.
+string hoverDisplay(string header, list entries, string footer)
+{
+    integer count = llGetListLength(entries);
+    integer banners = 0;
+    if (header != "") ++banners;
+    if (footer != "") ++banners;
+    integer parts = banners + (count > 0);
+    if (!parts) return "";
+    integer bannerBudget = (254 - parts + 1) / (banners + 2 * (count > 0));
+    header = hoverText(llDumpList2String(llParseStringKeepNulls(header, ["\n"], []), " "), bannerBudget);
+    footer = hoverText(llDumpList2String(llParseStringKeepNulls(footer, ["\n"], []), " "), bannerBudget);
+    if (!count) return joinText(header, footer);
+    integer budget = 254 - utf8Bytes(header) - utf8Bytes(footer) - banners;
+    string body = "";
+    integer index;
+    for (index = count - 1; index >= 0; --index)
+    {
+        string candidate = joinText(llList2String(entries, index), body);
+        if (body == "" || utf8Bytes(candidate) <= budget) body = candidate;
+        else index = -1;
+    }
+    return joinText(joinText(header, hoverText(body, budget)), footer);
 }
 
 clearDisplay()
@@ -65,14 +90,16 @@ renderDisplay()
         for (index = llGetListLength(messages) - 2; index >= 0; index -= 2)
             if (llList2Float(messages, index + 1) <= llGetTime())
                 messages = llDeleteSubList(messages, index, index + 1);
+        list entries = [];
         for (index = 0; index < llGetListLength(messages); index += 2)
-            text = joinText(text, llList2String(messages, index));
+            entries += [llList2String(messages, index)];
         if (REGION == "header") text = headerText;
         else if (REGION == "footer") text = footerText;
-        else if (REGION != "messages") text = joinText(joinText(headerText, text), footerText);
+        else if (REGION == "messages") text = hoverDisplay("", entries, "");
+        else text = hoverDisplay(headerText, entries, footerText);
     }
     else if (REGION == "header" || REGION == "footer") text = "";
-    llSetText(hoverText(text), TEXT_COLOR, TEXT_ALPHA);
+    llSetText(hoverText(text, 254), TEXT_COLOR, TEXT_ALPHA);
 }
 
 default

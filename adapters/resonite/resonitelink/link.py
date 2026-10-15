@@ -95,7 +95,7 @@ def template_members(component):
             reference(item["targetId"]) for item in materials["elements"]]},
     }
     for name in ("Profile", "Color", "LineHeight", "HorizontalAlign", "VerticalAlign",
-                 "BoundsAlignment", "AlignmentMode"):
+                 "BoundsAlignment", "AlignmentMode", "HorizontalAutoSize", "VerticalAutoSize"):
         member = members.get(name)
         if member and "value" in member:
             result[name] = {key: value for key, value in member.items()
@@ -121,7 +121,6 @@ async def add_preset(link, parent_id, prefix, source_id, preset, profile, member
         "Size": field("float", profile["lineHeight"]),
         "Bounded": field("bool", True),
         "BoundsSize": field("float2", {"x": profile["width"], "y": profile["height"]}),
-        "HorizontalAutoSize": field("bool", False), "VerticalAutoSize": field("bool", False),
     })
     await link.request("addComponent", containerSlotId=slot_id, data={
         "id": text_id, "componentType": TEXT_TYPE, "members": members,

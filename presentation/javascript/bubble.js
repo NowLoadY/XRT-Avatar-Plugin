@@ -119,6 +119,7 @@
         if (typeof options.maxBytes === "number" && isFinite(options.maxBytes)) {
             var limit = Math.max(0, Math.floor(options.maxBytes));
             if (bytes(text) > limit) {
+                clipped = true;
                 var kept = [], used = 0;
                 clusters(text).some(function (item) {
                     if (used + bytes(item.text) + 3 > limit) { return true; }
@@ -132,9 +133,49 @@
         }
         var rendered = text ? text.split("\n") : [];
         var widest = rendered.reduce(function (size, row) { return Math.max(size, width(clusters(row))); }, 0);
-        return { text: text, lines: rendered.length,
+        return { text: text, lines: rendered.length, clipped: clipped,
             width: Math.min(selected.width, Math.max(Math.min(style.minWidth, selected.width), widest * selected.columnWidth + selected.padding * 2)),
             height: rendered.length * selected.lineHeight * selected.lineSpacing + selected.padding * 2 };
+    }
+    function layoutDisplay(snapshot, options) {
+        options = options || {};
+        if (!snapshot || !Array.isArray(snapshot.messages)) { return layout(snapshot && snapshot.text, options); }
+        var region = options.region || "full";
+        if (region === "header" || region === "footer") { return layout(snapshot[region], options); }
+        var selected = profiles[options.profile || "horizontal"] || profiles.horizontal;
+        var rows = typeof options.maxLines === "number" && isFinite(options.maxLines)
+            ? Math.max(1, Math.min(12, Math.floor(options.maxLines))) : selected.maxLines;
+        var limit = typeof options.maxBytes === "number" && isFinite(options.maxBytes)
+            ? Math.max(0, Math.floor(options.maxBytes)) : Infinity;
+        var messages = snapshot.messages.filter(function (item) { return !!sourceText(item.text); });
+        var header = region === "full" ? sourceText(snapshot.header).replace(/\s+/g, " ") : "";
+        var footer = region === "full" ? sourceText(snapshot.footer).replace(/\s+/g, " ") : "";
+        var remaining = rows - (messages.length ? 1 : 0);
+        if (header && remaining > 0) { remaining--; } else { header = ""; }
+        if (footer && remaining > 0) { remaining--; } else { footer = ""; }
+        var bannerCount = (header ? 1 : 0) + (footer ? 1 : 0);
+        var parts = bannerCount + (messages.length ? 1 : 0);
+        var bannerBytes = Math.floor(Math.max(0, limit - Math.max(0, parts - 1)) /
+            (parts + (messages.length ? 1 : 0) || 1));
+        function settings(lines, maxBytes) {
+            var value = {};
+            Object.keys(options).forEach(function (key) { value[key] = options[key]; });
+            value.maxLines = lines; value.maxBytes = maxBytes;
+            return value;
+        }
+        if (header) { header = layout(header, settings(1, bannerBytes)).text; }
+        if (footer) { footer = layout(footer, settings(1, bannerBytes)).text; }
+        bannerCount = (header ? 1 : 0) + (footer ? 1 : 0);
+        var bodyOptions = settings(rows - bannerCount,
+            Math.max(0, limit - bytes(header) - bytes(footer) - bannerCount));
+        var body = "";
+        for (var index = messages.length - 1; index >= 0; index--) {
+            var candidate = messages[index].text + (body ? "\n" + body : "");
+            if (body && layout(candidate, bodyOptions).clipped) { break; }
+            body = candidate;
+        }
+        body = messages.length ? layout(body, bodyOptions).text : "";
+        return layout([header, body, footer].filter(function (part) { return !!part; }).join("\n"), options);
     }
     function lifetime(message) {
         return message && typeof message.expires_ms === "number" && isFinite(message.expires_ms)
@@ -214,6 +255,6 @@
         Object.keys(value).forEach(function (key) { copy[key] = value[key]; });
         return copy;
     };
-    return { style: style, profiles: profiles, layout: layout, lifetime: lifetime,
+    return { style: style, profiles: profiles, layout: layout, layoutDisplay: layoutDisplay, lifetime: lifetime,
         sourceText: sourceText, CaptionSource: CaptionSource };
 }));

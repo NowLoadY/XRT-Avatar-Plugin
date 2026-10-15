@@ -24,6 +24,12 @@ drive several user-selected objects. Native transport budgets can shorten the
 source; adapters document those budgets. Presentation never starts translation
 or acquires audio.
 
+Capacity-limited views select the newest consecutive messages that fit, then
+display them in chronological order. An oversized latest message is shortened
+within its region. Header and footer retain separate space when available.
+Selection uses each view's current layout or native byte budget; it does not
+change the source or queue expired messages for later display.
+
 ## Display binding
 
 An adapter binds one text source to objects selected or created by the user. Each

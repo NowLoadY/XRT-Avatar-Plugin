@@ -31,7 +31,8 @@ have the expected type.
 
 An optional preset copies the selected TextRenderer's font and material
 references into a new Caption slot, initializes size and bounds from the shared
-profile, and creates `ValueCopy<string>` from the selected source's Value to the
+profile, preserves the template's native auto-sizing settings, and creates
+`ValueCopy<string>` from the selected source's Value to the
 new renderer's Text field. `--source` defaults to `full` (`Text`). References use
 the fields' returned IDs, not component IDs. The installer checks native member
 types before wiring them. Failure removes only the subtree created by that attempt.
@@ -57,6 +58,10 @@ font, material, color, size and position, and restores the original managed
 values on exit only when they still match its last writes. Do not also drive the
 same Text field with ValueCopy. All owned source fields remain available in this
 mode.
+
+Sources retain all current candidate messages. The template's native font and
+auto-sizing settings, together with the object's bounds, control rendering;
+custom bindings retain their authored layout.
 
 Publication serializes source and direct-renderer writes, resolving the latest
 snapshot after waiting for the native connection. The running bridge enforces
