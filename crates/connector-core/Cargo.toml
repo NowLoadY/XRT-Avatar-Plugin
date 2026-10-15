@@ -4,4 +4,8 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Transport-independent lifecycle for XRT avatar connectors"
+description = "Shared connector contracts, text encoding and lifecycle for XRT avatar integrations"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+unicode-normalization = "0.1"

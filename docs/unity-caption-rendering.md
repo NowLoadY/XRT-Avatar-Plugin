@@ -12,8 +12,8 @@ asset GUIDs. The authoring helper owns preset tiles, material defaults and
 preview text, and renders the real mesh through `PreviewRenderUtility`.
 
 VRChat fills the material through its Animator buffer. ChilloutVR uses an Avatar
-Lua receiver and two packed integer words. Both consume the same 128-slot BMP
-layout and reuse the host's pacing, replacement and cancellation logic.
+Lua receiver and two packed integer words. Both consume the connector SDK's
+128-slot BMP layout and reuse the host's pacing, replacement and cancellation.
 
 ## Surface and text
 

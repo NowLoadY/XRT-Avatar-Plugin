@@ -1,7 +1,7 @@
 # Presentation architecture
 
-A caption source provides the current translation. A display binds that source
-to an editable game object. Presets create useful starting objects; users own
+A text source provides the current host-selected content. A display binds that
+source to an editable game object. Presets create useful starting objects; users own
 placement, shape, typography and decoration after creation.
 
 ## Text source
@@ -67,8 +67,8 @@ view, not a universal three-line source restriction. Plain-text receivers disabl
 rich-text parsing rather than treating translated text as markup.
 
 The [Unity renderer](unity-caption-rendering.md) supplies one shared font and
-material surface for VRChat and ChilloutVR. The host owns its bounded glyph
-layout and transmission queue; each adapter owns its native receiver. Overte
+material surface for VRChat and ChilloutVR. The connector SDK owns its bounded
+glyph layout; the host owns the transmission queue; each adapter owns its native receiver. Overte
 uses a native MTSDF font built from the same source and repertoire. Resonite
 uses native font collections, and Second Life uses the viewer's hover-text font.
 

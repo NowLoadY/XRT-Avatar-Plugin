@@ -9,7 +9,7 @@ by each platform. XRTranslate provides the translation runtime.
 | Owner | Responsibility |
 |---|---|
 | Platform adapter | SDK integration, installation assets, game interaction and display |
-| Connector core | Shared reset, intent, operation identity and lifecycle rules |
+| Connector SDK | Connector catalogue, generated transport contracts, pure text codecs and lifecycle |
 | Connector client | Pairing, framing, heartbeat and session validation |
 | XRTranslate host adapter | Validate requests, compose host capabilities and return actual operation state |
 | XRTranslate session infrastructure | Session ownership, input acquisition, cancellation and resource cleanup |
@@ -42,7 +42,8 @@ defines shared appearance, result lifetime and native rendering ownership.
 | `adapters/<platform>/` | Platform code, packages, protocol definitions, tools and examples |
 | `docs/adapters/<platform>/` | Platform installation, protocol, compatibility and host integration |
 | `docs/` | Repository architecture and common host contracts |
-| `crates/connector-core/` | I/O-free lifecycle shared by every platform |
+| `crates/connector-core/` | I/O-free connector SDK: catalogue, contracts, text codecs and lifecycle |
+| `connectors/catalog.json` | Public connector identities and transport selection |
 | `connectors/websocket/` | Common JavaScript and Python wire clients |
 | `authoring/unity/` | Shared Unity controls window, caption presets and material preview; SDK installers remain in adapters |
 | `presentation/` | Text sources, layouts, authoring styles and SDK-independent Unity glyph rendering |
@@ -55,9 +56,11 @@ transport. Overte, Resonite and Second Life use the [local connector protocol](c
 Platform bridges adapt game APIs to this protocol. ResoniteLink and Second Life's
 HTTP relay remain explicit platform-specific branches.
 
-The `xrt-avatar-control` crate preserves the VRChat dependency interface and
-re-exports the shared lifecycle. Platform crates own generated parameter
-constants. Host dependencies are pinned to a companion repository revision.
+XRTranslate depends on `xrt-connector-core` at a pinned repository revision.
+`tools/generate_protocol.py` builds its catalogue and OSC contracts from the
+connector catalogue and platform manifests. The SDK performs pure capability
+checks and text encoding; the host supplies typed snapshots and performs I/O.
+The small platform control crates preserve their existing Rust interfaces.
 OSC Chatbox sending, formatting and destination settings belong to XRTranslate's
 OSC plugin; game adapters consume existing host outputs where applicable.
 
@@ -79,6 +82,12 @@ The Unity window template shares selection, status, save and Undo interaction.
 packaging checks that these copies match. Each installer owns its validation,
 asset creation and restoration. Caption windows reuse `CaptionAuthoring` and
 `CaptionPreview` while retaining their platform-specific selection and install actions.
+
+Text display accepts replacement, clear and lifetime with opaque source/result
+identity. Translation, lyrics and clock content belong to host producers; no
+content category enters the game protocol. The host selects the producer and
+retains its ownership. Native text and buffered parameter displays share this
+contract while retaining their actual update capacity.
 
 The Unity caption renderer is shared source under `presentation/unity/`. An
 installable adapter receives a checked resource copy and provides its own

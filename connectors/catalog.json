@@ -1,0 +1,10 @@
+{
+  "default": "vrchat",
+  "connectors": [
+    { "id": "vrchat", "label": "VRChat", "transport": "oscquery" },
+    { "id": "chilloutvr", "label": "ChilloutVR", "transport": "oscquery" },
+    { "id": "resonite", "label": "Resonite", "transport": "websocket" },
+    { "id": "overte", "label": "Overte", "transport": "websocket" },
+    { "id": "secondlife", "label": "Second Life", "transport": "websocket" }
+  ]
+}

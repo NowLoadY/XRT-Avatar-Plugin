@@ -3,7 +3,8 @@
   "version": 1,
   "connector": "oscquery",
   "peer": "chilloutvr",
-  "servicePrefix": "ChilloutVR-",
+  "serviceName": "ChilloutVR",
+  "mutePath": null,
   "identityPath": "/avatar/change",
   "invalidatePaths": ["/avatar/change", "/avatar/profile/change"],
   "parameters": [

@@ -1,6 +1,6 @@
-# Local connector protocol
+# Connector protocol
 
-Protocol `xrt-avatar/1` carries game-component control and optional captions over
+Protocol `xrt-avatar/1` carries game-component control and optional text display over
 JSON WebSocket messages. XRTranslate serves `ws://127.0.0.1:<port>/xrt` while a
 WebSocket connector is enabled. The settings page supplies the current address
 and pairing token. A connection serves one selected game connector and one
@@ -58,7 +58,11 @@ ends the connection. Clients apply the same deadline to host messages. Disconnec
 context replacement and plugin disable clear local intent and cancel owned work.
 Reconnection starts a fresh pairing/reset lifecycle; it never restores On.
 
-## Captions
+## Text display
+
+The compatible `caption` message carries plain text from the host-selected
+producer. `stream` and `id` are opaque identities, not translation-specific
+fields. Lyrics, clock text and other sources use the same message shape.
 
 ```json
 {"type":"caption","session":"<host session ID>","stream":"42","id":"turn-1","revision":1,"text":"Translated text","expires_ms":15000}
@@ -82,5 +86,9 @@ operation. Socket and heartbeat work run outside the UI thread. Session IDs fenc
 late traffic. No token is embedded in shared Avatar assets or public relay frames.
 
 Shared clients live under `connectors/websocket/`. Platform bridges translate
-transport and platform interaction; the lifecycle implementation remains in
-`crates/connector-core` and the host adapter.
+transport and platform interaction. The `xrt-connector-core` SDK exposes the
+catalogue, generated native contracts and pure codecs through one host dependency.
+For numeric OSC displays, the host supplies a typed parameter lookup and receives
+integer frames and their send interval. The same SDK maps payload width and local capability names
+from each adapter's manifest; host code does not branch on a game to encode text.
+Socket, send-time pacing and cancellation remain with the host transport owner.

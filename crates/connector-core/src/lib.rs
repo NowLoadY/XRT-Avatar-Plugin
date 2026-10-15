@@ -1,12 +1,13 @@
-//! Connector control intent and lifecycle, without transport, audio or clock I/O.
+//! Connector contracts, plain-text encoding and lifecycle, without transport I/O.
 //!
 //! The host executes returned effects in order, associates callbacks with their
 //! operation, and validates a fresh authoritative reset snapshot before calling
 //! [`Controller::confirm_reset`]. Parameter-change events alone cannot confirm
 //! a reset. Host resources remain owned until a terminal host result arrives.
+mod catalog;
+pub mod osc;
 
-
-
+pub use catalog::Connector;
 /// Identity of one verified client/transport binding attempt.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Generation(u64);
@@ -64,6 +65,17 @@ pub enum Status {
 }
 
 impl Status {
+    pub const fn name(self) -> &'static str {
+        match self {
+            Self::Unavailable => "unavailable",
+            Self::Off => "off",
+            Self::Starting => "starting",
+            Self::Active => "active",
+            Self::Stopping => "stopping",
+            Self::Error => "error",
+        }
+    }
+
     pub const fn wire_value(self) -> i32 {
         match self {
             Self::Unavailable => 0,

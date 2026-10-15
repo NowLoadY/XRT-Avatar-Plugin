@@ -44,17 +44,24 @@ identity and follow owner-scoped cancellation.
 
 ## Connector composition
 
-XRTranslate's `plugins::avatar` owns settings, platform capability mapping and
-validated connector intent. `avatar_host` composes that intent into existing
-owned tasks. OSC profiles share the OSC plugin's transport; WebSocket connectors
+The companion `xrt-connector-core` SDK owns the connector catalogue, generated
+platform contracts, pure text codecs and shared lifecycle. XRTranslate's
+`plugins::avatar` owns settings and validated connector intent. `avatar_host`
+composes that intent into existing owned tasks. OSC profiles share the OSC plugin's transport; WebSocket connectors
 share one local worker and one bounded message contract. Switching connectors
 invalidates the old binding and cancels its operation before another can start.
 Existing `vrc_avatar` settings identities migrate to `avatar` at deserialization.
 
-Game-component captions are an explicit output preference, delivered through
-an owner-filtered `SessionEventSubscriber`. They use normalized translation
-results and have no capture or model dependency. Reset and cancellation clear
-pending presentation; a new connection receives no previous-session history.
+The host's `TextDisplay` publishes plain-text replacement and clear with opaque
+stream/result identities and a renewable lifetime. The selected content producer
+owns meaning and refresh timing. Translation, song text and clock content use
+the same display shape; connectors never select or combine host sources.
+
+Translation captions are one explicit output preference. An owner-filtered
+`SessionEventSubscriber` extracts normalized results before publishing to the
+text display. Native-text connections accept revisions; buffered surfaces prefer
+completed text. Reset and cancellation revoke pending presentation, including
+queued transport writes; a new connection receives no previous-session history.
 
 See the [connector protocol](connector-protocol.md) and platform guides for
 transport mappings and installation. The [VRChat host guide](adapters/vrchat/host-integration.md)

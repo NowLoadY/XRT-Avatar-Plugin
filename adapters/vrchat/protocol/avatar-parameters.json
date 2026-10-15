@@ -1,6 +1,11 @@
 {
   "protocol": "xrt-avatar-control",
   "version": 1,
+  "connector": "oscquery",
+  "serviceName": "VRChat",
+  "identityPath": "/avatar/change",
+  "invalidatePaths": ["/avatar/change"],
+  "mutePath": "/avatar/parameters/MuteSelf",
   "parameters": [
     {
       "key": "enabled",

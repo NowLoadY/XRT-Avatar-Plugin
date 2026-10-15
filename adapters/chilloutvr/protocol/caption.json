@@ -2,6 +2,7 @@
   "protocol": "xrt-avatar-caption",
   "version": 1,
   "slots": 128,
+  "columnCounts": [8, 16, 32],
   "encoding": "unicode-bmp-big-endian",
   "emptyCodepoint": 0,
   "pointerUnit": "chunk",
@@ -12,6 +13,7 @@
     "bytesPerChunk": "#XRT/Caption/Bytes"
   },
   "bus": {
+    "integerBytes": 4,
     "pointer": "XRT/Caption/Pointer",
     "wordPrefix": "XRT/Caption/Word",
     "wordCount": 2,
