@@ -26,7 +26,7 @@ VRC_ASSETS = "Assets/XRT-Avatar-Plugin/VRChat"
 # These identities are stable across releases and installation formats.
 VRC_FOLDER_GUID = "f481224d1ee34d72a4c4f24f7c44e91f"
 CVR_LICENSE_GUID = "58986b9148664c2f8874d2d255d6290a"
-UNITY_SUFFIXES = {".cs", ".asmdef", ".json", ".md", ".txt", ".meta", ".asset", ".prefab", ".mat", ".shader", ".png", ".svg"}
+UNITY_SUFFIXES = {".cs", ".asmdef", ".json", ".md", ".txt", ".meta", ".asset", ".prefab", ".mat", ".shader", ".hlsl", ".png", ".svg"}
 SEMVER = re.compile(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?\Z")
 GUID = re.compile(rb"^guid: ([0-9a-f]{32})\s*$", re.MULTILINE)
 
@@ -176,7 +176,7 @@ def main() -> None:
     dirty = bool(git("status", "--porcelain", "--untracked-files=normal").strip())
     if args.require_clean and dirty:
         parser.error("The source checkout must be clean for release packaging")
-    for generator in ("generate_presentation.py", "generate_unity_editor.py"):
+    for generator in ("generate_protocol.py", "generate_presentation.py", "generate_unity_editor.py", "sync_unity_presentation.py"):
         subprocess.run([sys.executable, str(ROOT / "tools" / generator), "--check"], check=True)
     tracked = tracked_files()
     compatibility = json.loads(read_source("release/compatibility.json", tracked))

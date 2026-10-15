@@ -23,7 +23,7 @@ animator, follow [animator setup](troubleshooting.md#animator-setup).
 
 ## 2. Import XRT
 
-1. Download [XRT-Avatar-Plugin for ChilloutVR](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.5/XRT-Avatar-Plugin-ChilloutVR-0.1.0-preview.5.unitypackage).
+1. Download [XRT-Avatar-Plugin for ChilloutVR](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.6/XRT-Avatar-Plugin-ChilloutVR-0.1.0-preview.6.unitypackage).
 2. In Unity, choose **Assets → Import Package → Custom Package**, select the
    downloaded `.unitypackage` and import all its contents.
 3. Open **Tools → XRT-Avatar-Plugin → ChilloutVR → Avatar Controls**.

@@ -1,0 +1,35 @@
+{
+  "protocol": "xrt-avatar-caption",
+  "version": 1,
+  "slots": 128,
+  "encoding": "unicode-bmp-big-endian",
+  "emptyCodepoint": 0,
+  "pointerUnit": "chunk",
+  "clearPointer": 255,
+  "capabilities": {
+    "version": "XRT/Caption/Version",
+    "columns": "XRT/Caption/Columns",
+    "bytesPerChunk": "XRT/Caption/Bytes"
+  },
+  "bus": {
+    "pointer": "XRT/Caption/Pointer",
+    "bytePrefix": "XRT/Caption/Byte"
+  },
+  "profiles": [
+    { "bytesPerChunk": 8, "glyphsPerChunk": 4, "syncBits": 72 },
+    { "bytesPerChunk": 4, "glyphsPerChunk": 2, "syncBits": 40 },
+    { "bytesPerChunk": 2, "glyphsPerChunk": 1, "syncBits": 24 }
+  ],
+  "presets": {
+    "horizontal": { "columns": 32, "rows": 4 },
+    "portrait": { "columns": 8, "rows": 16 },
+    "board": { "columns": 32, "rows": 4 }
+  },
+  "delivery": {
+    "clearBeforeSentence": true,
+    "clearOnCancellation": true,
+    "repeatWhilePointerHeld": true,
+    "defaultChunkIntervalMs": 200,
+    "historyRecovery": false
+  }
+}

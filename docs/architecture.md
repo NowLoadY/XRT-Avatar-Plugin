@@ -45,8 +45,9 @@ defines shared appearance, result lifetime and native rendering ownership.
 | `crates/connector-core/` | I/O-free lifecycle shared by every platform |
 | `connectors/websocket/` | Common JavaScript and Python wire clients |
 | `authoring/unity/` | Shared Unity window template; SDK-specific installers remain in adapters |
-| `presentation/` | Text source, optional layout, preset profiles and authoring styles |
-| `tools/` | Generated bindings, release packaging and visual preview |
+| `presentation/` | Text sources, layouts, authoring styles and SDK-independent Unity glyph rendering |
+| `tools/` | Generated bindings, shared asset synchronization, release packaging and visual preview |
+| `third_party/` | Pinned reference source with upstream provenance and licenses |
 
 The host selects one connector and retains one lifecycle controller across
 connection changes. VRChat and ChilloutVR use profiles of XRTranslate's OSCQuery
@@ -77,3 +78,8 @@ The Unity window template shares selection, status, save and Undo interaction.
 `tools/generate_unity_editor.py` emits the two SDK-specific windows; release
 packaging checks that these copies match. Each installer owns its validation,
 asset creation and restoration.
+
+The Unity caption renderer is shared source under `presentation/unity/`. An
+installable adapter receives a checked resource copy and provides its own
+synchronization and installation bindings. Game-specific code never enters the
+shared renderer. Reference repositories are separate from release inputs.

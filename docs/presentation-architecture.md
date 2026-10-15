@@ -56,8 +56,8 @@ binding generator publishes the same profiles to JavaScript and Python.
 
 Portrait specifies a surface shape, not top-to-bottom glyph writing. Custom
 renderers can use the unwrapped source for vertical typesetting, curved lettering
-or other arrangements. Board objects use native or user-provided fonts; they do
-not promise a bundled handwriting font or paint arbitrary textures by themselves.
+or other arrangements. Board objects use the selected renderer's fonts. Users can combine transparent
+lettering with their own artwork.
 
 Preset creation applies initial dimensions and supported appearance once. A
 native renderer may derive a fitted projection from the object's current font
@@ -80,9 +80,11 @@ profiles and supports positioning without a game client.
 | Overte | Local `XRT/CaptionSource` messages; editable native Text objects and a tablet object picker |
 | Resonite | `XRT/Text.Value`; native `ValueCopy<string>` binding to template-based TextRenderer presets or custom objects |
 | Second Life | Opt-in linkset messages; separate native hover-text receiver or a creator's renderer |
-| VRChat / ChilloutVR | Avatar menu controls; parameter-driven glyph rendering has a platform-specific implementation contract |
+| VRChat | Shared Unity SDF renderer; Avatar-specific buffered parameter receiver and editable mesh presets |
+| ChilloutVR | Avatar menu controls; native caption rendering remains an adapter contract |
 
-Visibility follows the chosen object: Overte presets are local; Resonite objects
+Visibility follows the chosen object: VRChat caption boards are part of the
+shared PC Avatar; Overte presets are local; Resonite objects
 follow session permissions; Second Life world attachments are visible nearby
 while HUDs are personal. Shared objects require an explicit user selection.
 Platform guides own assembly steps, font setup, visibility and native limits.

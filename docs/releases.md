@@ -32,11 +32,12 @@ lifecycle and remain independently pinned by the host.
    identities stable. Check generated bindings with
    `python3 tools/generate_protocol.py --check`. The packager also checks the
    shared presentation binding and Unity windows with
-   `tools/generate_presentation.py --check` and `tools/generate_unity_editor.py --check`.
+   `tools/generate_presentation.py --check`, `tools/generate_unity_editor.py --check`
+   and `tools/sync_unity_presentation.py --check`.
 2. Commit the source and create its version tag. Use a clean checkout to build:
 
    ```sh
-   python3 tools/build_release.py --version 0.1.0-preview.5 \
+   python3 tools/build_release.py --version 0.1.0-preview.6 \
      --output dist/release --require-clean
    ```
 
@@ -70,7 +71,7 @@ own package manifest.
 
 The builder reads tracked files from explicit platform subtrees and checks
 metadata, paths and GUID uniqueness. It includes licenses and the Overte setup
-guide, shared text source, object designer and toolbar icons. It excludes local runtime data and third-party SDK binaries. ZIP timestamps
+guide, shared text source, object designer and toolbar icons. It excludes local runtime data, reference repositories and third-party SDK binaries. ZIP timestamps
 and Unity archive metadata are deterministic so the same inputs produce identical
 install packages.
 

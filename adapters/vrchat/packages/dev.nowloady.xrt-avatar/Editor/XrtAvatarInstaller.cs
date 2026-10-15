@@ -224,6 +224,8 @@ namespace XrtAvatarPlugin.Editor
             if (record == null)
                 return "Translation menu is not added to this avatar.";
             ValidateRecord(record);
+            if (XrtCaptionInstaller.IsInstalled(avatar))
+                throw new InvalidOperationException("Remove the caption object in Tools > XRT-Avatar-Plugin > Caption Objects first.");
             if (!UsesInstalledExpressions(avatar, record))
                 throw ExternalChanges(record);
             ValidateOwnedAssets(record);
@@ -334,7 +336,8 @@ namespace XrtAvatarPlugin.Editor
         private static bool UsesInstalledExpressions(VRCAvatarDescriptor avatar, XrtAvatarInstallationRecord record)
         {
             return record.installedMenu != null && record.installedParameters != null && avatar.customExpressions &&
-                avatar.expressionsMenu == record.installedMenu && avatar.expressionParameters == record.installedParameters;
+                avatar.expressionsMenu == record.installedMenu &&
+                XrtCaptionInstaller.ParametersBeforeCaption(avatar) == record.installedParameters;
         }
 
         private static void ValidateOwnedAssets(XrtAvatarInstallationRecord record)

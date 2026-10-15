@@ -90,9 +90,11 @@ an allocated TTS output capability. Turning playback off takes effect immediatel
 
 Mute-follow suppresses audio admission without releasing capture resources. It
 is not an Off acknowledgement and must not change VRChat's mute/input controls.
-A future Avatar bubble is a separate result consumer under the
-[presentation contract](presentation.md); it does not change this
-control or resource ownership.
+The optional caption sink consumes the same owner's completed translations.
+OSCQuery advertises the installed board's capacity; the Avatar adapter frames
+text for that board and the shared OSC transport sends paced, revocable batches.
+Replacement, expiry and cancellation retire pending batches. See the
+[presentation contract](presentation.md) for the renderer and wire format.
 
 ## Integration status
 

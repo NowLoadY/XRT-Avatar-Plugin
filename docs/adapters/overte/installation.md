@@ -5,7 +5,7 @@ place and style yourself.
 
 ## Install and connect
 
-1. Download and extract [the Overte script bundle](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.5/XRT-Avatar-Plugin-Overte-0.1.0-preview.5.zip).
+1. Download and extract [the Overte script bundle](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.6/XRT-Avatar-Plugin-Overte-0.1.0-preview.6.zip).
 2. Start XRTranslate on the same computer. In **Avatar translation controls**,
    select **Overte**, enable the plugin and **Send captions to the game component**.
    Keep the connection address and pairing token available.

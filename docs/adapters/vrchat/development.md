@@ -9,8 +9,9 @@ Paths are relative to `adapters/vrchat/`.
 
 | Path | Responsibility |
 |---|---|
-| `packages/dev.nowloady.xrt-avatar/` | Unity editor package for menu installation and removal |
-| `protocol/avatar-parameters.json` | Parameter names, types, defaults and status codes |
+| `packages/dev.nowloady.xrt-avatar/` | Unity editor package for menu and caption installation |
+| `protocol/avatar-parameters.json` | Control parameter names, types, defaults and status codes |
+| `protocol/caption.json` | Buffered text bus, capabilities and layouts |
 | `control/` | Generated Rust protocol bindings and shared lifecycle re-export |
 | `examples/lifecycle.rs` | Executable lifecycle scenarios |
 | `tools/generate_protocol.py` | Rust and C# binding generation from the manifest |
@@ -25,9 +26,10 @@ XRTranslate owns sessions and the shared OSC/OSCQuery transport; see
 The shared window is generated from `authoring/unity/AvatarControlsWindow.cs.template`.
 Edit that template and run `python3 tools/generate_unity_editor.py` from the repository
 root. The installer remains here and uses the native Avatar Descriptor and
-Expressions assets. It leaves the Action/FX controllers and other tools' components
-in place. Generated controls keep their OSC parameter names, with saving and network
-sync disabled.
+Expressions assets. Menu installation leaves playable layers and other tools' components in place.
+Caption installation clones FX and appends its receiver and display layers.
+Control parameters remain unsaved and unsynchronized; the caption bus uses the
+budget declared in its manifest.
 
 When the descriptor has no custom menu, installation creates one and records
 the original references and `customExpressions` flag. The SDK's public
@@ -61,4 +63,8 @@ cargo run -p xrt-avatar-control --example lifecycle
 
 These checks do not establish Unity or game compatibility. The
 [compatibility document](compatibility.md) owns target versions and acceptance;
-the [presentation contract](presentation.md) owns future Avatar text rendering.
+the [presentation contract](presentation.md) owns Avatar text rendering.
+
+Shared render assets live under `presentation/unity/`; run
+`python3 tools/sync_unity_presentation.py` after editing them. Font generation is
+documented in [Unity caption rendering](../../unity-caption-rendering.md). The package copies are generated release inputs.
