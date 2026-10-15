@@ -9,13 +9,18 @@ renderer without adopting VRChat's transport or Animator setup.
 `authoring/unity/CaptionAuthoring.cs` into the VRChat and ChilloutVR packages.
 Edit the shared source, then run that script; package copies retain the same
 asset GUIDs. The authoring helper owns preset tiles, material defaults and
-preview text, and renders the real mesh through `PreviewRenderUtility`.
+preview text, object selection and removal of owned display components. It renders
+the caption mesh through `PreviewRenderUtility`.
 
 VRChat fills the material through its Animator buffer. ChilloutVR uses an Avatar
 Lua receiver and two packed integer words. Both consume the connector SDK's
 128-slot BMP layout and reuse the host's pacing and cancellation. A present
 header/footer occupies the first/last row. The SDK fits recent messages into the
-remaining rows and updates only changed chunks, preserving other regions.
+remaining rows and updates only changed chunks, preserving other regions. Each
+avatar uses one source layout and bus; multiple text objects mirror that source
+with independent materials and transforms. Generated text can be parented to the
+user's prop or animation hierarchy. The shared removal helper keeps objects with
+user-added components, children or replacement meshes/materials.
 
 ## Surface and text
 

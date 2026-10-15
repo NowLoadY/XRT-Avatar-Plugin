@@ -13,14 +13,8 @@ namespace XrtAvatarPlugin.Editor
         [SerializeField, HideInInspector] internal bool hadOriginalParameters;
         [SerializeField, HideInInspector] internal VRCExpressionsMenu originalMenu;
         [SerializeField, HideInInspector] internal VRCExpressionParameters originalParameters;
-        // Retained for version-1 assets; reinstallation copies the current source.
-        [SerializeField, HideInInspector] internal string originalMenuSourceHash;
-        [SerializeField, HideInInspector] internal string originalParametersSourceHash;
         [SerializeField, HideInInspector] internal VRCExpressionsMenu installedMenu;
         [SerializeField, HideInInspector] internal VRCExpressionParameters installedParameters;
         [SerializeField, HideInInspector] internal VRCExpressionsMenu xrtMenu;
-        [SerializeField, HideInInspector] internal string installedMenuHash;
-        [SerializeField, HideInInspector] internal string installedParametersHash;
-        [SerializeField, HideInInspector] internal string xrtMenuHash;
     }
 }

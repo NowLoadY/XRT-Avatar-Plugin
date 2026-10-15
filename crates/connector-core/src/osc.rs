@@ -1,6 +1,6 @@
 //! OSC connector metadata and buffered plain-text encoding. The host owns I/O.
 use crate::DisplaySnapshot;
-use std::{collections::VecDeque, time::Duration};
+use std::{collections::VecDeque, ops::Range, time::Duration};
 use unicode_normalization::UnicodeNormalization;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -223,7 +223,7 @@ impl CaptionLayout {
         values
     }
 
-    fn canvas(self, snapshot: &DisplaySnapshot) -> (Vec<Vec<i32>>, Vec<usize>) {
+    fn canvas(self, snapshot: &DisplaySnapshot) -> (Vec<Vec<i32>>, Range<usize>) {
         let snapshot = snapshot.normalized();
         let start = if snapshot.header.is_some() {
             self.columns
@@ -264,13 +264,9 @@ impl CaptionLayout {
             cells[offset..offset + glyphs.len()].copy_from_slice(&glyphs);
         }
         let size = self.bytes / 2;
-        let priority = (start / size..end / size)
-            .chain(0..start / size)
-            .chain(end / size..cells.len() / size)
-            .collect();
         (
             cells.chunks(size).map(|chunk| self.pack(chunk)).collect(),
-            priority,
+            start / size..end / size,
         )
     }
 }
@@ -288,27 +284,31 @@ pub struct CaptionBuffer {
     layout: CaptionLayout,
     desired: Vec<Vec<i32>>,
     delivered: Vec<Option<Vec<i32>>>,
-    priority: Vec<usize>,
+    body: Range<usize>,
+    cursors: [usize; 2],
+    body_sent: u8,
     clear_pending: bool,
     last_pointer: Option<usize>,
 }
 
 impl CaptionBuffer {
     pub fn new(layout: CaptionLayout) -> Self {
-        let (desired, priority) = layout.canvas(&DisplaySnapshot::default());
+        let (desired, body) = layout.canvas(&DisplaySnapshot::default());
         let delivered = vec![None; desired.len()];
         Self {
             layout,
             desired,
             delivered,
-            priority,
+            body,
+            cursors: [0; 2],
+            body_sent: 0,
             clear_pending: true,
             last_pointer: None,
         }
     }
 
     pub fn replace(&mut self, snapshot: &DisplaySnapshot) {
-        (self.desired, self.priority) = self.layout.canvas(snapshot);
+        (self.desired, self.body) = self.layout.canvas(snapshot);
     }
 
     pub fn is_empty(&self) -> bool {
@@ -340,6 +340,9 @@ impl CaptionBuffer {
         if let Some(index) = frame.chunk {
             self.delivered[index] = Some(frame.data);
             self.last_pointer = Some(index);
+            let body = self.body.contains(&index);
+            self.cursors[usize::from(body)] = (index + 1) % self.desired.len();
+            self.body_sent = if body { (self.body_sent + 1).min(3) } else { 0 };
         } else {
             for entry in &mut self.delivered {
                 *entry = Some(vec![
@@ -349,6 +352,8 @@ impl CaptionBuffer {
             }
             self.clear_pending = false;
             self.last_pointer = None;
+            self.cursors = [0; 2];
+            self.body_sent = 0;
         }
     }
 
@@ -370,11 +375,22 @@ impl CaptionBuffer {
         if timeout.is_some_and(|timeout| idle >= timeout) {
             self.delivered.fill(None);
         }
-        let changed = self
-            .priority
-            .iter()
-            .copied()
-            .find(|index| self.delivered[*index].as_ref() != Some(&self.desired[*index]));
+        // Prefer messages, but reserve every fourth confirmed write for banners.
+        // Each group rotates so a changing clock cannot starve the footer either.
+        let next_dirty = |body: bool| {
+            let cursor = self.cursors[usize::from(body)];
+            (cursor..self.desired.len()).chain(0..cursor).find(|index| {
+                self.body.contains(index) == body
+                    && self.delivered[*index].as_ref() != Some(&self.desired[*index])
+            })
+        };
+        let body = next_dirty(true);
+        let banners = next_dirty(false);
+        let changed = if self.body_sent < 3 {
+            body.or(banners)
+        } else {
+            banners.or(body)
+        };
         let renewal = timeout.is_some_and(|timeout| idle >= timeout / 2) && !self.is_empty();
         let index = changed.or_else(|| {
             renewal.then(|| (self.last_pointer.unwrap_or(0) + 1) % self.desired.len())
@@ -534,5 +550,33 @@ mod tests {
         buffer.confirm(renewal);
         assert!(buffer.next_frame(Duration::ZERO).is_none());
         assert!(buffer.next_frame(Duration::from_secs(21)).is_some());
+    }
+
+    #[test]
+    fn continuous_messages_and_clock_changes_do_not_starve_either_banner() {
+        let layout = CaptionLayout {
+            contract: &Connector::Vrchat.osc().unwrap().caption,
+            columns: 32,
+            bytes: 2,
+        };
+        let mut buffer = CaptionBuffer::new(layout);
+        let clear = buffer.next_frame(Duration::ZERO).unwrap();
+        buffer.confirm(clear);
+        let mut seen = [false; 128];
+        for tick in 0..256 {
+            buffer.replace(&DisplaySnapshot {
+                header: Some(format!("{tick:032}")),
+                footer: Some("F".repeat(32)),
+                messages: vec![crate::DisplayMessage {
+                    id: "message".into(),
+                    text: if tick % 2 == 0 { "A" } else { "B" }.repeat(64),
+                    ttl_ms: 8000,
+                }],
+            });
+            let frame = buffer.next_frame(Duration::ZERO).unwrap();
+            seen[frame.chunk.unwrap()] = true;
+            buffer.confirm(frame);
+        }
+        assert!(seen.iter().all(|value| *value));
     }
 }

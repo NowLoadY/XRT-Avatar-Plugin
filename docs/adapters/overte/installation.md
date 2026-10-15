@@ -1,6 +1,6 @@
 # Install in Overte
 
-Use the tablet to control translation and display captions on an object you can
+Use the tablet to control translation and display captions on objects you can
 place and style yourself.
 
 ## Install and connect
@@ -46,15 +46,19 @@ move, rotate and resize it, then edit its font, colors, margins and background.
 Avatar objects move with you; personal objects stay where you place them. Work in
 a location where Create is available.
 
-To use an existing object, choose it from the **Text object** list and select the
+To use an existing object, choose it from the **Text objects** list and select the
 **link icon**. The list shows editable Text objects within 30 meters and whether
-others can see them. Select **refresh** after adding or moving an object.
-Choose **All text**, **Header**, **Messages** or **Footer** as the object's text source.
+others can see them; a checkmark marks connected objects. Select **refresh** after
+adding or moving an object. Connect several objects to arrange your display.
+
+Select an object in the list, then choose **All text**, **Header**, **Messages** or
+**Footer** for it. Each object keeps its own source and visibility settings.
 
 Use the **eye icon** to keep sample text visible while editing. Select it again
 to end the preview; starting translation also ends it. **Hide when empty** hides
-the object between captions. The **broken-link icon** disconnects the object and
-restores its previous text and visibility while keeping your design.
+the object between captions. These controls apply to the selected object. The
+**broken-link icon** disconnects it and restores its previous text and visibility
+while keeping your design and the other connections.
 
 The audience selector applies to new objects. Binding an existing object keeps
 its placement and audience. Avatar objects use the domain's Avatar-object
@@ -76,11 +80,12 @@ in Create.
 ## Remove and restore
 
 Stop the script in **Running Scripts**. Its tablet controls disappear, translation
-stops and the bound object's previous text is restored. Objects you created or
+stops and the bound objects' previous text is restored. Objects you created or
 edited remain available.
 
-To use it again, load `xrt-avatar.js` and reconnect. The previous object binding is
-reused if the object still exists.
+To use it again, load `xrt-avatar.js` and reconnect. Saved bindings reconnect as
+their objects load. An unavailable object stays in the list as **Waiting for
+object**; select it and use the broken-link icon to remove that connection.
 
 For Avatar script installation or custom displays, see the
 [development guide](https://github.com/NowLoadY/XRT-Avatar-Plugin/blob/main/docs/adapters/overte/development.md).

@@ -69,12 +69,12 @@ protocol and compatible host versions. SDK and transport details remain within
 that adapter. Shared abstractions follow concrete contracts established by
 implemented adapters.
 
-Installation preserves user-authored assets and records ownership of generated
-changes. Scene references determine whether an installation is active; records
-and generated assets remain available for Undo/Redo and previously saved scenes.
-Adding again copies the current source assets. Removal restores references only
-while ownership remains verifiable. Platform-specific installation rules belong
-to the adapter guide.
+Installation records identify contributed menu controls, parameters, animation
+layers, receivers and text objects. Removal edits those contributions in place,
+preserving user changes in the same assets. Scene references and recorded
+components identify active installations; records and generated assets remain
+available for Undo/Redo and previously saved scenes. Platform-specific
+installation rules belong to the adapter guide.
 
 The Unity window template shares selection, status, save and Undo interaction.
 `adapters/<platform>/unity-editor.json` supplies SDK bindings and labels.

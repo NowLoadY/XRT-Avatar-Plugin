@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using UnityEditor.Animations;
 using UnityEngine;
 
@@ -10,12 +12,18 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
         [SerializeField, HideInInspector] internal string avatarGlobalId;
         [SerializeField, HideInInspector] internal string rendererGlobalId;
         [SerializeField, HideInInspector] internal AnimatorOverrideController originalOverride;
-        [SerializeField, HideInInspector] internal AnimatorOverrideController installedOverride;
         [SerializeField, HideInInspector] internal AnimatorController installedController;
         [SerializeField, HideInInspector] internal Material material;
         [SerializeField, HideInInspector] internal Mesh mesh;
         [SerializeField, HideInInspector] internal int columns;
-        [SerializeField, HideInInspector] internal string controllerHash;
-        [SerializeField, HideInInspector] internal string overrideHash;
+        [SerializeField, HideInInspector] internal List<Display> displays = new List<Display>();
+
+        [Serializable]
+        internal sealed class Display
+        {
+            public string rendererGlobalId;
+            public Material material;
+            public Mesh mesh;
+        }
     }
 }

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using ABI.CCK.Components;
 using ABI.CCK.Scripts;
 using UnityEditor;
@@ -47,7 +46,7 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
                     {
                         Title = "Added",
                         Detail = avatar.gameObject.scene.isDirty ? "Save the scene before uploading." :
-                            (XrtChilloutCaptionInstaller.IsInstalled(avatar) ? "Remove the caption object before removing translation controls." :
+                            (XrtChilloutCaptionInstaller.IsInstalled(avatar) ? "Remove the caption objects before removing translation controls." :
                             "XRT Translation is ready. Upload this avatar with the CCK."),
                         CanRemove = !XrtChilloutCaptionInstaller.IsInstalled(avatar)
                     };
@@ -131,14 +130,10 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
                 };
                 var record = ScriptableObject.CreateInstance<XrtChilloutInstallationRecord>();
                 record.avatarGlobalId = id;
-                record.hadOriginalOverride = originalOverride != null;
-                record.originalOverride = originalOverride;
                 record.originalUsesAdvancedSettings = originalUsesSettings;
                 record.originalHadSettings = originalSettings != null;
                 record.installedOverride = installedOverride;
                 record.installedController = installedController;
-                record.controllerHash = Hash(installedController);
-                record.overrideHash = Hash(installedOverride);
                 AssetDatabase.CreateAsset(record, folder + "/Installation.asset");
                 AssetDatabase.SaveAssetIfDirty(record);
 
@@ -174,14 +169,14 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
         {
             string id = ValidateAvatar(avatar);
             if (XrtChilloutCaptionInstaller.IsInstalled(avatar))
-                throw new InvalidOperationException("Remove the caption object before removing translation controls.");
+                throw new InvalidOperationException("Remove the caption objects before removing translation controls.");
             XrtChilloutInstallationRecord record = FindInstalled(avatar, id);
             if (record == null) return "No XRT installation is registered for this avatar.";
             ValidateInstallation(avatar, record);
             Undo.RecordObject(avatar, "Remove XRT Translation");
-            avatar.overrides = record.originalOverride;
-            avatar.avatarSettings.settings.RemoveAll(e => e != null && e.machineName == XrtChilloutProtocol.Enabled);
-            if (avatar.avatarSettings.settings.Count == 0)
+            RemoveParameters(CurrentController(avatar), Parameters);
+            avatar.avatarSettings?.settings?.RemoveAll(e => e != null && e.machineName == XrtChilloutProtocol.Enabled);
+            if (avatar.avatarSettings?.settings != null && avatar.avatarSettings.settings.Count == 0)
             {
                 avatar.avatarUsesAdvancedSettings = record.originalUsesAdvancedSettings;
                 if (!record.originalHadSettings && avatar.avatarSettings.baseController == null &&
@@ -278,48 +273,37 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
 
         private static XrtChilloutInstallationRecord FindInstalled(CVRAvatar avatar, string id)
         {
-            // Scene references are the installation state. Assets are saved independently,
-            // so a persisted flag would disagree after Undo or a discarded scene change.
+            var controller = CurrentController(avatar);
+            if (controller == null || (!controller.parameters.Any(p => Parameters.Contains(p.name)) &&
+                !(avatar.avatarSettings?.settings?.Any(e => e != null && e.machineName == XrtChilloutProtocol.Enabled) ?? false)))
+                return null;
             var records = AssetDatabase.FindAssets("t:XrtChilloutInstallationRecord")
                 .Select(g => AssetDatabase.LoadAssetAtPath<XrtChilloutInstallationRecord>(AssetDatabase.GUIDToAssetPath(g)))
-                .Where(r => r != null && r.avatarGlobalId == id && r.installedOverride != null &&
-                    XrtChilloutCaptionInstaller.OverrideBeforeCaption(avatar) == r.installedOverride).ToArray();
-            if (records.Length > 1) throw new InvalidOperationException("More than one XRT setup was found for this avatar. Follow the recovery steps in the setup guide.");
+                .Where(r => r != null && r.avatarGlobalId == id &&
+                    (r.installedController == controller || XrtChilloutCaptionInstaller.UsesControl(avatar, r.installedOverride)))
+                .ToArray();
+            if (records.Length > 1) throw new InvalidOperationException("More than one XRT setup was found for this avatar.");
             return records.FirstOrDefault();
         }
 
         private static void ValidateInstallation(CVRAvatar avatar, XrtChilloutInstallationRecord record)
         {
-            var entries = avatar.avatarSettings?.settings?.Where(e => e != null && e.machineName == XrtChilloutProtocol.Enabled).ToArray();
-            if (record.recordVersion != 1 || record.installedController == null || record.installedOverride == null ||
-                (record.hadOriginalOverride && record.originalOverride == null) ||
-                XrtChilloutCaptionInstaller.OverrideBeforeCaption(avatar) != record.installedOverride || entries == null || entries.Length != 1 ||
-                !IsControlEntry(entries[0]) ||
-                !Unchanged(record.installedController, record.controllerHash) ||
-                !Unchanged(record.installedOverride, record.overrideHash))
-                throw new InvalidOperationException(
-                    "This avatar's XRT setup has been edited. Keep your changes and follow the recovery steps in the setup guide.");
+            if (record.recordVersion != 1 || CurrentController(avatar) == null)
+                throw new InvalidOperationException("Could not read this avatar's XRT setup.");
         }
 
-        private static bool IsControlEntry(CVRAdvancedSettingsEntry entry)
+        internal static AnimatorController CurrentController(CVRAvatar avatar) => BaseController(
+            avatar.overrides != null ? (RuntimeAnimatorController)avatar.overrides :
+            avatar.GetComponent<Animator>()?.runtimeAnimatorController ?? avatar.avatarSettings?.baseController);
+
+        internal static void RemoveParameters(AnimatorController controller, string[] names)
         {
-            var toggle = entry.toggleSettings;
-            return entry.type == CVRAdvancedSettingsEntry.SettingsType.Toggle && toggle != null &&
-                toggle.usedType == CVRAdvancesAvatarSettingBase.ParameterType.Bool && !toggle.defaultValue &&
-                !toggle.useAnimationClip && toggle.animationClip == null && toggle.offAnimationClip == null &&
-                (toggle.gameObjectTargets == null || toggle.gameObjectTargets.Count == 0);
+            if (controller == null) return;
+            Undo.RecordObject(controller, "Remove XRT parameters");
+            controller.parameters = controller.parameters.Where(parameter => !names.Contains(parameter.name)).ToArray();
+            EditorUtility.SetDirty(controller);
+            AssetDatabase.SaveAssetIfDirty(controller);
         }
-
-        internal static string Hash(Object asset)
-        {
-            string path = AssetDatabase.GetAssetPath(asset);
-            if (string.IsNullOrEmpty(path) || !File.Exists(path)) return string.Empty;
-            using (var hash = SHA256.Create())
-                return BitConverter.ToString(hash.ComputeHash(File.ReadAllBytes(path))).Replace("-", string.Empty);
-        }
-
-        internal static bool Unchanged(Object asset, string expectedHash) => asset != null &&
-            !HasUnsavedChanges(asset) && !string.IsNullOrEmpty(expectedHash) && Hash(asset) == expectedHash;
 
         internal static bool HasUnsavedChanges(Object asset) => EditorUtility.IsDirty(asset) ||
             AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GetAssetPath(asset)).Any(EditorUtility.IsDirty);

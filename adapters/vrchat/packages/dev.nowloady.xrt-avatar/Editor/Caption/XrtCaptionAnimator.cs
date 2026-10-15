@@ -18,8 +18,10 @@ namespace XrtAvatarPlugin.Editor
         private const string CachePrefix = Prefix + "Cache";
         private const string Weight = Prefix + "Weight";
 
-        internal static void Build(AnimatorController controller, string rendererPath, int byteCount, int columns)
+        internal static void Build(AnimatorController controller, string rendererPath, int byteCount, int columns,
+            out AnimatorStateMachine[] ownedLayers, out AnimationClip[] bindingClips)
         {
+            var clips = new List<AnimationClip>();
             AddParameter(controller, XrtCaptionProtocol.VersionParameter, AnimatorControllerParameterType.Int, XrtCaptionProtocol.Version);
             AddParameter(controller, XrtCaptionProtocol.ColumnsParameter, AnimatorControllerParameterType.Int, columns);
             AddParameter(controller, XrtCaptionProtocol.BytesParameter, AnimatorControllerParameterType.Int, byteCount);
@@ -36,6 +38,7 @@ namespace XrtAvatarPlugin.Editor
                 EditorCurveBinding.FloatCurve(rendererPath, typeof(MeshRenderer), "material._Columns"),
                 AnimationCurve.Constant(0, 1f / 30, columns));
             AssetDatabase.AddObjectToAsset(clock, controller);
+            clips.Add(clock);
             var clear = receive.AddState("Clear");
             clear.writeDefaultValues = false;
             clear.motion = clock;
@@ -94,13 +97,19 @@ namespace XrtAvatarPlugin.Editor
                     useAutomaticThresholds = false
                 };
                 AssetDatabase.AddObjectToAsset(value, controller);
-                value.AddChild(ByteClip(controller, rendererPath, i, 0), 0);
-                value.AddChild(ByteClip(controller, rendererPath, i, 255), 255);
+                var low = ByteClip(controller, rendererPath, i, 0);
+                var high = ByteClip(controller, rendererPath, i, 255);
+                clips.Add(low);
+                clips.Add(high);
+                value.AddChild(low, 0);
+                value.AddChild(high, 255);
                 children[i] = new ChildMotion { motion = value, directBlendParameter = Weight, timeScale = 1 };
             }
             direct.children = children;
             show.motion = direct;
             display.defaultState = show;
+            ownedLayers = new[] { receive, display };
+            bindingClips = clips.ToArray();
             EditorUtility.SetDirty(controller);
             AssetDatabase.SaveAssetIfDirty(controller);
         }

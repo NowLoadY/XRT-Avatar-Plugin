@@ -73,6 +73,12 @@ missing their Parameters asset, see [Expressions setup](troubleshooting.md#expre
    inspect the font and layout.
 5. Save the scene.
 
+To add another text object, choose its **Attach to** parent under **New object**
+and press **+** again. Use **Text object** to select an existing object, then the
+magnifier to find it in the Scene view. Objects share the same text and layout;
+each keeps its own placement, scale and material. Parent transparent Board text
+to your own sign, clothing accessory or animated prop.
+
 The installer chooses a transfer size that fits the avatar's remaining parameter
 space. All sizes display up to 128 characters; smaller transfers fill the board
 more slowly.
@@ -107,17 +113,19 @@ again. Overlay, speech and OSC Chatbox have their own output settings.
 
 ## Remove or update
 
-Remove a caption object with **−** in **Caption Objects** first. To remove the
-translation menu, select the avatar in **Avatar Controls**, click **−** beside
+Select a **Text object** and press **−** in **Caption Objects** to remove its XRT
+text. Your added components, children and replacement meshes or materials are
+kept. To remove the translation menu, remove all text objects first, then select
+the avatar in **Avatar Controls** and click **−** beside
 **Translation menu**, save and upload again. Keep XRT installed until you have
 removed its menu from every avatar that uses it.
 
 Use Unity's **Edit → Undo / Redo** to reverse an add or removal. After removing
-XRT, you can edit the original menu and add XRT again.
+XRT, you can continue editing the assigned menu and add XRT again.
 
 For updates, use VCC if it manages your installation; otherwise import the newer
-Unity package. Keep the project's generated XRT folders. The refresh icon checks
-the selected avatar. If it reports an edited setup, follow
-[recovery](troubleshooting.md#recover-an-edited-setup) before continuing.
+Unity package. Existing text objects and their placement are kept. Keep the
+project's generated XRT folders. The refresh icon checks the selected avatar;
+see [setup help](troubleshooting.md) for missing assets or duplicate setups.
 
 [Setup help](troubleshooting.md) · [Compatibility](compatibility.md)

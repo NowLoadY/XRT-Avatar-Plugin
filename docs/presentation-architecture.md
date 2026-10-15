@@ -2,7 +2,7 @@
 
 A text source provides the current host-selected content. A display binds that
 source to an editable game object. Presets create useful starting objects; users own
-placement, shape, typography and decoration after creation.
+placement, appearance and decoration after creation.
 
 ## Text source
 
@@ -26,9 +26,12 @@ or acquires audio.
 
 ## Display binding
 
-An adapter binds to a specific object selected or created by the user. Live
+An adapter binds one text source to objects selected or created by the user. Each
+binding keeps its own display preferences and object identity. Live
 updates change the text field and, when explicitly enabled, visibility. They do
-not reset transforms, dimensions, colors, fonts, materials or parentage.
+not reset transforms, dimensions, colors, fonts, materials or parentage. Native
+constraints and animations can move the display's parent without changing the
+text connection.
 
 The same object can be mounted on an avatar, a handheld sign, a board or an
 editable world object, subject to native permissions. No anchor or head position

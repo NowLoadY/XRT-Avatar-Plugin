@@ -67,8 +67,9 @@ Exchanges carry at most four frames within a 12288-byte HTTP envelope.
 
 Native hover text keeps soft-white lettering and the viewer's font and background
 behavior. [`llSetText`](https://wiki.secondlife.com/wiki/LlSetText) provides text,
-color and opacity, with a 254-byte UTF-8 limit. A dedicated receiver can show the
-full display or just the header, messages or footer. Its prim remains editable in
+color and opacity, with a 254-byte UTF-8 limit. Both included displays shorten
+long text at a character boundary and end it with an ellipsis. A dedicated
+receiver can show the full display or just the header, messages or footer. Its prim remains editable in
 Build.
 
 Global revisions order full snapshots. Clearing retains the revision fence;

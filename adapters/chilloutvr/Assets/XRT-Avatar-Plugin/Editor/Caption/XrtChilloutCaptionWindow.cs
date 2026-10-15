@@ -13,6 +13,7 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
         [SerializeField] private CVRAvatar avatar;
         [SerializeField] private Transform attachment;
         [SerializeField] private int preset;
+        [SerializeField] private int selectedObject;
         [SerializeField] private string previewText = "The entrance is on the right.\nWe'll wait near the stairs.";
         private XrtChilloutCaptionInstaller.Status status;
         private CaptionPreview preview;
@@ -57,12 +58,10 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
         {
             error = null;
             status = XrtChilloutCaptionInstaller.Inspect(avatar);
-            if (status.Record != null)
-            {
-                preset = status.Record.columns == 8 ? 1 : status.Record.material != null &&
-                    status.Record.material.GetColor("_BackgroundColor").a == 0 ? 2 : 0;
-                if (status.Renderer != null) attachment = status.Renderer.transform.parent;
-            }
+            var selected = Selection.activeGameObject == null ? null : Selection.activeGameObject.GetComponent<MeshRenderer>();
+            int index = Array.IndexOf(status.Renderers, selected);
+            if (index >= 0) selectedObject = index;
+            selectedObject = Mathf.Clamp(selectedObject, 0, Mathf.Max(0, status.Renderers.Length - 1));
             Repaint();
         }
         private void FollowSelection()
@@ -74,6 +73,7 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
         private void SelectAvatar(CVRAvatar selected)
         {
             avatar = selected;
+            selectedObject = 0;
             attachment = avatar == null ? null : avatar.transform;
             Refresh();
         }
@@ -96,16 +96,15 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
             EditorGUI.BeginChangeCheck();
             var selected = (CVRAvatar)EditorGUILayout.ObjectField("Avatar", avatar, typeof(CVRAvatar), true);
             if (EditorGUI.EndChangeCheck()) SelectAvatar(selected);
-            using (new EditorGUI.DisabledScope(status.Record != null))
-            {
-                attachment = (Transform)EditorGUILayout.ObjectField("Attach to", attachment, typeof(Transform), true);
-                GUILayout.Space(8);
-                preset = CaptionAuthoring.DrawPresets(preset);
-            }
+            GUILayout.Label("New object", EditorStyles.miniLabel);
+            attachment = (Transform)EditorGUILayout.ObjectField("Attach to", attachment, typeof(Transform), true);
+            GUILayout.Space(8);
+            preset = CaptionAuthoring.DrawPresets(preset, status.Columns);
+            var renderer = CaptionAuthoring.DrawObjectPicker(status.Renderers, ref selectedObject);
             GUILayout.Space(8);
             if (preview == null) preview = new CaptionPreview();
             preview.Draw(GUILayoutUtility.GetRect(80, 145, GUILayout.ExpandWidth(true)),
-                Presets[Mathf.Clamp(preset, 0, 2)], previewText, status.Record?.material);
+                Presets[Mathf.Clamp(preset, 0, 2)], previewText, renderer == null ? null : renderer.sharedMaterial, status.Columns);
             GUILayout.Label("Preview text", EditorStyles.miniLabel);
             previewText = EditorGUILayout.TextArea(previewText, GUILayout.Height(48));
             GUILayout.Space(8);
@@ -120,11 +119,11 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
                             Run(() => XrtChilloutCaptionInstaller.Install(avatar, attachment, Presets[Mathf.Clamp(preset, 0, 2)]));
                     using (new EditorGUI.DisabledScope(!status.CanRemove))
                         if (Icon("Toolbar Minus", "Remove caption object"))
-                            Run(() => XrtChilloutCaptionInstaller.Remove(avatar));
-                    using (new EditorGUI.DisabledScope(status.Renderer == null))
+                            Run(() => XrtChilloutCaptionInstaller.Remove(avatar, renderer));
+                    using (new EditorGUI.DisabledScope(renderer == null))
                         if (Icon("ViewToolZoom", "Select caption object"))
                         {
-                            Selection.activeGameObject = status.Renderer.gameObject;
+                            Selection.activeGameObject = renderer.gameObject;
                             SceneView.lastActiveSceneView?.FrameSelected();
                         }
                 }

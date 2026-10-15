@@ -68,11 +68,13 @@ preview text stays on the selected object and does not enter the live source.
 
 The tablet's **Caption objects** button opens `designer.html` through
 `tablet.gotoWebScreen()`. The page exchanges actions and state with the script
-through `EventBridge`. The text-source selector chooses the complete display or
-one region; selection is retained with the local binding preferences.
+through `EventBridge`. Each connected object selects the complete display or one
+region and retains its own preview and empty-state visibility settings.
 
 The designer lists nearby editable Text entities with `Entities.findEntitiesByType`
-and binds the selected ID. It does not depend on Create's internal selection state.
+and binds selected IDs to one shared `CaptionSource`. Selecting another object
+changes the editor's target while existing bindings continue updating. It does
+not depend on Create's internal selection state.
 Create's Entity List includes local objects when its **Local entities** filter is
 enabled. Users can then edit normal entity properties or export a reusable object.
 
@@ -81,7 +83,15 @@ Avatar** is selected. The adapter checks `Entities.canRezAvatarEntities()` befor
 creation; **Only me** creates a local entity. Existing bindings never change the
 entity's host, parent or transform.
 
-Live updates write the bound object's text and, when selected, its visibility.
+`CaptionDisplay` owns the binding collection; `TextBinding` owns one renderer's
+text, optional visibility and restoration. Local preferences retain object IDs
+and authoring settings; the previous single-object preference migrates on load.
+Unresolved objects retain those preferences and retry once per second. The
+binding captures original fields on its first successful resolution and retains
+them across temporary unavailability. Only explicit unbinding removes the saved
+connection; availability changes do not write preferences.
+
+Live updates write each bound object's text and, when selected, its visibility.
 Native `Entities.textSize` measurements determine wrapping without resizing the
 object or changing its font. Full layout measurements are cached until text, font, dimensions
 or margins change. A small metric probe detects asynchronous font loading; an

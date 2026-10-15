@@ -21,8 +21,10 @@ full guide. Changes that need saving expose a save action.
 
 Object creation and text binding are separate from the translation switch.
 Offer a small visual preset chooser and a picker for existing editable objects.
-Creation selects the new object; binding changes only its text and explicitly
-chosen visibility. Move, resize, rotate and decorate through the native editor.
+Creation selects the new object; the object picker selects which binding to edit
+or remove. Adding or selecting another object keeps existing bindings active.
+Binding changes only its text and explicitly chosen visibility. Move, resize,
+rotate and decorate through the native editor.
 
 An eye action toggles authoring sample text until it is dismissed or live
 translation starts. Preview text never becomes a translation result. Unbinding
@@ -43,8 +45,9 @@ They must remain readable independently of the surrounding editor's theme.
 | Stopping | Pending stop, no repeated start request | Wait |
 | Error | Brief explanation and retry action | Retry after resolving the cause |
 
-Repeated clicks do not queue contradictory requests. A local Stop action clears
-captions immediately; delayed feedback cannot turn that action back into Start.
+Repeated clicks do not queue contradictory requests. A Stop action removes the
+stopped task's messages while independent header/footer content remains;
+delayed feedback cannot turn that action back into Start.
 A disconnect, context change or reset returns to Off and requires a new action.
 Connection settings and pairing prompts appear when needed rather than on each
 ordinary toggle.
@@ -58,6 +61,6 @@ explanations and test-status paragraphs in the control surface. Preserve full
 diagnostics in developer logs and keep compatibility information in platform
 documentation.
 
-Caption surfaces contain translated text only. Status, errors, branding and
+Caption surfaces contain the selected text content. Status, errors, branding and
 controls are outside the bubble. See [presentation](presentation-architecture.md)
 for the shared visual and lifetime policy.

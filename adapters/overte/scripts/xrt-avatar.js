@@ -43,9 +43,8 @@
     function clearCaption(force) {
         if (source.displayMode && force !== true) { return; }
         source.clear();
-        display.preview = false;
+        if (!ended) { display.stopPreviews(); display.update(null, Date.now()); }
         publishSource(true);
-        display.update(null, Date.now());
     }
 
     function control() {
@@ -92,19 +91,20 @@
     function displayCaption(message) {
         if (!requested || status !== "active" || !source.accept(message, Date.now())) { return; }
         publishSource();
-        display.update(source.snapshot(Date.now(), display.region), Date.now());
+        display.update(source, Date.now());
     }
 
     function displaySnapshot(message) {
         if (!source.accept(message, Date.now())) { return; }
         publishSource();
-        display.update(source.snapshot(Date.now(), display.region), Date.now());
+        display.update(source, Date.now());
     }
 
     function sendPanelState() {
         if (ended || !tablet.isPathLoaded(panelUrl)) { return; }
+        var binding = display.current();
         tablet.emitScriptEvent(JSON.stringify({ app: "xrt-caption-designer", type: "state", items: panelItems,
-            binding: display.state(), control: control(), caption: source.snapshot(Date.now()) }));
+            binding: display.state(), control: control(), caption: source.snapshot(Date.now(), binding ? binding.region : "full") }));
     }
 
     function panelEvent(raw) {
@@ -112,23 +112,27 @@
         var message;
         try { message = JSON.parse(raw); } catch (error) { return; }
         if (message.app !== "xrt-caption-designer") { return; }
+        var binding = display.current();
         if (message.action === "ready" || message.action === "refresh") { panelItems = display.list(); }
         else if (message.action === "create") {
             display.create(message.profile, message.audience === "local" ? "local" : "avatar");
             panelItems = display.list();
+        } else if (message.action === "select") {
+            display.select(message.id);
         } else if (message.action === "bind") {
             var allowed = display.list().some(function (item) { return item.id === message.id; });
             if (allowed) { display.bind(message.id, message.hideWhenEmpty === true); }
         } else if (message.action === "unbind") { display.unbind(); }
-        else if (message.action === "visibility" && display.target) {
-            display.hideWhenEmpty = message.hideWhenEmpty === true;
-        } else if (message.action === "region" && ["full", "header", "messages", "footer"].indexOf(message.region) !== -1) {
-            display.region = message.region;
-            Settings.setValue("XRT/captionRegion", display.region);
-        } else if (message.action === "preview" && display.target) { display.preview = !display.preview; }
+        else if (message.action === "visibility" && binding) {
+            binding.hideWhenEmpty = message.hideWhenEmpty === true;
+        } else if (message.action === "region" && binding && ["full", "header", "messages", "footer"].indexOf(message.region) !== -1) {
+            binding.region = message.region;
+        } else if (message.action === "preview" && binding) { binding.preview = !binding.preview; }
         else if (message.action === "control") { clicked(); }
         else { return; }
-        display.update(source.snapshot(Date.now(), display.region), Date.now());
+        display.save();
+        display.update(source, Date.now());
+        panelItems = display.list();
         sendPanelState();
     }
 
@@ -206,7 +210,7 @@
         var next = state.action === "start";
         if (connector.setEnabled(next)) {
             requested = next;
-            if (requested) { display.preview = false; }
+            if (requested) { display.stopPreviews(); }
             pendingSince = Date.now();
             if (!requested) { clearCaption(); }
             updateButton();
@@ -217,8 +221,6 @@
         if (connector) { connector.close("Avatar or domain changed"); }
     }
 
-    var savedTarget = Settings.getValue("XRT/captionTarget", "");
-    if (savedTarget) { display.bind(savedTarget, Settings.getValue("XRT/captionHideWhenEmpty", false)); }
     var displayTimer = Script.setInterval(function () {
         var now = Date.now();
         if (pendingSince && now - pendingSince >= 10000 && connector) {
@@ -226,9 +228,9 @@
         }
         updateButton();
         publishSource();
-        display.update(source.snapshot(now, display.region), now);
+        display.update(source, now);
         var currentDisplay = JSON.stringify(display.state());
-        if (currentDisplay !== displayedState) { displayedState = currentDisplay; sendPanelState(); }
+        if (currentDisplay !== displayedState) { displayedState = currentDisplay; panelItems = display.list(); sendPanelState(); }
     }, 100);
     button.clicked.connect(clicked);
     displayButton.clicked.connect(openPanel);
@@ -248,7 +250,6 @@
         tablet.webEventReceived.disconnect(panelEvent);
         tablet.removeButton(displayButton);
         clearCaption(true);
-        Settings.setValue("XRT/captionHideWhenEmpty", display.hideWhenEmpty);
-        display.unbind(true);
+        display.dispose();
     });
 }());

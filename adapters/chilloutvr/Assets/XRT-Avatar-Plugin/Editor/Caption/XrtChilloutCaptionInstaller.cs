@@ -1,5 +1,5 @@
 using System;
-using System.IO;
+using System.Collections.Generic;
 using System.Linq;
 using ABI.CCK.Components;
 using ABI.CCK.Scripts;
@@ -17,6 +17,11 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
         private const int ByteCount = 8;
         private const string ReceiverGuid = "64cbd0590f6b485ab097f211f5e536da";
         private const string Root = "Assets/XRT-Avatar-Plugin/ChilloutVR";
+        private static readonly string[] Parameters = new[] {
+            XrtChilloutCaptionProtocol.VersionParameter, XrtChilloutCaptionProtocol.ColumnsParameter,
+            XrtChilloutCaptionProtocol.BytesParameter, XrtChilloutCaptionProtocol.Pointer
+        }.Concat(Enumerable.Range(0, XrtChilloutCaptionProtocol.BusWordCount)
+            .Select(i => XrtChilloutCaptionProtocol.WordPrefix + i)).ToArray();
 
         internal sealed class Status
         {
@@ -24,8 +29,8 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
             internal string Detail;
             internal bool CanAdd;
             internal bool CanRemove;
-            internal XrtChilloutCaptionRecord Record;
-            internal MeshRenderer Renderer;
+            internal int Columns;
+            internal MeshRenderer[] Renderers = Array.Empty<MeshRenderer>();
         }
 
         internal static Status Inspect(CVRAvatar avatar)
@@ -34,21 +39,27 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
             {
                 XrtChilloutInstaller.ValidateAvatar(avatar);
                 var record = FindRecord(avatar);
-                if (record != null)
+                var renderers = FindRenderers(avatar, record);
+                if (HasBus(avatar))
                 {
-                    ValidateInstalled(avatar, record);
-                    var renderer = FindRenderers(avatar, record).FirstOrDefault();
-                    return new Status
+                    if (record == null) throw new InvalidOperationException("The caption installation record is missing. Restore its generated XRT folder.");
+                    try { ValidateBus(XrtChilloutInstaller.CurrentController(avatar)); }
+                    catch (InvalidOperationException failure)
                     {
-                        Title = "Added", CanRemove = true, Record = record, Renderer = renderer,
-                        Detail = renderer == null ? "Caption object is missing. Remove, then add it again." :
-                            "Move, rotate and scale the object in the Scene view."
+                        return new Status { Title = "Check caption source", Detail = failure.Message,
+                            CanRemove = true, Renderers = renderers };
+                    }
+                    return new Status {
+                        Title = renderers.Length == 0 ? "No text object" : renderers.Length + " text objects",
+                        CanAdd = true, CanRemove = true, Renderers = renderers,
+                        Columns = XrtChilloutInstaller.CurrentController(avatar).parameters.First(p => p.name == XrtChilloutCaptionProtocol.ColumnsParameter).defaultInt,
+                        Detail = "Add a text child to a prop, or select a text object to remove it."
                     };
                 }
-                var menu = XrtChilloutInstaller.Inspect(avatar);
-                if (!menu.CanInstall && !menu.CanRemove) throw new InvalidOperationException(menu.Detail);
                 ValidateSource(avatar);
-                return new Status { Title = "Not added", CanAdd = true,
+                return new Status { Title = renderers.Length == 0 ? "Not added" : "Caption source missing", CanAdd = true,
+                    CanRemove = renderers.Length > 0, Renderers = renderers,
+                    Columns = renderers.Length > 0 ? record.columns : 0,
                     Detail = "128 characters · visible to nearby players" };
             }
             catch (Exception failure)
@@ -60,11 +71,17 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
         internal static void Install(CVRAvatar avatar, Transform parent, string preset)
         {
             XrtChilloutInstaller.ValidateAvatar(avatar);
-            if (FindRecord(avatar) != null) throw new InvalidOperationException("A caption object is already added to this avatar.");
             if (parent == null) parent = avatar.transform;
             if (parent != avatar.transform && !parent.IsChildOf(avatar.transform))
                 throw new InvalidOperationException("Choose an attachment inside this avatar.");
-            ValidateSource(avatar);
+            var record = FindRecord(avatar);
+            bool existingBus = HasBus(avatar);
+            if (existingBus)
+            {
+                if (record == null) throw new InvalidOperationException("Restore the generated XRT installation folder before adding text objects.");
+                ValidateBus(XrtChilloutInstaller.CurrentController(avatar));
+            }
+            else ValidateSource(avatar);
             var script = AssetDatabase.LoadAssetAtPath<CVRLuaScript>(AssetDatabase.GUIDToAssetPath(ReceiverGuid));
             if (script == null) throw new InvalidOperationException("Reimport the XRT package to restore its caption receiver.");
             CaptionAssets.LoadShader();
@@ -73,40 +90,37 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
             int undo = Undo.GetCurrentGroup();
             Undo.SetCurrentGroupName("Add XRT Caption");
             string folder = null;
-            GameObject board = null;
             try
             {
                 XrtChilloutInstaller.Install(avatar);
-                var sourceOverride = avatar.overrides;
-                var sourceController = XrtChilloutInstaller.BaseController(sourceOverride);
+                if (!existingBus) ValidateSource(avatar);
+                var controller = XrtChilloutInstaller.CurrentController(avatar);
                 XrtChilloutInstaller.EnsureFolder(Root);
                 folder = Root + "/Caption-" + Guid.NewGuid().ToString("N");
                 XrtChilloutInstaller.EnsureFolder(folder);
-                string controllerPath = folder + "/Avatar.controller";
-                if (!AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(sourceController), controllerPath))
-                    throw new IOException("Could not copy the avatar controller.");
-                var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(controllerPath);
-                if (controller == null) throw new IOException("Could not load the copied avatar controller.");
                 var material = CaptionAssets.CreateMaterial();
-                int columns = CaptionAuthoring.ConfigureMaterial(material, preset);
-                // Sample text is confined to the window; uploaded materials begin empty.
+                int sourceColumns = existingBus
+                    ? controller.parameters.First(p => p.name == XrtChilloutCaptionProtocol.ColumnsParameter).defaultInt
+                    : record != null && FindRenderers(avatar, record).Any() ? record.columns : 0;
+                int columns = CaptionAuthoring.ConfigureMaterial(material, preset, sourceColumns);
                 CaptionAuthoring.SetPreview(material, string.Empty, columns);
                 Save(material, folder + "/Caption.mat");
                 var mesh = CaptionAssets.CreateMesh();
                 Save(mesh, folder + "/Caption.asset");
-                AddInt(controller, XrtChilloutCaptionProtocol.VersionParameter, XrtChilloutCaptionProtocol.Version);
-                AddInt(controller, XrtChilloutCaptionProtocol.ColumnsParameter, columns);
-                AddInt(controller, XrtChilloutCaptionProtocol.BytesParameter, ByteCount);
-                AddInt(controller, XrtChilloutCaptionProtocol.Pointer, XrtChilloutCaptionProtocol.ClearPointer);
-                for (int i = 0; i < XrtChilloutCaptionProtocol.BusWordCount; i++)
-                    AddInt(controller, XrtChilloutCaptionProtocol.WordPrefix + i, 0);
-                EditorUtility.SetDirty(controller);
-                AssetDatabase.SaveAssetIfDirty(controller);
-                var overrides = new AnimatorOverrideController(controller) { name = "XRT Caption Overrides" };
-                XrtChilloutInstaller.ApplyOverrideChain(sourceOverride, overrides, sourceController, controller);
-                Save(overrides, folder + "/Overrides.overrideController");
+                if (!existingBus)
+                {
+                    Undo.RecordObject(controller, "Add XRT caption parameters");
+                    AddInt(controller, XrtChilloutCaptionProtocol.VersionParameter, XrtChilloutCaptionProtocol.Version);
+                    AddInt(controller, XrtChilloutCaptionProtocol.ColumnsParameter, columns);
+                    AddInt(controller, XrtChilloutCaptionProtocol.BytesParameter, ByteCount);
+                    AddInt(controller, XrtChilloutCaptionProtocol.Pointer, XrtChilloutCaptionProtocol.ClearPointer);
+                    for (int i = 0; i < XrtChilloutCaptionProtocol.BusWordCount; i++)
+                        AddInt(controller, XrtChilloutCaptionProtocol.WordPrefix + i, 0);
+                    EditorUtility.SetDirty(controller);
+                    AssetDatabase.SaveAssetIfDirty(controller);
+                }
 
-                board = new GameObject("XRT Caption");
+                var board = new GameObject("XRT Text");
                 Undo.RegisterCreatedObjectUndo(board, "Add XRT Caption");
                 Undo.SetTransformParent(board.transform, parent, "Attach XRT Caption");
                 GameObjectUtility.EnsureUniqueNameForSibling(board);
@@ -127,20 +141,24 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
                 receiver.boundObjects = new[] { new CVRBaseLuaBehaviour.BoundObject
                     { name = "captionRenderer", boundThing = renderer } };
 
-                var record = ScriptableObject.CreateInstance<XrtChilloutCaptionRecord>();
-                record.avatarGlobalId = GlobalObjectId.GetGlobalObjectIdSlow(avatar).ToString();
-                record.rendererGlobalId = GlobalObjectId.GetGlobalObjectIdSlow(renderer).ToString();
-                record.originalOverride = sourceOverride;
-                record.installedController = controller;
-                record.installedOverride = overrides;
-                record.material = material;
-                record.mesh = mesh;
+                if (record == null)
+                {
+                    record = ScriptableObject.CreateInstance<XrtChilloutCaptionRecord>();
+                    record.avatarGlobalId = GlobalObjectId.GetGlobalObjectIdSlow(avatar).ToString();
+                    record.originalOverride = avatar.overrides;
+                    record.installedController = controller;
+                    record.columns = columns;
+                    Save(record, folder + "/Installation.asset");
+                }
+                Undo.RecordObject(record, "Add XRT Caption");
+                Migrate(record);
                 record.columns = columns;
-                record.controllerHash = XrtChilloutInstaller.Hash(controller);
-                record.overrideHash = XrtChilloutInstaller.Hash(overrides);
-                Save(record, folder + "/Installation.asset");
-                Undo.RecordObject(avatar, "Add XRT Caption");
-                avatar.overrides = overrides;
+                record.displays.Add(new XrtChilloutCaptionRecord.Display {
+                    rendererGlobalId = GlobalObjectId.GetGlobalObjectIdSlow(renderer).ToString(),
+                    material = material, mesh = mesh
+                });
+                EditorUtility.SetDirty(record);
+                AssetDatabase.SaveAssetIfDirty(record);
                 XrtChilloutInstaller.MarkChanged(avatar);
                 Undo.CollapseUndoOperations(undo);
                 Selection.activeGameObject = board;
@@ -148,106 +166,127 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
             catch
             {
                 Undo.RevertAllDownToGroup(undo);
-                if (board != null) Object.DestroyImmediate(board);
                 if (folder != null && AssetDatabase.IsValidFolder(folder)) AssetDatabase.DeleteAsset(folder);
                 throw;
             }
         }
 
-        internal static void Remove(CVRAvatar avatar)
+        internal static void Remove(CVRAvatar avatar, MeshRenderer selected)
         {
             XrtChilloutInstaller.ValidateAvatar(avatar);
             var record = FindRecord(avatar);
             if (record == null) return;
-            ValidateInstalled(avatar, record);
+            var renderers = FindRenderers(avatar, record);
+            if (renderers.Length > 0 && (selected == null || !renderers.Contains(selected)))
+                throw new InvalidOperationException("Choose the text object to remove.");
             Undo.IncrementCurrentGroup();
             int undo = Undo.GetCurrentGroup();
             Undo.SetCurrentGroupName("Remove XRT Caption");
-            Undo.RecordObject(avatar, "Remove XRT Caption");
-            avatar.overrides = record.originalOverride;
-            foreach (var renderer in FindRenderers(avatar, record))
+            Undo.RecordObject(record, "Remove XRT Caption");
+            Migrate(record);
+            if (selected != null)
             {
-                var board = renderer.gameObject;
-                var receiver = board.GetComponents<CVRLuaClientBehaviour>().FirstOrDefault(r => IsOwnedReceiver(r, renderer));
-                var filter = board.GetComponent<MeshFilter>();
-                bool ownsFilter = filter != null && filter.sharedMesh == record.mesh;
-                if (receiver != null && ownsFilter && board.transform.childCount == 0 && board.GetComponents<Component>().Length == 4)
-                    Undo.DestroyObjectImmediate(board);
-                else
-                {
-                    if (receiver != null) Undo.DestroyObjectImmediate(receiver);
-                    if (ownsFilter) Undo.DestroyObjectImmediate(filter);
-                    Undo.DestroyObjectImmediate(renderer);
-                }
+                var display = record.displays.First(item => Resolve(avatar, item).Contains(selected));
+                var receiver = selected.GetComponents<CVRLuaClientBehaviour>().FirstOrDefault(r => IsOwnedReceiver(r, selected));
+                CaptionAuthoring.RemoveObject(selected, display.mesh, display.material, receiver);
+                // Retain asset ownership for Undo and saved scene revisions.
             }
-            // Keep generated assets for Undo/Redo and other saved scene revisions.
+            if (!FindRenderers(avatar, record).Any())
+                XrtChilloutInstaller.RemoveParameters(XrtChilloutInstaller.CurrentController(avatar), Parameters);
+            EditorUtility.SetDirty(record);
+            AssetDatabase.SaveAssetIfDirty(record);
             XrtChilloutInstaller.MarkChanged(avatar);
             Undo.CollapseUndoOperations(undo);
         }
 
-        internal static bool IsInstalled(CVRAvatar avatar) => FindRecord(avatar) != null;
-        internal static AnimatorOverrideController OverrideBeforeCaption(CVRAvatar avatar)
+        internal static bool IsInstalled(CVRAvatar avatar) => avatar != null &&
+            (HasBus(avatar) || FindRenderers(avatar, FindRecord(avatar)).Length != 0);
+
+        // Version-1 captions copied the control controller. Keep that provenance so
+        // their menu record remains usable after removing the last caption.
+        internal static bool UsesControl(CVRAvatar avatar, AnimatorOverrideController control) => control != null &&
+            Records(avatar).Any(record => record.originalOverride == control &&
+                record.installedController == XrtChilloutInstaller.CurrentController(avatar));
+
+        private static bool HasBus(CVRAvatar avatar) =>
+            XrtChilloutInstaller.CurrentController(avatar)?.parameters.Any(p => Parameters.Contains(p.name)) ?? false;
+
+        private static void ValidateBus(AnimatorController controller)
         {
-            var record = FindRecord(avatar);
-            return record == null ? avatar.overrides : record.originalOverride;
+            if (Parameters.Any(name => !controller.parameters.Any(p => p.name == name && p.type == AnimatorControllerParameterType.Int)))
+                throw new InvalidOperationException("Restore the missing XRT caption parameters before adding a text object.");
+            int columns = controller.parameters.First(p => p.name == XrtChilloutCaptionProtocol.ColumnsParameter).defaultInt;
+            if (columns != 8 && columns != 16 && columns != 32)
+                throw new InvalidOperationException("Set the caption column count to 8, 16 or 32.");
         }
 
         private static void ValidateSource(CVRAvatar avatar)
         {
-            RuntimeAnimatorController source = avatar.overrides;
-            if (source == null) source = avatar.GetComponent<Animator>()?.runtimeAnimatorController;
-            if (source == null) source = avatar.avatarSettings?.baseController;
-            var controller = XrtChilloutInstaller.BaseController(source);
-            if (controller == null || string.IsNullOrEmpty(AssetDatabase.GetAssetPath(controller))) throw new InvalidOperationException("Configure the avatar's animator in the CCK before adding captions.");
+            var controller = XrtChilloutInstaller.CurrentController(avatar);
+            if (controller == null || string.IsNullOrEmpty(AssetDatabase.GetAssetPath(controller)))
+                throw new InvalidOperationException("Configure the avatar's animator in the CCK before adding captions.");
             var synced = CVRCommon.GetParametersFromController(controller, CVRCommon.NonCoreFilter, CVRCommon.NonLocalFilter)
                 .GroupBy(p => p.name).Select(group => group.First()).ToArray();
             int bools = synced.Count(p => p.type == AnimatorControllerParameterType.Bool);
-            int values = synced.Count(p => p.type != AnimatorControllerParameterType.Bool &&
-                p.type != AnimatorControllerParameterType.Trigger);
+            int values = synced.Count(p => p.type != AnimatorControllerParameterType.Bool && p.type != AnimatorControllerParameterType.Trigger);
             int usage = values * 32 + Mathf.CeilToInt(bools / 8f) * 8;
             if (usage + (XrtChilloutCaptionProtocol.BusWordCount + 1) * 32 > CVRCommon.AVATAR_BIT_LIMIT)
                 throw new InvalidOperationException("Free 96 synced bits in the avatar's animator before adding captions.");
-            if (XrtChilloutInstaller.HasUnsavedChanges(controller))
-                throw new InvalidOperationException("Save the avatar's animator assets before adding captions.");
-            if (controller.parameters.Any(p => p.name.StartsWith("XRT/Caption/", StringComparison.Ordinal) ||
-                p.name.StartsWith("#XRT/Caption/", StringComparison.Ordinal)))
-                throw new InvalidOperationException("This avatar already has caption parameters. Restore its original controller before adding captions.");
+        }
+
+        private static IEnumerable<XrtChilloutCaptionRecord> Records(CVRAvatar avatar)
+        {
+            if (avatar == null) return Enumerable.Empty<XrtChilloutCaptionRecord>();
+            string id = GlobalObjectId.GetGlobalObjectIdSlow(avatar).ToString();
+            return AssetDatabase.FindAssets("t:XrtChilloutCaptionRecord")
+                .Select(g => AssetDatabase.LoadAssetAtPath<XrtChilloutCaptionRecord>(AssetDatabase.GUIDToAssetPath(g)))
+                .Where(record => record != null && record.avatarGlobalId == id);
         }
 
         private static XrtChilloutCaptionRecord FindRecord(CVRAvatar avatar)
         {
-            if (avatar == null || avatar.overrides == null) return null;
-            string id = GlobalObjectId.GetGlobalObjectIdSlow(avatar).ToString();
-            var records = AssetDatabase.FindAssets("t:XrtChilloutCaptionRecord")
-                .Select(g => AssetDatabase.LoadAssetAtPath<XrtChilloutCaptionRecord>(AssetDatabase.GUIDToAssetPath(g)))
-                .Where(r => r != null && r.avatarGlobalId == id && r.installedOverride == avatar.overrides).ToArray();
+            if (avatar == null) return null;
+            var controller = XrtChilloutInstaller.CurrentController(avatar);
+            var records = Records(avatar).Where(record => record.installedController == controller ||
+                FindRenderers(avatar, record).Any()).ToArray();
             if (records.Length > 1) throw new InvalidOperationException("More than one caption installation is registered for this avatar.");
             return records.FirstOrDefault();
         }
 
-        private static MeshRenderer[] FindRenderers(CVRAvatar avatar, XrtChilloutCaptionRecord record)
+        private static IEnumerable<XrtChilloutCaptionRecord.Display> Displays(XrtChilloutCaptionRecord record)
         {
-            if (GlobalObjectId.TryParse(record.rendererGlobalId, out var id) &&
-                GlobalObjectId.GlobalObjectIdentifierToObjectSlow(id) is MeshRenderer renderer &&
-                renderer.transform.IsChildOf(avatar.transform))
-                return new[] { renderer };
-            // Unsaved scene objects may not resolve through GlobalObjectId yet.
-            return avatar.GetComponentsInChildren<MeshRenderer>(true).Where(r =>
-                r.GetComponent<MeshFilter>()?.sharedMesh == record.mesh &&
-                r.GetComponents<CVRLuaClientBehaviour>().Any(receiver => IsOwnedReceiver(receiver, r))).ToArray();
+            if (record == null) return Enumerable.Empty<XrtChilloutCaptionRecord.Display>();
+            if (record.displays != null && record.displays.Count > 0) return record.displays;
+            if (record.mesh == null) return Enumerable.Empty<XrtChilloutCaptionRecord.Display>();
+            return new[] { new XrtChilloutCaptionRecord.Display {
+                rendererGlobalId = record.rendererGlobalId, material = record.material, mesh = record.mesh
+            } };
         }
 
-        private static bool IsOwnedReceiver(CVRLuaClientBehaviour receiver, MeshRenderer renderer) => receiver.asset != null &&
+        private static void Migrate(XrtChilloutCaptionRecord record)
+        {
+            record.displays = Displays(record).ToList();
+            record.rendererGlobalId = null;
+            record.material = null;
+            record.mesh = null;
+        }
+
+        private static MeshRenderer[] FindRenderers(CVRAvatar avatar, XrtChilloutCaptionRecord record) =>
+            avatar == null ? Array.Empty<MeshRenderer>() : Displays(record).SelectMany(display => Resolve(avatar, display)).Distinct().ToArray();
+
+        private static MeshRenderer[] Resolve(CVRAvatar avatar, XrtChilloutCaptionRecord.Display display)
+        {
+            MeshRenderer identified = null;
+            if (GlobalObjectId.TryParse(display.rendererGlobalId, out var id))
+                identified = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(id) as MeshRenderer;
+            return avatar.GetComponentsInChildren<MeshRenderer>(true).Where(renderer =>
+                (renderer == identified || renderer.GetComponent<MeshFilter>()?.sharedMesh == display.mesh) &&
+                renderer.GetComponents<CVRLuaClientBehaviour>().Any(receiver => IsOwnedReceiver(receiver, renderer))).ToArray();
+        }
+
+        private static bool IsOwnedReceiver(CVRLuaClientBehaviour receiver, MeshRenderer renderer) => receiver != null && receiver.asset != null &&
             AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(receiver.asset)) == ReceiverGuid &&
-            receiver.boundObjects != null && receiver.boundObjects.Any(b => b.name == "captionRenderer" && b.boundThing == renderer);
-
-        private static void ValidateInstalled(CVRAvatar avatar, XrtChilloutCaptionRecord record)
-        {
-            if (record.recordVersion != 1 || record.originalOverride == null || record.material == null || record.mesh == null ||
-                !XrtChilloutInstaller.Unchanged(record.installedController, record.controllerHash) ||
-                !XrtChilloutInstaller.Unchanged(record.installedOverride, record.overrideHash))
-                throw new InvalidOperationException("This avatar's caption setup has been edited. Keep your changes and follow the recovery steps in the guide.");
-        }
+            receiver.boundObjects != null && receiver.boundObjects.Any(binding => binding.name == "captionRenderer" && binding.boundThing == renderer);
 
         private static void AddInt(AnimatorController controller, string name, int value) => controller.AddParameter(
             new AnimatorControllerParameter { name = name, type = AnimatorControllerParameterType.Int, defaultInt = value });

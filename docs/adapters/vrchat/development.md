@@ -28,6 +28,11 @@ Edit that template and run `python3 tools/generate_unity_editor.py` from the rep
 root. The installer remains here and uses the native Avatar Descriptor and
 Expressions assets. Menu installation leaves playable layers and other tools' components in place.
 Caption installation clones FX and appends its receiver and display layers.
+Additional text objects share those layers, clips and synchronization parameters.
+Records identify owned contributions directly. Placement changes update each
+tracked renderer's material bindings; removal retains unrelated menu, parameter
+and animator edits. Existing records are hydrated without saving during inspection
+and persisted by an authoring operation.
 Control parameters remain unsaved and unsynchronized; the caption bus uses the
 budget declared in its manifest.
 

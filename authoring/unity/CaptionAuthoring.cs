@@ -10,9 +10,9 @@ namespace XrtAvatarPlugin.Presentation
     /// <summary>Common caption preset selection and preview text for Unity authoring.</summary>
     public static class CaptionAuthoring
     {
-        public static int ConfigureMaterial(Material material, string preset)
+        public static int ConfigureMaterial(Material material, string preset, int columns = 0)
         {
-            int columns = string.Equals(preset, "portrait", StringComparison.OrdinalIgnoreCase) ? 8 : 32;
+            if (columns == 0) columns = string.Equals(preset, "portrait", StringComparison.OrdinalIgnoreCase) ? 8 : 32;
             material.SetFloat("_Columns", columns);
             material.SetColor("_BackgroundColor", string.Equals(preset, "board", StringComparison.OrdinalIgnoreCase)
                 ? Color.clear : new Color(.98f, .98f, .98f, .92f));
@@ -88,8 +88,49 @@ namespace XrtAvatarPlugin.Presentation
             for (int i = 0; i < count && glyphs.Count <= CaptionAssets.SlotCount; i++) glyphs.Add('\0');
         }
 
-        public static int DrawPresets(int selectedPreset)
+        public static MeshRenderer DrawObjectPicker(MeshRenderer[] renderers, ref int selectedIndex)
         {
+            if (renderers == null || renderers.Length == 0) { selectedIndex = -1; return null; }
+            selectedIndex = Mathf.Clamp(selectedIndex, 0, renderers.Length - 1);
+            var names = new string[renderers.Length];
+            for (int i = 0; i < renderers.Length; i++)
+                names[i] = renderers[i] == null ? "Missing text object" : renderers[i].name;
+            selectedIndex = EditorGUILayout.Popup("Text object", selectedIndex, names);
+            return renderers[selectedIndex];
+        }
+
+        // Remove the generated text only; a user's replacement renderer or prop stays intact.
+        public static void RemoveObject(MeshRenderer renderer, Mesh ownedMesh, Material ownedMaterial,
+            params Component[] ownedComponents)
+        {
+            if (renderer == null) return;
+            var target = renderer.gameObject;
+            var filter = target.GetComponent<MeshFilter>();
+            var materials = renderer.sharedMaterials;
+            bool ownsSurface = ownedMesh != null && ownedMaterial != null &&
+                filter != null && filter.sharedMesh == ownedMesh &&
+                materials.Length == 1 && materials[0] == ownedMaterial;
+            ownedComponents = ownedComponents ?? Array.Empty<Component>();
+            bool wholeObject = ownsSurface && target.transform.childCount == 0;
+            foreach (var component in target.GetComponents<Component>())
+                if (component == null || (component != target.transform && component != filter &&
+                    component != renderer && Array.IndexOf(ownedComponents, component) < 0)) wholeObject = false;
+            if (wholeObject) { Undo.DestroyObjectImmediate(target); return; }
+            foreach (var component in ownedComponents)
+                if (component != null && component.gameObject == target && component != target.transform &&
+                    component != renderer && component != filter) Undo.DestroyObjectImmediate(component);
+            if (ownsSurface)
+            {
+                Undo.DestroyObjectImmediate(renderer);
+                Undo.DestroyObjectImmediate(filter);
+            }
+        }
+
+        public static int DrawPresets(int selectedPreset, int columns = 0)
+        {
+            if (columns == 8 && selectedPreset == 0) selectedPreset = 1;
+            else if (columns == 32 && selectedPreset == 1) selectedPreset = 0;
+            else if (columns == 16) selectedPreset = 2;
             using (new EditorGUILayout.HorizontalScope())
             {
                 for (int i = 0; i < 3; i++)
@@ -97,7 +138,9 @@ namespace XrtAvatarPlugin.Presentation
                     int value = i;
                     Rect area = GUILayoutUtility.GetRect(80, 66, GUILayout.ExpandWidth(true));
                     bool selected = selectedPreset == value;
-                    if (GUI.Toggle(area, selected, GUIContent.none, "Button") && !selected) selectedPreset = value;
+                    using (new EditorGUI.DisabledScope(columns != 0 &&
+                        ((value == 0 && columns != 32) || (value == 1 && columns != 8))))
+                        if (GUI.Toggle(area, selected, GUIContent.none, "Button") && !selected) selectedPreset = value;
                     var shape = value == 1
                         ? new Rect(area.center.x - 8, area.y + 9, 16, 25)
                         : new Rect(area.center.x - 20, area.y + 15, 40, 15);
@@ -131,7 +174,7 @@ namespace XrtAvatarPlugin.Presentation
         private Material sourceMaterial;
         private Mesh mesh;
 
-        public void Draw(Rect rect, string preset, string text, Material installedMaterial = null)
+        public void Draw(Rect rect, string preset, string text, Material installedMaterial = null, int columns = 0)
         {
             if (Event.current.type != EventType.Repaint) return;
             try
@@ -144,7 +187,7 @@ namespace XrtAvatarPlugin.Presentation
                     material = CaptionAssets.CreateMaterial();
                     sourceMaterial = installedMaterial;
                 }
-                int columns = CaptionAuthoring.ConfigureMaterial(material, preset);
+                columns = CaptionAuthoring.ConfigureMaterial(material, preset, columns);
                 if (installedMaterial != null)
                 {
                     material.CopyPropertiesFromMaterial(installedMaterial);

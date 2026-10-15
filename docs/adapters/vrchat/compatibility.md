@@ -40,8 +40,9 @@ For each accepted configuration, record exact Unity, SDK, VRChat and XRTranslate
 versions and verify the following:
 
 1. Install on a copy of an Avatar, preserve original menu/parameters, reject
-   collisions, retain a full root menu in a submenu, and restore an unchanged installation. An
-   edited installation must produce a diagnostic without destructive removal. Check
+   collisions and retain a full root menu in a submenu. Add unrelated menu controls,
+   parameters and animator layers after installation, then remove XRT without
+   losing those edits. Check
    Undo/Redo, discarded scene changes and reinstallation after editing the originals.
    Cover default avatars, missing Parameters references, and existing MA/VRCFury
    menu components without changing their original assets.
@@ -55,11 +56,13 @@ versions and verify the following:
    desktop cancellation, Avatar change, reconnect and lost UDP updates. Confirm
    overlapping input requests are rejected without changing the existing task;
    independent sessions and another OSC application continue operating.
-5. Add each caption preset, preview mixed-language text, move/reparent the object,
+5. Add each caption preset and multiple text objects, preview mixed-language text,
+   move/reparent each object and remove one while the others continue receiving,
    then upload. Check local and remote text, changed-chunk updates, independent
    message expiry and banners persisting after menu Off. Check 24/40/72-bit
    profiles, default/custom FX, original expressions, Undo and removal. Confirm
-   material colors and customized objects are preserved.
+   material colors, replacement meshes, added components and children are preserved.
+   Open a version-1 installation and verify its existing objects work without reinstallation.
 6. Record the compatible host version, check generated protocol consistency and
    package only tracked Unity source/assets plus the license. Publish a VPM
    listing only when its URL and checksum refer to a real release artifact.

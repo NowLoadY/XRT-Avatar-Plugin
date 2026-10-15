@@ -18,8 +18,10 @@ creator's import instructions. Finish its normal animation setup first; see
    avatar in the Hierarchy or drag it into **Avatar**.
 4. Choose **Horizontal**, **Portrait** or **Board**. Use **Attach to** to choose a
    hand, chest or another object within the avatar, then press **＋**.
-5. Select the caption with the magnifier icon. Move, rotate and resize it in the
+5. Select the text with the magnifier icon. Move, rotate and resize it in the
    Scene view. Board starts with transparent lettering for your own sign or art.
+   Use **＋** again to place the same text on another prop; select an object in
+   the list to inspect or remove it.
 6. Save the scene and upload the avatar through the CCK **Builder** panel. Wear
    that uploaded version in ChilloutVR.
 
@@ -50,13 +52,14 @@ See [ChilloutVR OSC](https://docs.chilloutvr.net/chilloutvr/game/osc/) and
 
 ## Remove or update
 
-Use **−** in Caption Objects to remove the caption, then **−** in Avatar Controls
-if you also want to remove the translation control. Save and upload again.
+Select a text object and use **−** in Caption Objects to remove it. After removing
+all text objects, use **−** in Avatar Controls to remove the translation control
+if desired. Save and upload again.
 Unity's **Edit → Undo / Redo** reverses either operation.
 
 Import a newer package to update XRT. Keep the generated XRT folders in your
-project. Remove the caption and control before regenerating the avatar's
-animator, then add them again after attaching the new controller. An edited
-installation can be restored through the [recovery guide](troubleshooting.md#recover-an-edited-setup).
+project. Your controller, animation overrides and other avatar settings remain
+editable. Removing XRT keeps those edits. Remove its objects and control before
+replacing the avatar's animator, then add them again after attaching the new one.
 
 [Setup help](troubleshooting.md) · [Compatibility](compatibility.md)

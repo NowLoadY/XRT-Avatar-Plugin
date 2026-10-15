@@ -19,9 +19,11 @@ the menu-controlled translation task.
 
 ## Rendering
 
-The installed surface uses one mesh, one material and 128 glyph slots. Horizontal
+Each text child uses one mesh, one material and 128 glyph slots. Several children
+can show the same text on separate props using a single bus and column layout. Horizontal
 and Board use four rows; Portrait uses sixteen. Board starts with a transparent
-background. Placement, scale and colors remain editable. The same SDF assets and
+background. Attach it beneath a user-authored prop to add live lettering; the
+prop keeps its own mesh and materials. Placement, scale and colors remain editable. The same SDF assets and
 proportional glyph spacing are used by the VRChat adapter; font coverage and
 resource cost are recorded in
 [`XrtCaptionFont.json`](../../../presentation/unity/Runtime/Caption/XrtCaptionFont.json).
@@ -52,8 +54,9 @@ caption adapters, then packs the bytes into ChilloutVR words. Pointer 255 clears
 the display. The Lua receiver re-reads a held pointer so late word updates can
 complete that chunk.
 
-Each content update replaces the desired buffer. Only changed chunks are sent,
-with message rows ahead of banner rows; an unchanged region remains visible.
+Each content update replaces the desired buffer. Only changed chunks are sent;
+the shared scheduler favors messages while reserving writes for pending header
+and footer changes. An unchanged region remains visible.
 Pending writes that no longer match the buffer are revoked. Message expiry and
 task cancellation update the affected rows. A new binding, an empty display or
 disabling display content requests a whole-surface clear.
@@ -66,15 +69,18 @@ remote delivery acknowledgement.
 
 ## Installation
 
-The installer copies the current controller and preserves its override chain,
-then adds the caption parameters and object. An editor-only record tracks the
-original controller, generated assets and renderer identity. Material reuse on
-another object does not transfer ownership. Renaming and reparenting the caption
-within the avatar preserve its direct Lua binding.
+The control installer copies the current controller and preserves its override
+chain. Captions add one parameter bus to that working controller. Each new text
+child gets its own generated mesh, material and directly bound Lua receiver;
+additional objects reuse the bus. Editor records track the bus and each object's
+ownership. Existing single-object records are read without reinstalling.
 
-Removal restores the previous controller and removes only owned components.
-Remove captions before their translation control. Generated assets remain for
-Undo and saved scene references. Editor sample text is not stored in uploaded
-materials.
+Renaming or reparenting a text child within the avatar preserves its direct Lua
+binding. Removal strips only the selected object's owned components. A customized
+object, replacement mesh or material, foreign components and children are retained.
+Removing the last text object removes the exact caption parameters; removing the
+control removes its exact parameters and Advanced Avatar Settings entry. Other
+controller and override edits remain in place. Generated assets remain for Undo
+and saved scene references. Editor sample text is not stored in uploaded materials.
 
 Runtime acceptance is recorded in [compatibility](compatibility.md).

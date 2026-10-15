@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -47,17 +46,16 @@ namespace XrtAvatarPlugin.Editor
                 if (record != null)
                 {
                     ValidateRecord(record);
-                    ValidateOwnedAssets(record);
-                    if (UsesInstalledExpressions(avatar, record))
-                        return new InstallationStatus
-                        {
-                            Title = "Added",
-                            Detail = "XRT > Translation is ready on this avatar. " +
+                    return new InstallationStatus
+                    {
+                        Title = "Added",
+                        Detail = ControlsPresent(avatar, record)
+                            ? "XRT > Translation is ready on this avatar. " +
                                 (avatar.gameObject.scene.isDirty ? "Save the scene before uploading." :
-                                    "Upload the avatar with the VRChat SDK when ready."),
-                            CanRemove = true
-                        };
-                    throw ExternalChanges(record);
+                                    "Upload the avatar with the VRChat SDK when ready.")
+                            : "Restore the XRT menu and parameter references in Avatar Descriptor. You can also remove its remaining controls.",
+                        CanRemove = true
+                    };
                 }
                 ValidateSourceAssets(avatar, out VRCExpressionsMenu sourceMenu, out _);
                 return new InstallationStatus
@@ -90,10 +88,7 @@ namespace XrtAvatarPlugin.Editor
             if (existing != null)
             {
                 ValidateRecord(existing);
-                ValidateOwnedAssets(existing);
-                if (UsesInstalledExpressions(avatar, existing))
-                    return "Translation menu is already added.";
-                throw ExternalChanges(existing);
+                return "Translation menu is already added.";
             }
 
             ValidateSourceAssets(avatar, out VRCExpressionsMenu sourceMenu,
@@ -178,9 +173,6 @@ namespace XrtAvatarPlugin.Editor
                 record.installedMenu = menu;
                 record.installedParameters = parameters;
                 record.xrtMenu = submenu;
-                record.installedMenuHash = AssetHash(menu);
-                record.installedParametersHash = AssetHash(parameters);
-                record.xrtMenuHash = AssetHash(submenu);
                 Persist(record, folder + "/Installation.asset", createdPaths);
 
                 descriptorTouched = true;
@@ -225,14 +217,43 @@ namespace XrtAvatarPlugin.Editor
                 return "Translation menu is not added to this avatar.";
             ValidateRecord(record);
             if (XrtCaptionInstaller.IsInstalled(avatar))
-                throw new InvalidOperationException("Remove the caption object in Tools > XRT-Avatar-Plugin > Caption Objects first.");
-            if (!UsesInstalledExpressions(avatar, record))
-                throw ExternalChanges(record);
-            ValidateOwnedAssets(record);
-
-            // Keep generated assets for Undo/Redo and for scenes saved before removal.
-            ApplyExpressions(avatar, record.originalMenu, record.originalParameters,
-                record.originalCustomExpressions, "Remove XRT Translation");
+                throw new InvalidOperationException("Remove the caption objects in Tools > XRT-Avatar-Plugin > Caption Objects first.");
+            Undo.IncrementCurrentGroup();
+            int undo = Undo.GetCurrentGroup();
+            const string action = "Remove XRT Translation";
+            Undo.SetCurrentGroupName(action);
+            var menu = avatar.expressionsMenu;
+            var parameters = avatar.expressionParameters;
+            if (record.xrtMenu != null)
+            {
+                Undo.RecordObject(record.xrtMenu, action);
+                record.xrtMenu.controls?.RemoveAll(control => control != null &&
+                    control.parameter?.name == XrtAvatarProtocol.Enabled);
+                EditorUtility.SetDirty(record.xrtMenu);
+                AssetDatabase.SaveAssetIfDirty(record.xrtMenu);
+                if (record.xrtMenu.controls == null || record.xrtMenu.controls.Count == 0)
+                    RemoveMenuLink(menu, record.xrtMenu, new HashSet<VRCExpressionsMenu>());
+            }
+            RemoveParameters(parameters, ReservedParameters, action);
+            // Keep the user's working copies. Only unwrap a root that contains
+            // nothing beyond the original menu, or restore the untouched default.
+            if (menu == record.installedMenu && menu != null)
+            {
+                var controls = menu.controls ?? new List<VRCExpressionsMenu.Control>();
+                if (controls.Count == 1 && controls[0]?.subMenu == record.originalMenu &&
+                    controls[0].name == "Avatar" && controls[0].icon == null &&
+                    controls[0].type == VRCExpressionsMenu.Control.ControlType.SubMenu &&
+                    string.IsNullOrEmpty(controls[0].parameter?.name))
+                    menu = record.originalMenu;
+            }
+            bool emptyRoot = menu == record.installedMenu && record.originalMenu == null &&
+                (menu?.controls == null || menu.controls.Count == 0);
+            bool defaults = !record.originalCustomExpressions && (menu == null || emptyRoot) &&
+                SameParameters(parameters?.parameters, SourceParameters(null));
+            ApplyExpressions(avatar, defaults ? record.originalMenu : menu,
+                defaults ? record.originalParameters : parameters,
+                defaults ? false : avatar.customExpressions, action);
+            Undo.CollapseUndoOperations(undo);
             return "Translation menu removed. Save the scene, then upload this avatar again.";
         }
 
@@ -311,12 +332,16 @@ namespace XrtAvatarPlugin.Editor
             foreach (string guid in AssetDatabase.FindAssets("t:XrtAvatarInstallationRecord", new[] { "Assets" }))
             {
                 var record = AssetDatabase.LoadAssetAtPath<XrtAvatarInstallationRecord>(AssetDatabase.GUIDToAssetPath(guid));
-                // Scene references own state; retained records support Undo and discarded saves.
-                // Match either reference so a partially edited setup is still protected.
-                if (record == null || record.avatarGlobalId != ownerId ||
-                    !((record.installedMenu != null && avatar.expressionsMenu == record.installedMenu) ||
-                      (record.installedParameters != null && avatar.expressionParameters == record.installedParameters)))
-                    continue;
+                if (record == null || record.avatarGlobalId != ownerId) continue;
+                var parameters = XrtCaptionInstaller.ParametersBeforeCaption(avatar);
+                bool menuAssigned = ContainsMenu(avatar.expressionsMenu, record.xrtMenu,
+                    new HashSet<VRCExpressionsMenu>()) && record.xrtMenu != null &&
+                    record.xrtMenu.controls != null && record.xrtMenu.controls.Any(control =>
+                        control != null && control.parameter?.name == XrtAvatarProtocol.Enabled);
+                bool parametersAssigned = parameters == record.installedParameters && parameters != null &&
+                    parameters.parameters != null && parameters.parameters.Any(parameter =>
+                        parameter != null && ReservedParameters.Contains(parameter.name));
+                if (!menuAssigned && !parametersAssigned) continue;
                 if (result != null)
                     throw new InvalidOperationException("More than one XRT setup was found for this avatar. Follow the recovery steps in the setup guide.");
                 result = record;
@@ -328,36 +353,54 @@ namespace XrtAvatarPlugin.Editor
         {
             if (record.recordVersion != 1)
                 throw new InvalidOperationException("This setup uses a different XRT version. Update the plugin before continuing.");
-            if ((record.hadOriginalMenu && record.originalMenu == null) ||
-                (record.hadOriginalParameters && record.originalParameters == null))
-                throw new InvalidOperationException("An original Expressions asset is missing. Restore it from your project backup before continuing.");
         }
 
-        private static bool UsesInstalledExpressions(VRCAvatarDescriptor avatar, XrtAvatarInstallationRecord record)
+        private static bool ControlsPresent(VRCAvatarDescriptor avatar, XrtAvatarInstallationRecord record) =>
+            avatar.customExpressions && ContainsMenu(avatar.expressionsMenu, record.xrtMenu,
+                new HashSet<VRCExpressionsMenu>()) && record.xrtMenu.controls != null &&
+            record.xrtMenu.controls.Any(control => control != null && control.parameter?.name == XrtAvatarProtocol.Enabled) &&
+            ReservedParameters.All(name => (avatar.expressionParameters?.parameters ?? Array.Empty<VRCExpressionParameters.Parameter>())
+                .Any(parameter => parameter != null && parameter.name == name));
+
+        private static bool ContainsMenu(VRCExpressionsMenu root, VRCExpressionsMenu target,
+            HashSet<VRCExpressionsMenu> visited)
         {
-            return record.installedMenu != null && record.installedParameters != null && avatar.customExpressions &&
-                avatar.expressionsMenu == record.installedMenu &&
-                XrtCaptionInstaller.ParametersBeforeCaption(avatar) == record.installedParameters;
+            if (root == null || target == null || !visited.Add(root)) return false;
+            return root == target || (root.controls != null && root.controls.Any(control =>
+                control != null && ContainsMenu(control.subMenu, target, visited)));
         }
 
-        private static void ValidateOwnedAssets(XrtAvatarInstallationRecord record)
+        private static void RemoveMenuLink(VRCExpressionsMenu menu, VRCExpressionsMenu target,
+            HashSet<VRCExpressionsMenu> visited)
         {
-            if (!Unchanged(record.installedMenu, record.installedMenuHash) ||
-                !Unchanged(record.installedParameters, record.installedParametersHash) ||
-                !Unchanged(record.xrtMenu, record.xrtMenuHash))
-                throw ExternalChanges(record);
+            if (menu == null || !visited.Add(menu) || menu.controls == null) return;
+            foreach (var control in menu.controls.ToArray())
+                if (control != null) RemoveMenuLink(control.subMenu, target, visited);
+            if (!menu.controls.Any(control => control != null && control.subMenu == target)) return;
+            Undo.RecordObject(menu, "Remove XRT Translation");
+            menu.controls.RemoveAll(control => control != null && control.subMenu == target);
+            EditorUtility.SetDirty(menu);
+            AssetDatabase.SaveAssetIfDirty(menu);
         }
 
-        private static bool Unchanged(Object asset, string hash)
+        internal static void RemoveParameters(VRCExpressionParameters asset, IEnumerable<string> owned, string action)
         {
-            // Unsaved edits must also prevent restoration; a disk hash alone would miss them.
-            return asset != null && !EditorUtility.IsDirty(asset) && !string.IsNullOrEmpty(hash) &&
-                string.Equals(hash, AssetHash(asset), StringComparison.Ordinal);
+            if (asset == null || asset.parameters == null) return;
+            var names = new HashSet<string>(owned);
+            if (!asset.parameters.Any(parameter => parameter != null && names.Contains(parameter.name))) return;
+            Undo.RecordObject(asset, action);
+            asset.parameters = asset.parameters.Where(parameter => parameter == null || !names.Contains(parameter.name)).ToArray();
+            EditorUtility.SetDirty(asset);
+            AssetDatabase.SaveAssetIfDirty(asset);
         }
 
-        private static InvalidOperationException ExternalChanges(XrtAvatarInstallationRecord record)
+        private static bool SameParameters(VRCExpressionParameters.Parameter[] first,
+            VRCExpressionParameters.Parameter[] second)
         {
-            return new InvalidOperationException("This avatar's XRT setup has been edited. Keep your changes and follow the recovery steps in the setup guide.");
+            first = first ?? Array.Empty<VRCExpressionParameters.Parameter>();
+            second = second ?? Array.Empty<VRCExpressionParameters.Parameter>();
+            return first.Length == second.Length && first.Zip(second, (a, b) =>
+                JsonUtility.ToJson(a) == JsonUtility.ToJson(b)).All(equal => equal);
         }
 
         private static VRCExpressionParameters.Parameter Parameter(string name, VRCExpressionParameters.ValueType type,
@@ -409,14 +452,6 @@ namespace XrtAvatarPlugin.Editor
             if (string.IsNullOrEmpty(AssetDatabase.CreateFolder(parent, name)))
                 throw new IOException("Could not create folder: " + path);
             return path;
-        }
-
-        private static string AssetHash(Object asset)
-        {
-            string path = AssetDatabase.GetAssetPath(asset);
-            using (SHA256 hash = SHA256.Create())
-                return BitConverter.ToString(hash.ComputeHash(File.ReadAllBytes(AbsoluteAssetPath(path))))
-                    .Replace("-", string.Empty);
         }
 
         private static string AbsoluteAssetPath(string path)

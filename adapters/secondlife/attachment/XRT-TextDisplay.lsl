@@ -11,6 +11,30 @@ string footerText;
 string legacyText;
 list messages; // text, local deadline
 
+integer utf8Bytes(string text)
+{
+    string encoded = llStringToBase64(text);
+    integer length = llStringLength(encoded) * 3 / 4;
+    if (llGetSubString(encoded, -2, -1) == "==") return length - 2;
+    if (llGetSubString(encoded, -1, -1) == "=") return length - 1;
+    return length;
+}
+
+string hoverText(string text)
+{
+    if (utf8Bytes(text) <= 254) return text;
+    integer low = 0;
+    integer high = llStringLength(text);
+    while (low < high)
+    {
+        integer middle = (low + high + 1) / 2;
+        if (utf8Bytes(llGetSubString(text, 0, middle - 1)) <= 251) low = middle;
+        else high = middle - 1;
+    }
+    if (!low) return "…";
+    return llGetSubString(text, 0, low - 1) + "…";
+}
+
 string joinText(string first, string second)
 {
     if (first == "") return second;
@@ -48,7 +72,7 @@ renderDisplay()
         else if (REGION != "messages") text = joinText(joinText(headerText, text), footerText);
     }
     else if (REGION == "header" || REGION == "footer") text = "";
-    llSetText(text, TEXT_COLOR, TEXT_ALPHA);
+    llSetText(hoverText(text), TEXT_COLOR, TEXT_ALPHA);
 }
 
 default

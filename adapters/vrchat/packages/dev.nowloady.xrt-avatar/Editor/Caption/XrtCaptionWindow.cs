@@ -12,6 +12,8 @@ namespace XrtAvatarPlugin.Editor
         [SerializeField] private VRCAvatarDescriptor avatar;
         [SerializeField] private Transform attachment;
         [SerializeField] private XrtCaptionInstaller.Preset preset;
+        [SerializeField] private int selectedIndex;
+        private MeshRenderer selectedRenderer;
         [SerializeField] private string previewText = "The entrance is on the right.\nWe'll wait near the stairs.";
         private string error;
         private CaptionPreview preview;
@@ -57,13 +59,15 @@ namespace XrtAvatarPlugin.Editor
         {
             error = null;
             status = XrtCaptionInstaller.Inspect(avatar);
-            if (status.Record != null)
+            if (status.Renderers.Length > 0)
             {
-                preset = status.Record.columns == 8 ? XrtCaptionInstaller.Preset.Portrait :
-                    status.Record.material != null && status.Record.material.GetColor("_BackgroundColor").a == 0
-                    ? XrtCaptionInstaller.Preset.Board : XrtCaptionInstaller.Preset.Horizontal;
-                if (status.Renderer != null) attachment = status.Renderer.transform.parent;
+                var selected = Selection.activeGameObject == null ? null : Selection.activeGameObject.GetComponent<MeshRenderer>();
+                int index = Array.IndexOf(status.Renderers, selected);
+                if (index >= 0) selectedIndex = index;
+                selectedIndex = Mathf.Clamp(selectedIndex, 0, status.Renderers.Length - 1);
+                selectedRenderer = status.Renderers[selectedIndex];
             }
+            else selectedRenderer = null;
             Repaint();
         }
         private void FollowSelection()
@@ -98,12 +102,11 @@ namespace XrtAvatarPlugin.Editor
             var selectedAvatar = (VRCAvatarDescriptor)EditorGUILayout.ObjectField("Avatar", avatar,
                 typeof(VRCAvatarDescriptor), true);
             if (EditorGUI.EndChangeCheck()) SelectAvatar(selectedAvatar);
-            using (new EditorGUI.DisabledScope(status.Record != null))
-            {
-                attachment = (Transform)EditorGUILayout.ObjectField("Attach to", attachment, typeof(Transform), true);
-                GUILayout.Space(8);
-                preset = (XrtCaptionInstaller.Preset)CaptionAuthoring.DrawPresets((int)preset);
-            }
+            GUILayout.Label("New object", EditorStyles.miniLabel);
+            attachment = (Transform)EditorGUILayout.ObjectField("Attach to", attachment, typeof(Transform), true);
+            GUILayout.Space(8);
+            preset = (XrtCaptionInstaller.Preset)CaptionAuthoring.DrawPresets((int)preset, status.Record?.columns ?? 0);
+            selectedRenderer = CaptionAuthoring.DrawObjectPicker(status.Renderers, ref selectedIndex);
             GUILayout.Space(8);
             DrawPreview();
             GUILayout.Label("Preview text", EditorStyles.miniLabel);
@@ -117,14 +120,14 @@ namespace XrtAvatarPlugin.Editor
                     GUILayout.FlexibleSpace();
                     using (new EditorGUI.DisabledScope(!status.CanAdd))
                         if (Icon("Toolbar Plus", "Add caption object"))
-                            Run(() => XrtCaptionInstaller.Install(avatar, attachment, preset, previewText));
+                            Run(() => XrtCaptionInstaller.Install(avatar, attachment, preset));
                     using (new EditorGUI.DisabledScope(!status.CanRemove))
                         if (Icon("Toolbar Minus", "Remove caption object"))
-                            Run(() => XrtCaptionInstaller.Remove(avatar));
-                    using (new EditorGUI.DisabledScope(status.Renderer == null))
+                            Run(() => XrtCaptionInstaller.Remove(avatar, selectedRenderer));
+                    using (new EditorGUI.DisabledScope(selectedRenderer == null))
                         if (Icon("ViewToolZoom", "Select caption object"))
                         {
-                            Selection.activeGameObject = status.Renderer.gameObject;
+                            Selection.activeGameObject = selectedRenderer.gameObject;
                             SceneView.lastActiveSceneView?.FrameSelected();
                         }
                 }
@@ -137,7 +140,7 @@ namespace XrtAvatarPlugin.Editor
         {
             Rect rect = GUILayoutUtility.GetRect(80, 145, GUILayout.ExpandWidth(true));
             if (preview == null) preview = new CaptionPreview();
-            preview.Draw(rect, preset.ToString(), previewText, status.Record?.material);
+            preview.Draw(rect, preset.ToString(), previewText, selectedRenderer?.sharedMaterial, status.Record?.columns ?? 0);
         }
 
         private static bool Icon(string name, string tooltip, GUIStyle style = null)

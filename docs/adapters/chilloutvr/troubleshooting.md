@@ -29,18 +29,15 @@ updates. A square replacement glyph means the bundled font does
 not contain that character; the shared [font manifest](../../../presentation/unity/Runtime/Caption/XrtCaptionFont.json)
 lists its coverage.
 
-## Recover an edited setup
+## Missing setup assets
 
-If the window reports an edited or duplicate XRT setup:
+Controller and override edits do not require reinstalling XRT. If a generated
+installation record or asset was deleted, restore its XRT folder from the project
+backup. Keep that folder while saved scenes or Undo still reference it.
 
-1. Save a project copy to keep your current changes.
-2. Restore the avatar's XRT setup and generated folder from a working backup.
-   Keep the scene and assets from the same backup together.
-3. Refresh the window and remove the caption, then its translation control with
-   **−**. Make your intended changes and add XRT after finishing the animator.
-
-Removing the editor package alone does not remove objects or controls from the
-avatar. Keep its generated assets while saved scenes or Undo still reference them.
+If a text object was deleted directly from the Hierarchy, use **−** in Caption
+Objects to remove its remaining bus, or **＋** to create a new text child. Removing
+the editor package alone does not remove objects or controls from the avatar.
 
 ## Connection or upload problems
 

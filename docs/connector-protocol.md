@@ -112,5 +112,8 @@ The SDK maps regions into the existing glyph buffer and selects changed chunks.
 A present header/footer uses the first/last row; messages use the remaining rows,
 with recent messages taking precedence. Layout and payload width come from the
 installed capability. Cached chunks are confirmed only after actual transmission.
-Updates preserve unaffected regions, including during static-content renewal.
+Messages receive up to three consecutive writes before a pending banner update.
+Both groups rotate through changed chunks, so continuous messages or clock
+updates cannot starve other regions. Updates preserve unaffected regions,
+including during static-content renewal.
 Socket, send-time pacing and cancellation remain with the host transport owner.

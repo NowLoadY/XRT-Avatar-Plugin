@@ -18,15 +18,20 @@ VRChat's default menu. Click **−** to restore the original setup. To create yo
 own emote controls, follow VRChat's
 [Expressions guide](https://creators.vrchat.com/avatars/expression-menu-and-controls/).
 
-## Recover an edited setup
+## Missing assets or duplicate setups
 
-If the window reports an edited or duplicate XRT setup:
+You can edit menus, add animator layers and move text objects after installation.
+If a required asset is missing or more than one installation is assigned:
 
 1. Save a copy of the project to keep your current changes.
 2. Restore the avatar's XRT setup and its generated folder from a known working
    project backup. Keep the scene and assets from the same backup together.
-3. Refresh the window, remove XRT with **−**, then make your intended changes to
-   the avatar's original Expressions. Add XRT again when those assets are saved.
+3. Refresh the window and select the text object you want to manage. Use **−** to
+   remove its XRT contribution while keeping your other content.
+
+If adding another object is unavailable, check that Avatar Descriptor still uses
+the caption FX controller and its caption parameters. Existing objects can still
+be removed when that receiver assignment is incomplete.
 
 ## Caption is blank
 

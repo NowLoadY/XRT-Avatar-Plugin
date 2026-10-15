@@ -23,11 +23,17 @@ continues to own translation intent and runtime status.
 
 ## Display
 
-One mesh contains a background quad and 128 glyph quads. One unlit, transparent
+Each text object contains a background quad and 128 glyph quads. One unlit, transparent
 material renders a light rounded surface and dark text; the Board preset starts
 with a transparent background for custom signs and artwork. Horizontal uses four
 rows; Portrait uses sixteen. Parent, position, size and material colors remain
 editable. No head attachment is imposed.
+
+Multiple text objects mirror one shared receiver and layout without adding
+synchronized parameters. Each object has its own mesh and material. A transparent
+text child can follow a user's prop, bone or animated parent; XRT does not drive
+its transform. Renaming or reparenting inside the avatar updates only its owned
+material animation bindings.
 
 An enabled header occupies the first row and a footer the last. The remaining
 rows show the newest messages that fit, in chronological order. Empty banners
@@ -64,8 +70,9 @@ A second FX layer drives all material bytes from the retained values using a
 Direct Blend Tree. The display state enables Write Defaults as recommended for
 direct blending; receive states use timed clips instead of zero-length loops.
 
-Each content update replaces the desired buffer. Only changed chunks are sent,
-with message rows ahead of banner rows; an unchanged region remains visible.
+Each content update replaces the desired buffer. Only changed chunks are sent;
+the shared scheduler favors messages while reserving writes for pending header
+and footer changes. An unchanged region remains visible.
 Pending writes that no longer match the buffer are revoked. Message expiry and
 task cancellation update the affected rows. A new binding, an empty display or
 disabling display content requests a whole-surface clear.
@@ -80,12 +87,17 @@ retained in [`third_party/VRCBitmapLed`](../../../third_party/VRCBitmapLed).
 
 ## Installation ownership
 
-Caption installation copies the current expression parameters and FX controller,
-adds its own assets and records the original references. Default FX uses the SDK's
-face controller. Existing controller motions and behaviors are preserved.
-Removal restores the recorded references; original assets are never edited.
-Caption objects are removed before their translation menu so restoration remains
-ordered. Generated assets remain available for Undo and saved scene references.
+The first text object copies the current expression parameters and FX controller,
+then adds one receiver and display layer. Default FX uses the SDK's face controller.
+The installation record tracks the added parameters, layer references, generated
+clips and each text renderer. Later objects add bindings to those clips.
+
+Removal deletes the selected object's bindings and matching generated components.
+The final object also removes the recorded caption parameters and layers. User
+menu controls, animator additions and customized objects remain; working asset
+copies stay assigned so their edits are preserved. Remove caption objects before
+their translation menu. Generated assets remain available for Undo and saved
+scene references. Older records adopt the same ownership model when used.
 
 ## Platform support
 
