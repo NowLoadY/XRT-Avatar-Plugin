@@ -37,7 +37,6 @@
             Messages.sendLocalMessage(sourceChannel, message);
             sendPanelState();
         }
-        return snapshot;
     }
 
     function clearCaption(force) {
@@ -88,13 +87,8 @@
         sendPanelState();
     }
 
-    function displayCaption(message) {
-        if (!requested || status !== "active" || !source.accept(message, Date.now())) { return; }
-        publishSource();
-        display.update(source, Date.now());
-    }
-
-    function displaySnapshot(message) {
+    function displayText(message) {
+        if (message.type === "caption" && (!requested || status !== "active")) { return; }
         if (!source.accept(message, Date.now())) { return; }
         publishSource();
         display.update(source, Date.now());
@@ -113,10 +107,8 @@
         try { message = JSON.parse(raw); } catch (error) { return; }
         if (message.app !== "xrt-caption-designer") { return; }
         var binding = display.current();
-        if (message.action === "ready" || message.action === "refresh") { panelItems = display.list(); }
-        else if (message.action === "create") {
+        if (message.action === "create") {
             display.create(message.profile, message.audience === "local" ? "local" : "avatar");
-            panelItems = display.list();
         } else if (message.action === "select") {
             display.select(message.id);
         } else if (message.action === "bind") {
@@ -129,7 +121,7 @@
             binding.region = message.region;
         } else if (message.action === "preview" && binding) { binding.preview = !binding.preview; }
         else if (message.action === "control") { clicked(); }
-        else { return; }
+        else if (message.action !== "ready" && message.action !== "refresh") { return; }
         display.save();
         display.update(source, Date.now());
         panelItems = display.list();
@@ -177,8 +169,8 @@
                     if (status !== "active") { clearCaption(); }
                     updateButton();
                 },
-                caption: displayCaption,
-                display: displaySnapshot,
+                caption: displayText,
+                display: displayText,
                 clear: function () { clearCaption(true); },
                 disconnect: function () {
                     requested = false;

@@ -8,5 +8,13 @@
   "remove_method": "Restore",
   "platform": "VRChat",
   "menu_path": "Tools/XRT-Avatar-Plugin/Avatar Controls",
-  "in_game": "Upload this avatar, then turn on OSC > Enabled in VRChat. In XRTranslate, enable Avatar translation controls and select VRChat. Use Expressions > XRT > Translation to start or stop."
+  "in_game": "Upload this avatar, then turn on OSC > Enabled in VRChat. In XRTranslate, enable Avatar translation controls and select VRChat. Use Expressions > XRT > Translation to start or stop.",
+  "captions": {
+    "output": "packages/dev.nowloady.xrt-avatar/Editor/Caption/XrtCaptionWindow.cs",
+    "window": "XrtCaptionWindow",
+    "installer": "XrtCaptionInstaller",
+    "menu_path": "Tools/XRT-Avatar-Plugin/Caption Objects",
+    "columns": "status.Record?.columns ?? 0",
+    "preset_argument": "(XrtCaptionInstaller.Preset)preset"
+  }
 }

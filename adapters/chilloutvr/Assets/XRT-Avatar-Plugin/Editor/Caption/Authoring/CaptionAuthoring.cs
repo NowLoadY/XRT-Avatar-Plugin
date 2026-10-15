@@ -10,6 +10,8 @@ namespace XrtAvatarPlugin.Presentation
     /// <summary>Common caption preset selection and preview text for Unity authoring.</summary>
     public static class CaptionAuthoring
     {
+        private static readonly string[] PresetLabels = { "Horizontal", "Portrait", "Board" };
+
         public static int ConfigureMaterial(Material material, string preset, int columns = 0)
         {
             if (columns == 0) columns = string.Equals(preset, "portrait", StringComparison.OrdinalIgnoreCase) ? 8 : 32;
@@ -128,14 +130,15 @@ namespace XrtAvatarPlugin.Presentation
 
         public static int DrawPresets(int selectedPreset, int columns = 0)
         {
+            selectedPreset = Mathf.Clamp(selectedPreset, 0, PresetLabels.Length - 1);
             if (columns == 8 && selectedPreset == 0) selectedPreset = 1;
             else if (columns == 32 && selectedPreset == 1) selectedPreset = 0;
             else if (columns == 16) selectedPreset = 2;
             using (new EditorGUILayout.HorizontalScope())
             {
-                for (int i = 0; i < 3; i++)
+                var labelStyle = new GUIStyle(EditorStyles.miniLabel) { alignment = TextAnchor.MiddleCenter };
+                for (int value = 0; value < PresetLabels.Length; value++)
                 {
-                    int value = i;
                     Rect area = GUILayoutUtility.GetRect(80, 66, GUILayout.ExpandWidth(true));
                     bool selected = selectedPreset == value;
                     using (new EditorGUI.DisabledScope(columns != 0 &&
@@ -157,8 +160,7 @@ namespace XrtAvatarPlugin.Presentation
                         Handles.DrawAAPolyLine(1.5f, new Vector3(shape.x + 7, shape.yMax + 3),
                             new Vector3(shape.x + 12, shape.yMax - 2), new Vector3(shape.x + 18, shape.yMax + 3));
                     Handles.EndGUI();
-                    GUI.Label(new Rect(area.x, area.yMax - 23, area.width, 18), new[] { "Horizontal", "Portrait", "Board" }[value],
-                        new GUIStyle(EditorStyles.miniLabel) { alignment = TextAnchor.MiddleCenter });
+                    GUI.Label(new Rect(area.x, area.yMax - 23, area.width, 18), PresetLabels[value], labelStyle);
                 }
             }
             return selectedPreset;

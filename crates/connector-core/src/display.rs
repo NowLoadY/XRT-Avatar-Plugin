@@ -56,10 +56,6 @@ impl DisplaySnapshot {
         }
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.header.is_none() && self.messages.is_empty() && self.footer.is_none()
-    }
-
     /// Compatibility projection for a single 256-character caption field.
     /// The latest message gets its space before optional banners.
     pub fn legacy_text(&self) -> String {

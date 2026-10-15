@@ -1,6 +1,6 @@
 //! OSC connector metadata and buffered plain-text encoding. The host owns I/O.
 use crate::DisplaySnapshot;
-use std::{collections::VecDeque, ops::Range, time::Duration};
+use std::{ops::Range, time::Duration};
 use unicode_normalization::UnicodeNormalization;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -132,10 +132,6 @@ impl CaptionLayout {
         Duration::from_millis(self.contract.interval_ms)
     }
 
-    fn glyphs(self, text: &str) -> Vec<u16> {
-        self.glyphs_with_limit(text, self.contract.slots)
-    }
-
     fn glyphs_with_limit(self, text: &str, limit: usize) -> Vec<u16> {
         let normalized: String = text
             .chars()
@@ -188,15 +184,6 @@ impl CaptionLayout {
         glyphs
     }
 
-    pub fn frames(self, text: &str) -> VecDeque<Vec<(String, i32)>> {
-        let glyphs = self.glyphs(text);
-        let mut frames = VecDeque::from([vec![self.clear_write()]]);
-        for (pointer, chunk) in glyphs.chunks(self.bytes / 2).enumerate() {
-            frames.push_back(self.write_chunk(pointer, &self.pack(chunk)));
-        }
-        frames
-    }
-
     fn pack(self, chunk: &[u16]) -> Vec<i32> {
         let mut bytes = chunk
             .iter()
@@ -225,7 +212,38 @@ impl CaptionLayout {
 
     /// Preview the content selected for this layout, including its rendered line breaks.
     pub fn project(self, snapshot: &DisplaySnapshot) -> DisplaySnapshot {
-        self.project_cells(snapshot).0
+        let (mut snapshot, cells, body) = self.project_cells(snapshot);
+        let preview_text = |glyphs: &[u16]| {
+            glyphs
+                .chunks(self.columns)
+                .map(|line| {
+                    line.iter()
+                        .map(|glyph| {
+                            if *glyph == 0 {
+                                ' '
+                            } else {
+                                char::from_u32(u32::from(*glyph)).unwrap_or('\u{fffd}')
+                            }
+                        })
+                        .collect::<String>()
+                        .trim_end()
+                        .to_owned()
+                })
+                .collect::<Vec<_>>()
+                .join("\n")
+                .trim()
+                .to_owned()
+        };
+        if let Some(header) = &mut snapshot.header {
+            *header = preview_text(&cells[..self.columns]);
+        }
+        if let Some(footer) = &mut snapshot.footer {
+            *footer = preview_text(&cells[body.end..]);
+        }
+        for message in &mut snapshot.messages {
+            message.text = preview_text(&self.glyphs_with_limit(&message.text, body.len()));
+        }
+        snapshot
     }
 
     fn project_cells(
@@ -274,36 +292,6 @@ impl CaptionLayout {
             cells[offset..offset + glyphs.len()].copy_from_slice(&glyphs);
         }
         snapshot.messages.drain(..first);
-        let preview_text = |glyphs: &[u16]| {
-            glyphs
-                .chunks(self.columns)
-                .map(|line| {
-                    line.iter()
-                        .map(|glyph| {
-                            if *glyph == 0 {
-                                ' '
-                            } else {
-                                char::from_u32(u32::from(*glyph)).unwrap_or('\u{fffd}')
-                            }
-                        })
-                        .collect::<String>()
-                        .trim_end()
-                        .to_owned()
-                })
-                .collect::<Vec<_>>()
-                .join("\n")
-                .trim()
-                .to_owned()
-        };
-        if let Some(header) = &mut snapshot.header {
-            *header = preview_text(&cells[..self.columns]);
-        }
-        if let Some(footer) = &mut snapshot.footer {
-            *footer = preview_text(&cells[end..]);
-        }
-        for message in &mut snapshot.messages {
-            message.text = preview_text(&self.glyphs_with_limit(&message.text, capacity));
-        }
         (snapshot, cells, start..end)
     }
 
@@ -484,17 +472,29 @@ mod tests {
             CaptionLayout::discover(vrchat, |path, _| vrchat_values.get(path).copied()).unwrap();
         let word_layout =
             CaptionLayout::discover(cvr, |path, _| cvr_values.get(path).copied()).unwrap();
-        assert_eq!(word_layout.glyphs("文한🙂A"), byte_layout.glyphs("文한🙂A"));
-        let frames = word_layout.frames("文한🙂A");
-        assert_eq!(frames[0], vec![(cvr.pointer.into(), 255)]);
-        assert_eq!(frames[1].len(), 3);
-        let decoded: Vec<_> = frames[1][..2]
+        let display = DisplaySnapshot {
+            messages: vec![crate::DisplayMessage {
+                id: "1".into(),
+                text: "文한🙂A".into(),
+                ttl_ms: 8000,
+            }],
+            ..Default::default()
+        };
+        assert_eq!(word_layout.project(&display), byte_layout.project(&display));
+        let mut buffer = CaptionBuffer::new(word_layout);
+        buffer.replace(&display);
+        let clear = buffer.next_frame(Duration::ZERO).unwrap();
+        assert_eq!(clear.values, vec![(cvr.pointer.into(), 255)]);
+        buffer.confirm(clear);
+        let frame = buffer.next_frame(Duration::ZERO).unwrap();
+        assert_eq!(frame.values.len(), 3);
+        let decoded: Vec<_> = frame.values[..2]
             .iter()
             .flat_map(|(_, word)| [((*word as u32) >> 16) as u16, *word as u16])
             .collect();
         assert_eq!(decoded, vec![0x6587, 0xd55c, 0xfffd, 65]);
-        assert!(frames[1][1].1 < 0);
-        assert_eq!(frames[1][2], (cvr.pointer.into(), 0));
+        assert!(frame.values[1].1 < 0);
+        assert_eq!(frame.values[2], (cvr.pointer.into(), 0));
         assert!(!cvr.paths().iter().any(|path| path.ends_with("Byte0")));
         assert!(CaptionLayout::discover(vrchat, |path, _| cvr_values.get(path).copied()).is_none());
         cvr_values.remove(cvr.pointer);
@@ -508,31 +508,42 @@ mod tests {
             columns: 16,
             bytes: 4,
         };
-        let glyphs = layout.glyphs("A文\n🙂B");
-        assert_eq!(&glyphs[..2], &[65, 0x6587]);
-        assert!(glyphs[2..16].iter().all(|glyph| *glyph == 0));
-        assert_eq!(&glyphs[16..], &[0xfffd, 66]);
-        let frames = layout.frames("A文B");
-        assert_eq!(frames[0], vec![layout.clear_write()]);
+        let glyphs = |text: &str| layout.glyphs_with_limit(text, layout.contract.slots);
+        let mixed = glyphs("A文\n🙂B");
+        assert_eq!(&mixed[..2], &[65, 0x6587]);
+        assert!(mixed[2..16].iter().all(|glyph| *glyph == 0));
+        assert_eq!(&mixed[16..], &[0xfffd, 66]);
+        let mut buffer = CaptionBuffer::new(layout);
+        buffer.replace(&DisplaySnapshot {
+            messages: vec![crate::DisplayMessage {
+                id: "1".into(),
+                text: "A文B".into(),
+                ttl_ms: 8000,
+            }],
+            ..Default::default()
+        });
+        let clear = buffer.next_frame(Duration::ZERO).unwrap();
+        assert_eq!(clear.values, vec![layout.clear_write()]);
+        buffer.confirm(clear);
+        for expected in [vec![0, 65, 0x65, 0x87, 0], vec![0, 66, 0, 0, 1]] {
+            let frame = buffer.next_frame(Duration::ZERO).unwrap();
+            assert_eq!(
+                frame.values.iter().map(|(_, v)| *v).collect::<Vec<_>>(),
+                expected
+            );
+            buffer.confirm(frame);
+        }
         assert_eq!(
-            frames[1].iter().map(|(_, v)| *v).collect::<Vec<_>>(),
-            vec![0, 65, 0x65, 0x87, 0]
-        );
-        assert_eq!(
-            frames[2].iter().map(|(_, v)| *v).collect::<Vec<_>>(),
-            vec![0, 66, 0, 0, 1]
-        );
-        assert_eq!(
-            layout.glyphs("Cafe\u{301}\t한"),
+            glyphs("Cafe\u{301}\t한"),
             vec![67, 97, 102, 0xe9, 32, 0xd55c]
         );
-        let wrapped = layout.glyphs("Meet us near the entrance");
+        let wrapped = glyphs("Meet us near the entrance");
         assert_eq!(
             &wrapped[16..24],
             &"entrance".encode_utf16().collect::<Vec<_>>()
         );
-        assert_eq!(layout.glyphs("1234567890123456\nB")[16], 66);
-        let truncated = layout.glyphs(&"文".repeat(130));
+        assert_eq!(glyphs("1234567890123456\nB")[16], 66);
+        let truncated = glyphs(&"文".repeat(130));
         assert_eq!(truncated.len(), layout.contract.slots);
         assert_eq!(truncated[layout.contract.slots - 1], 0x2026);
     }

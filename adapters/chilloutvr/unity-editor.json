@@ -8,5 +8,13 @@
   "remove_method": "Remove",
   "platform": "ChilloutVR",
   "menu_path": "Tools/XRT-Avatar-Plugin/ChilloutVR/Avatar Controls",
-  "in_game": "Upload this avatar, then turn on Settings > Implementation > OSC in ChilloutVR. In XRTranslate, enable Avatar translation controls and select ChilloutVR. Use XRT Translation in Advanced Avatar Settings to start or stop."
+  "in_game": "Upload this avatar, then turn on Settings > Implementation > OSC in ChilloutVR. In XRTranslate, enable Avatar translation controls and select ChilloutVR. Use XRT Translation in Advanced Avatar Settings to start or stop.",
+  "captions": {
+    "output": "Assets/XRT-Avatar-Plugin/Editor/Caption/XrtChilloutCaptionWindow.cs",
+    "window": "XrtChilloutCaptionWindow",
+    "installer": "XrtChilloutCaptionInstaller",
+    "menu_path": "Tools/XRT-Avatar-Plugin/ChilloutVR/Caption Objects",
+    "columns": "status.Columns",
+    "preset_argument": "Presets[preset]"
+  }
 }

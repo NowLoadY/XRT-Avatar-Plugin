@@ -111,10 +111,11 @@ namespace XrtAvatarPlugin.Editor
                     ChooseAvatar(selected);
                     GUIUtility.ExitGUI();
                 }
-                using (new EditorGUI.DisabledScope(SelectedAvatar() == null))
+                var hierarchyAvatar = SelectedAvatar();
+                using (new EditorGUI.DisabledScope(hierarchyAvatar == null))
                     if (IconButton("Avatar Icon", "Use the avatar selected in the Hierarchy", EditorStyles.miniButton))
                     {
-                        ChooseAvatar(SelectedAvatar());
+                        ChooseAvatar(hierarchyAvatar);
                         GUIUtility.ExitGUI();
                     }
             }
@@ -125,15 +126,12 @@ namespace XrtAvatarPlugin.Editor
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     EditorGUILayout.LabelField("Translation menu", EditorStyles.boldLabel);
-                    using (new EditorGUI.DisabledScope(avatar == null || EditorApplication.isPlayingOrWillChangePlaymode))
-                    {
-                        using (new EditorGUI.DisabledScope(!status.CanInstall))
-                            if (IconButton("Toolbar Plus", "Add translation menu", EditorStyles.miniButtonLeft))
-                                Run(() => XrtAvatarInstaller.Install(avatar));
-                        using (new EditorGUI.DisabledScope(!status.CanRemove))
-                            if (IconButton("Toolbar Minus", "Remove translation menu", EditorStyles.miniButtonRight))
-                                Run(() => XrtAvatarInstaller.Restore(avatar));
-                    }
+                    using (new EditorGUI.DisabledScope(!status.CanInstall))
+                        if (IconButton("Toolbar Plus", "Add translation menu", EditorStyles.miniButtonLeft))
+                            Run(() => XrtAvatarInstaller.Install(avatar));
+                    using (new EditorGUI.DisabledScope(!status.CanRemove))
+                        if (IconButton("Toolbar Minus", "Remove translation menu", EditorStyles.miniButtonRight))
+                            Run(() => XrtAvatarInstaller.Restore(avatar));
                 }
                 EditorGUILayout.LabelField(status.Title, EditorStyles.miniLabel);
                 string detail = error ?? status.Detail;

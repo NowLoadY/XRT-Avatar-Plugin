@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the shared Avatar Controls window for each Unity SDK package."""
+"""Generate shared authoring windows for each Unity SDK package."""
 
 import argparse
 import json
@@ -7,24 +7,28 @@ from pathlib import Path
 from string import Template
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
-TEMPLATE = REPOSITORY_ROOT / "authoring/unity/AvatarControlsWindow.cs.template"
+TEMPLATES = REPOSITORY_ROOT / "authoring/unity"
 
 
 def outputs():
-    template = Template(TEMPLATE.read_text(encoding="utf-8"))
     result = {}
     for profile in sorted((REPOSITORY_ROOT / "adapters").glob("*/unity-editor.json")):
         adapter = profile.parent.name
         binding = json.loads(profile.read_text(encoding="utf-8"))
-        output = profile.parent / binding.pop("output")
+        captions = binding.pop("captions")
         binding["window_title"] = "XRT · " + binding["platform"]
         binding["guide_url"] = (
             "https://github.com/NowLoadY/XRT-Avatar-Plugin/blob/main/docs/adapters/"
             + adapter + "/installation.md"
         )
-        for key in ("platform", "window_title", "menu_path", "guide_url", "in_game"):
-            binding[key] = json.dumps(binding[key], ensure_ascii=False)
-        result[output] = template.substitute(binding)
+        for name, values in (("AvatarControlsWindow", binding),
+                             ("CaptionObjectsWindow", binding | captions)):
+            values = values.copy()
+            output = profile.parent / values.pop("output")
+            for key in ("platform", "window_title", "menu_path", "guide_url", "in_game"):
+                values[key] = json.dumps(values[key], ensure_ascii=False)
+            template = Template((TEMPLATES / (name + ".cs.template")).read_text(encoding="utf-8"))
+            result[output] = template.substitute(values)
     return result
 
 

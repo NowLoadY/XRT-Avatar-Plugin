@@ -78,9 +78,9 @@ preserving user additions. Previous assets remain available for Undo/Redo and
 saved scenes, including scenes that are not open. Inspection does not create
 assets. Platform-specific installation rules belong to the adapter guide.
 
-The Unity window template shares selection, status, save and Undo interaction.
+The Unity window templates share selection, status, save, Undo and caption preview interaction.
 `adapters/<platform>/unity-editor.json` supplies SDK bindings and labels.
-`tools/generate_unity_editor.py` emits the two SDK-specific windows; release
+`tools/generate_unity_editor.py` emits control and caption windows for each SDK; release
 packaging checks that these copies match. Each installer owns its validation,
 asset creation and restoration. Caption windows reuse `CaptionAuthoring` and
 `CaptionPreview` while retaining their platform-specific selection and install actions.

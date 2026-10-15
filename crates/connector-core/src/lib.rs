@@ -102,10 +102,6 @@ pub enum Effect {
         token: ResetToken,
     },
     /// Ignore a write if its binding generation is no longer current.
-    WriteEnabled {
-        generation: Generation,
-        value: bool,
-    },
     WriteStatus {
         generation: Generation,
         value: Status,
@@ -232,11 +228,11 @@ impl Controller {
         if self.pending_reset != Some(token) || self.connection == Connection::Disconnected {
             return Vec::new();
         }
-        let before = self.feedback();
+        let before = self.status();
         self.pending_reset = None;
         self.connection = Connection::Ready;
         let mut effects = Vec::new();
-        self.append_feedback(before, &mut effects);
+        self.append_status(before, &mut effects);
         effects
     }
 
@@ -254,7 +250,7 @@ impl Controller {
                 Vec::new()
             };
         }
-        let before = self.feedback();
+        let before = self.status();
         let mut effects = Vec::new();
         if enabled {
             if let Some(operation) = self.operation {
@@ -279,13 +275,13 @@ impl Controller {
             });
             effects.push(Effect::Start(id));
         } else {
-            self.requested_enabled = false;
+            let was_enabled = std::mem::replace(&mut self.requested_enabled, false);
             self.cancel_operation(&mut effects);
-            if before.0 {
+            if was_enabled {
                 effects.push(self.begin_reset());
             }
         }
-        self.append_feedback(before, &mut effects);
+        self.append_status(before, &mut effects);
         effects
     }
 
@@ -300,7 +296,7 @@ impl Controller {
                 Vec::new()
             };
         };
-        let before = self.feedback();
+        let before = self.status();
         let mut effects = Vec::new();
         match result {
             HostResult::Started => {
@@ -335,7 +331,7 @@ impl Controller {
                 effects.push(self.begin_reset());
             }
         }
-        self.append_feedback(before, &mut effects);
+        self.append_status(before, &mut effects);
         effects
     }
 
@@ -350,14 +346,14 @@ impl Controller {
         if generation != self.generation || self.connection == Connection::Disconnected {
             return Vec::new();
         }
-        let before = self.feedback();
+        let before = self.status();
         self.connection = Connection::Disconnected;
         self.requested_enabled = false;
         self.diagnostic = Some(diagnostic.into());
         let mut effects = Vec::new();
         self.cancel_operation(&mut effects);
         effects.push(self.begin_reset());
-        self.append_feedback(before, &mut effects);
+        self.append_status(before, &mut effects);
         effects
     }
 
@@ -388,18 +384,8 @@ impl Controller {
         }
     }
 
-    fn feedback(&self) -> (bool, Status) {
-        (self.requested_enabled, self.status())
-    }
-
-    fn append_feedback(&self, before: (bool, Status), effects: &mut Vec<Effect>) {
-        // OFF writes are always reset barriers, emitted by their lifecycle
-        // transition. A plain false feedback write would permit a lost reset
-        // packet to turn the client's stale true value into another Start.
-        if !before.0 && self.requested_enabled {
-            effects.push(self.enabled_write(true));
-        }
-        if before.1 != self.status() {
+    fn append_status(&self, before: Status, effects: &mut Vec<Effect>) {
+        if before != self.status() {
             effects.push(self.status_write());
         }
     }
@@ -415,13 +401,6 @@ impl Controller {
         };
         self.pending_reset = Some(token);
         Effect::ResetEnabled { token }
-    }
-
-    fn enabled_write(&self, value: bool) -> Effect {
-        Effect::WriteEnabled {
-            generation: self.generation,
-            value,
-        }
     }
 
     fn status_write(&self) -> Effect {

@@ -111,9 +111,7 @@ class ResoniteAdapter:
     async def caption(self, message):
         if not (self.source_ids or self.text_id) or not self.requested or self.last_status != "active":
             return
-        now = time.monotonic() * 1000
-        if self.captions.accept(message, now):
-            await self.publish_text()
+        await self.display(message)
 
     async def display(self, message):
         if self.captions.accept(message, time.monotonic() * 1000):

@@ -23,8 +23,8 @@ XRTranslate owns sessions and the shared OSC/OSCQuery transport; see
 
 ## Unity authoring
 
-The shared window is generated from `authoring/unity/AvatarControlsWindow.cs.template`.
-Edit that template and run `python3 tools/generate_unity_editor.py` from the repository
+The control and caption windows use the shared templates in `authoring/unity/`.
+Edit the templates and run `python3 tools/generate_unity_editor.py` from the repository
 root. The installer remains here and uses the native Avatar Descriptor and
 Expressions assets. Menu installation leaves playable layers and other tools' components in place.
 Caption installation and build-time bindings follow the
