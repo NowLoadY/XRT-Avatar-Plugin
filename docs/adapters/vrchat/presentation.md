@@ -5,6 +5,17 @@ adapter. The current package contains no bubble renderer, font atlas, shader or
 text-paging protocol. Existing XRTranslate overlays and VRChat Chatbox remain the
 available output paths.
 
+## Board placement concept
+
+Full-body placement studies with a white board held at chest height.
+
+![AI-generated board placement concepts with Kipfel, Mamehinata and Usasaki](images/board-placement-concept.jpg)
+
+Character references: [Kipfel](https://mukumi.booth.pm/items/5813187),
+[Mamehinata](https://mukumi.booth.pm/items/4340548) and
+[Usasaki](https://mukumi.booth.pm/items/3550881) by もち山金魚 / @mukumi.
+[Kipfel detail](images/kipfel-board-concept.jpg).
+
 ## Ownership
 
 The adapter consumes normalized translation results with their owner, message

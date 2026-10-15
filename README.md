@@ -14,15 +14,15 @@ Start and stop [XRTranslate](https://github.com/NowLoadY/XRTranslate) from your 
 
 **Unity · VRChat avatar setup**
 
-Select your avatar, add the translation menu and upload through the VRChat SDK.
+Open **Tools → XRT-Avatar-Plugin → Avatar Controls** in your avatar project. Select your avatar and click **+** beside **Translation menu**, then save the scene and upload through the VRChat SDK.
 
 <p align="center">
-  <img src="assets/previews/vrchat-unity-illustration.jpg" alt="AI-generated illustration of the Unity avatar installer with the translation menu added" width="900" />
+  <img src="assets/previews/vrchat-unity-illustration.jpg" alt="AI-generated illustration of the Unity avatar installer before installation, with the plus button enabled" width="900" />
 </p>
 
 **VRChat · Translation switch**
 
-Open **Expressions → XRT → Translation** to start or stop translation while you play.
+Open VRChat's Action Menu (**R** on desktop), then **Expressions → XRT → Translation**. Select **Translation** to turn it on or off.
 
 <p align="center">
   <img src="assets/previews/vrchat-menu-illustration.jpg" alt="AI-generated illustration of the Translation toggle in VRChat's XRT radial submenu" width="900" />
