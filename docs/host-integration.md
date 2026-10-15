@@ -5,7 +5,8 @@ turns supported interactions into session requests and reports the host's actual
 state back to the platform. The adapter's protocol defines how requests and
 feedback travel between them. The companion host implementation is maintained
 on [XRTranslate main](https://github.com/NowLoadY/XRTranslate/tree/main).
-Installable releases declare their compatible host in `release/compatibility.json`.
+Host requirements and the integration revision are recorded in
+[`release/compatibility.json`](../release/compatibility.json).
 
 ## Session ownership
 
@@ -58,11 +59,3 @@ pending presentation; a new connection receives no previous-session history.
 See the [connector protocol](connector-protocol.md) and platform guides for
 transport mappings and installation. The [VRChat host guide](adapters/vrchat/host-integration.md)
 records its OSCQuery mapping and setting lifetimes.
-
-## Host availability
-
-The installable plugin preview targets XRTranslate **0.3.4**. Until that version
-is released, use a development build containing the Avatar connector integration.
-The required development revision and setup guide are recorded in
-[`release/compatibility.json`](../release/compatibility.json). XRTranslate 0.3.3
-does not include this integration.

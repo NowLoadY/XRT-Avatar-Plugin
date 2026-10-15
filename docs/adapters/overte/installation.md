@@ -15,9 +15,6 @@ place and style yourself.
 4. Open the tablet and select the **link icon**. Paste the address and pairing
    token from XRTranslate. Connecting leaves translation off.
 
-Avatar controls are planned for XRTranslate 0.3.4. This preview currently requires
-an [XRTranslate development build](https://github.com/NowLoadY/XRTranslate/blob/main/docs/avatar-connectors.md).
-
 ## Start and stop
 
 Select the **play icon** to start translation. It becomes a **square** that stops
@@ -75,9 +72,6 @@ edited remain available.
 
 To use it again, load `xrt-avatar.js` and reconnect. The previous object binding is
 reused if the object still exists.
-
-This is a preview. Installation, VR interaction and text appearance still need
-verification in the Overte client.
 
 For Avatar script installation or custom displays, see the
 [development guide](https://github.com/NowLoadY/XRT-Avatar-Plugin/blob/main/docs/adapters/overte/development.md).

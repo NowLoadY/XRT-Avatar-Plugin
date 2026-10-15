@@ -12,19 +12,19 @@ In Overte, create a caption object or connect one you have designed. Place it on
 
 ## Previews
 
-Overte's caption page provides object presets, selection and preview controls. The page below is shown before connecting to the game.
+Create a caption object, choose an existing one and preview its text in Overte's caption page.
 
 <p align="center">
   <img src="assets/previews/caption-designer.jpg" alt="Overte caption page with horizontal, portrait and board presets and object selection controls" width="900" />
 </p>
 
-Horizontal caption layout preview:
+Horizontal layout:
 
 <p align="center">
   <img src="assets/previews/caption-horizontal.jpg" alt="Horizontal caption layout in the positioning and text preview tool" width="900" />
 </p>
 
-Portrait caption layout preview. You can also use transparent board lettering and your own fonts and artwork in supported games.
+Portrait layout. For a board, combine transparent lettering with your own fonts and artwork.
 
 <p align="center">
   <img src="assets/previews/caption-portrait.jpg" alt="Portrait caption layout in the positioning and text preview tool" width="900" />
@@ -32,7 +32,7 @@ Portrait caption layout preview. You can also use transparent board lettering an
 
 ## Install
 
-**Host requirement:** this preview needs XRTranslate with **Avatar translation controls**, planned for **0.3.4**. The current **0.3.3** release cannot connect to the plugin. See [XRTranslate setup](https://github.com/NowLoadY/XRTranslate/blob/main/docs/avatar-connectors.md) for the available development setup.
+**Requires XRTranslate > 0.3.3.**
 
 Choose the package for your game:
 
@@ -46,11 +46,7 @@ Choose the package for your game:
 2. **Connect XRTranslate.** Open **Settings → Plugins → Avatar translation controls**, select your game and enable the plugin. Follow your game's setup guide to enable OSC or pair its controls.
 3. **Start in the game.** Use **XRT → Translation** in VRChat, **XRT Translation** in ChilloutVR, or the tablet's play icon in Overte. Use the same control to stop.
 
-Caption objects shown above are available in Overte. The VRChat and ChilloutVR packages add menu controls; choose their translation output in XRTranslate.
-
 [Resonite](docs/adapters/resonite/installation.md) and [Second Life](docs/adapters/secondlife/installation.md) have separate setup guides. Resonite needs a session with ResoniteLink enabled; Second Life needs a configured relay service.
-
-The packages are development previews. Unity import and live game checks are still pending.
 
 ## Help
 

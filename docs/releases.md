@@ -19,7 +19,9 @@ to `dist/release/metadata/` and remain available in the Actions artifact. Publis
 the VPM index at `vpm/index.json` and include checksums in the release notes.
 
 `release/compatibility.json` owns the target host version, development revision
-and setup guide. Host releases follow XRTranslate's own release cycle.
+and setup guide. The root README owns the user-facing host requirement;
+platform guides and release notes link to its installation section.
+Host releases follow XRTranslate's own release cycle.
 The Unity package's `package.json` owns its package version and SDK range. Release
 tags use `v<package version>`. Connector-core crate versions follow their Rust API
 lifecycle and remain independently pinned by the host.
@@ -44,10 +46,9 @@ lifecycle and remain independently pinned by the host.
    version. Preserve published package bytes and stable package identities.
    When renaming an existing download, update its listing URL while retaining
    its checksum. Future package manifests use the product download filename.
-4. Inspect the draft's files and checksums. State whether the compatible host
-   is a released version or requires a development build. Record archive checks
-   and actual Unity/game testing separately in the release notes. Publish the
-   preview when the plugin downloads and stated compatibility are ready.
+4. Inspect the draft's files and checksums. Describe the package contents and link
+   to the installation guides. Record archive checks and actual Unity/game testing
+   in the platform compatibility documents. Publish when the downloads are ready.
 5. Merge the generated `metadata/index.json` into `vpm/index.json` on `main`, retaining
    earlier versions. Publish the listing after its download URLs are available.
    The tool's `--listing-input` and `--listing-output` options support this update.
@@ -80,7 +81,7 @@ Unity-package formats so migration preserves their references.
 
 Archive validation checks packaging. Unity import, SDK compilation, installation,
 removal and in-game behavior are recorded against the environments in which they
-were actually exercised. A preview must describe outstanding acceptance work.
+were actually exercised. Platform compatibility documents track acceptance status.
 
 References: [VPM packages](https://vcc.docs.vrchat.com/vpm/packages/),
 [VPM repositories](https://vcc.docs.vrchat.com/vpm/repos/),

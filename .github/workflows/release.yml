@@ -71,17 +71,12 @@ jobs:
           release = next((item for page in releases for item in page if item['tag_name'] == tag), None)
           if release is None:
               manifest = json.loads(pathlib.Path('dist/release/metadata/release-manifest.json').read_text())
-              host = manifest['host']
               notes = ('Installable preview packages for VRChat, ChilloutVR and Overte.\n\n'
-                       'Targets XRTranslate ' + host['minimum_version'] + '. Use the current development build '
-                       'until that host release is available. See the [XRTranslate connection guide]('
-                       + host['documentation_url'] + ').\n\n'
                        'For VRChat, import the .unitypackage into your Avatar project, then open '
                        'Tools > XRT-Avatar-Plugin > Avatar Controls. Select your avatar and add its translation menu.\n\n'
-                       'Use the platform installation guides linked from the repository README. '
-                       'Archive structure and GUIDs are checked during packaging; '
-                       'Unity import and game-client acceptance remain pending. '
-                       'The VRChat package provides menu controls; avatar bubble rendering is not included.')
+                       'See [installation and setup](https://github.com/NowLoadY/XRT-Avatar-Plugin#install) '
+                       'for your game. VRChat and ChilloutVR provide avatar translation controls; '
+                       'Overte also provides editable caption objects.')
               checksums = '\n'.join(item['sha256'] + '  ' + item['name'] for item in manifest['artifacts'])
               notes += '\n\n<details>\n<summary>SHA-256 checksums</summary>\n\n```text\n' + checksums + '\n```\n</details>'
               gh('release', 'create', tag, '--verify-tag', '--draft', '--prerelease',

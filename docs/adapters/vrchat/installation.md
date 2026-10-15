@@ -8,11 +8,6 @@ translation in XRTranslate.
 Use VRChat and XRTranslate on the same PC, and have an avatar Unity project you
 can edit and upload. Make a backup of the project.
 
-XRTranslate must include **Avatar translation controls**, planned for **0.3.4**.
-The current **0.3.3** release cannot use this plugin. See
-[XRTranslate's Avatar controls guide](https://github.com/NowLoadY/XRTranslate/blob/main/docs/avatar-connectors.md)
-for host setup.
-
 ## 1. Prepare your avatar project
 
 Open your existing project in **VRChat Creator Companion (VCC)**. If you are
@@ -98,6 +93,3 @@ the selected avatar. If it reports an edited setup, follow
 [recovery](troubleshooting.md#recover-an-edited-setup) before continuing.
 
 [Setup help](troubleshooting.md) · [Compatibility](compatibility.md)
-
-This is a preview; Unity import, upload and in-game operation still need live
-validation. The package currently adds translation menu controls.
