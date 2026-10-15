@@ -51,7 +51,7 @@ namespace XrtAvatarPlugin.Editor
                 if (!menu.CanInstall && !menu.CanRemove)
                     throw new InvalidOperationException(menu.Detail);
                 ValidateController(avatar);
-                int bytes = AvailableBytes(avatar.expressionParameters, avatar.customExpressions);
+                int bytes = AvailableBytes(avatar);
                 return new Status
                 {
                     Title = "Not added", CanAdd = true, ByteCount = bytes,
@@ -77,7 +77,7 @@ namespace XrtAvatarPlugin.Editor
                 return;
             }
             var sourceController = ValidateController(avatar);
-            AvailableBytes(avatar.expressionParameters, avatar.customExpressions);
+            AvailableBytes(avatar);
             if (CaptionAssets.LoadShader() == null)
                 throw new InvalidOperationException("Reimport the XRT package to restore its caption assets.");
 
@@ -91,7 +91,7 @@ namespace XrtAvatarPlugin.Editor
             {
                 XrtAvatarInstaller.Install(avatar);
                 var sourceParameters = avatar.expressionParameters;
-                int bytes = AvailableBytes(sourceParameters, true);
+                int bytes = AvailableBytes(avatar);
                 int columns = preset == Preset.Portrait ? XrtCaptionProtocol.PortraitColumns : XrtCaptionProtocol.HorizontalColumns;
                 EnsureRoot(paths);
                 string folder = Root + "/Caption-" + Guid.NewGuid().ToString("N");
@@ -375,19 +375,20 @@ namespace XrtAvatarPlugin.Editor
             }
         }
 
-        private static int AvailableBytes(VRCExpressionParameters parameters, bool custom)
+        private static int AvailableBytes(VRCAvatarDescriptor avatar)
         {
-            var entries = custom && parameters != null
+            var parameters = avatar.customExpressions
+                ? avatar.expressionParameters ?? avatar.expressionsMenu?.Parameters : null;
+            var entries = parameters != null
                 ? parameters.parameters ?? Array.Empty<VRCExpressionParameters.Parameter>()
                 : VRC.SDK3.Editor.VRCExpressionParametersEditor.GetDefaultParameters();
             if (parameters != null && EditorUtility.IsDirty(parameters))
                 throw new InvalidOperationException("Save the Expressions Parameters asset first.");
-            if (entries.Any(p => p != null && p.name != null && p.name.StartsWith(XrtCaptionAnimator.Prefix)))
-                throw new InvalidOperationException("This avatar already contains caption parameters.");
-            int used = entries.Where(p => p != null && p.networkSynced && !string.IsNullOrEmpty(p.name))
-                .Sum(p => p.valueType == VRCExpressionParameters.ValueType.Bool ? 1 : 8);
+            var budget = XrtParameterBudget.Inspect(avatar, entries);
             foreach (int bytes in XrtCaptionProtocol.BusByteCounts)
-                if (used + (bytes + 1) * 8 <= 256 && entries.Length + bytes + 4 <= 8192) return bytes;
+                if (budget.Bits + (bytes + 1) * 8 <= 256 && budget.Count + bytes + 4 <= 8192) return bytes;
+            if (budget.Count + XrtCaptionProtocol.BusByteCounts.Min() + 4 > 8192)
+                throw new InvalidOperationException("This avatar has no room for caption parameters. Remove unused Expressions Parameters first.");
             throw new InvalidOperationException("Caption objects need at least 24 free synced bits in Expressions Parameters.");
         }
 

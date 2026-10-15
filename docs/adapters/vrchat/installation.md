@@ -11,7 +11,8 @@ can edit and upload. Make a backup of the project.
 
 ## 1. Prepare your avatar project
 
-Open your existing project in **VRChat Creator Companion (VCC)**. If you are
+Open your existing project in **VRChat Creator Companion (VCC)** or
+[ALCOM](https://vrc-get.anatawa12.com/en/alcom/). If you are
 starting fresh, follow [VCC setup](https://vcc.docs.vrchat.com/guides/getting-started/),
 create an **Avatar** project and import your avatar using its creator's instructions.
 VCC helps install the Unity version required by VRChat.
@@ -22,21 +23,27 @@ must first be linked to a VRChat account. See
 
 ## 2. Install XRT
 
-### Through VCC
+### VCC or ALCOM
 
-1. Open **Settings → Packages → Add Repository** and paste:
+Add this repository to your package manager:
 
-   ```text
-   https://raw.githubusercontent.com/NowLoadY/XRT-Avatar-Plugin/main/vpm/index.json
-   ```
+```text
+https://raw.githubusercontent.com/NowLoadY/XRT-Avatar-Plugin/main/vpm/index.json
+```
 
-2. Confirm and enable **XRT-Avatar-Plugin**. Enable **Show Pre-Release Packages**
-   to see this preview.
-3. Open your project's **Manage Project**, add **XRT-Avatar-Plugin (VRChat)**,
-   then open the project in Unity.
+- **VCC:** Open **Settings → Packages → Add Repository**, paste the URL and
+  confirm **XRT-Avatar-Plugin**.
+- **ALCOM:** Open **Packages → Add Repository**, paste the URL and
+  confirm **XRT-Avatar-Plugin**.
 
-VCC manages later updates. These steps follow its
-[community repository workflow](https://vcc.docs.vrchat.com/guides/community-repositories/).
+Enable **Show Pre-Release Packages** in the package manager's settings to see
+this preview. Open your project's **Manage Project** and click **+** beside
+**XRT-Avatar-Plugin (VRChat)**. In ALCOM, click **Apply** to finish. Open the
+project in Unity.
+
+The package manager also installs later updates. See
+[VCC's repository guide](https://vcc.docs.vrchat.com/guides/community-repositories/)
+for its package settings.
 
 ### Or import the download
 
@@ -123,8 +130,8 @@ removed its menu from every avatar that uses it.
 Use Unity's **Edit → Undo / Redo** to reverse an add or removal. After removing
 XRT, you can continue editing the assigned menu and add XRT again.
 
-For updates, use VCC if it manages your installation; otherwise import the newer
-Unity package. Existing text objects and their placement are kept. Keep the
+For updates, use VCC or ALCOM if it manages your installation; otherwise import
+the newer Unity package. Existing text objects and their placement are kept. Keep the
 project's generated XRT folders. The refresh icon checks the selected avatar;
 see [setup help](troubleshooting.md) for missing assets or duplicate setups.
 

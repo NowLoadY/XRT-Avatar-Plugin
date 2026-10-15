@@ -34,7 +34,9 @@ tracked renderer's material bindings; removal retains unrelated menu, parameter
 and animator edits. Existing records are hydrated without saving during inspection
 and persisted by an authoring operation.
 Control parameters remain unsaved and unsynchronized; the caption bus uses the
-budget declared in its manifest.
+budget declared in its manifest. When NDMF is present, its public parameter
+providers supply the effective names and usage of build-time contributions for
+capacity checks; SDK-only projects use their Expressions Parameters and defaults.
 
 When the descriptor has no custom menu, installation creates one and records
 the original references and `customExpressions` flag. The SDK's public

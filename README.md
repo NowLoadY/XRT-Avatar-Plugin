@@ -48,9 +48,9 @@ Create a horizontal or portrait text object, or place the text on your own board
 
 Choose your game and follow its setup guide:
 
-| Game | Features | Download | Setup |
+| Game | Features | Install | Setup |
 |---|---|---|---|
-| VRChat | Translation menu and caption boards (PC) | [Unity package](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.7/XRT-Avatar-Plugin-VRChat-0.1.0-preview.7.unitypackage) | [Unity / VCC](docs/adapters/vrchat/installation.md) |
+| VRChat | Translation menu and caption boards (PC) | [VCC / ALCOM](docs/adapters/vrchat/installation.md#vcc-or-alcom) · [Unity package](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.7/XRT-Avatar-Plugin-VRChat-0.1.0-preview.7.unitypackage) | [Avatar setup](docs/adapters/vrchat/installation.md#3-add-the-menu) |
 | ChilloutVR | Translation menu and caption boards | [Unity package](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.7/XRT-Avatar-Plugin-ChilloutVR-0.1.0-preview.7.unitypackage) | [CCK project](docs/adapters/chilloutvr/installation.md) |
 | Overte | Tablet controls and wearable caption objects | [Script bundle](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.7/XRT-Avatar-Plugin-Overte-0.1.0-preview.7.zip) | [Running Scripts](docs/adapters/overte/installation.md) |
 | Resonite | Avatar controls and caption objects | [Source archive](https://github.com/NowLoadY/XRT-Avatar-Plugin/archive/refs/tags/v0.1.0-preview.7.zip) | [ResoniteLink](docs/adapters/resonite/installation.md) |
