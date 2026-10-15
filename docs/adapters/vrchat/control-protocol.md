@@ -23,7 +23,7 @@ from the currently bound local Avatar. OSC endpoints are not authentication.
 
 The menu shows **requested enablement**, not a read-only actual-state widget.
 The host displays Unavailable, Off, Starting, Active, Stopping or Error in its
-plugin settings. Startup acceptance alone is not Active. A future Avatar status
+Avatar page. Startup acceptance alone is not Active. A future Avatar status
 indicator consumes host status through an explicitly installed renderer; no such
 indicator is shipped in this baseline.
 
@@ -40,7 +40,8 @@ indicator is shipped in this baseline.
    the existing host output configuration. Repeated on values do not create
    duplicate work. Resource or configuration failure resets the request and
    reports Error through the host.
-4. Off cancels only that operation, including pending startup and accepted output.
+4. Off cancels only that operation, including pending startup and its messages.
+   Other display content retains its own lifetime.
    Stopping remains visible until the host confirms release. An on request during
    cancellation is rejected; the user can retry after Off.
 5. Completion, failure and desktop stop force a new reset and require its fresh

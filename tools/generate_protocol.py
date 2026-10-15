@@ -196,7 +196,9 @@ def catalog_outputs():
                              ("interval_ms", caption["delivery"]["defaultChunkIntervalMs"])):
             result += f'        {field}: {value},\n'
         result += f'        column_counts: &{json.dumps(caption["columnCounts"])},\n'
-        result += f'        bytes_per_chunk: &{json.dumps(counts)},\n    }},\n}};\n\n'
+        result += f'        bytes_per_chunk: &{json.dumps(counts)},\n'
+        idle = caption["delivery"].get("receiverIdleTimeoutMs")
+        result += f'        receiver_idle_ms: {"Some(" + str(idle) + ")" if idle else "None"},\n    }},\n}};\n\n'
     if catalog["default"] not in [entry["id"] for entry in osc_entries]:
         raise ValueError("The default OSC peer must have an OSC contract")
     result += f'pub(crate) const DEFAULT_PEER: osc::Peer = {catalog["default"].upper()}.peer;\n'

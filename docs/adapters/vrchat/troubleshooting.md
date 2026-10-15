@@ -28,15 +28,27 @@ If the window reports an edited or duplicate XRT setup:
 3. Refresh the window, remove XRT with **−**, then make your intended changes to
    the avatar's original Expressions. Add XRT again when those assets are saved.
 
+## Caption is blank
+
+Enable **Display content** on XRTranslate's **Avatar** page. Select **Messages**
+in the preview to check its content and audio-source settings, or choose content
+for **Header** or **Footer**. For menu-controlled translation, turn on
+**Expressions → XRT → Translation**. Wear the uploaded PC avatar and allow its
+custom shaders. In Unity, the magnifier in Caption Objects selects the object
+so you can check its placement and scale.
+
+Messages expire individually. Stopping translation removes that task's messages;
+the header and footer remain visible. The trash icon clears messages, while
+disabling **Display content** clears the whole surface.
+
 ## Connection or upload problems
 
 - **XRT is missing in Unity:** finish importing the package and resolve errors in
   the Console. Check the [target Unity and SDK versions](compatibility.md#targets).
 - **No menu in the game:** save and upload the modified avatar, then wear that
   uploaded version.
-- **Connection unavailable:** enable OSC, select VRChat in XRTranslate's Avatar
-  translation controls and wear the avatar with XRT installed. Read the message
-  in XRTranslate's plugin settings.
+- **Connection unavailable:** enable OSC, select VRChat on XRTranslate's **Avatar**
+  page and wear the avatar with XRT installed. Read the connection message there.
 - **Input is busy:** stop the other XRTranslate task using the same audio input.
 - **Cannot upload:** check VRChat's
   [account requirements and Builder messages](https://creators.vrchat.com/avatars/creating-your-first-avatar/#requirements).

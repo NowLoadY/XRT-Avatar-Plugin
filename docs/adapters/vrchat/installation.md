@@ -1,7 +1,7 @@
 # Install for VRChat
 
 Add **XRT → Translation** to your avatar's Expressions menu to start and stop
-translation in XRTranslate. Add a caption object to show the translated text on
+translation in XRTranslate. Add a caption object to show text on
 a board or another surface on your PC avatar.
 
 ## Before you start
@@ -88,8 +88,9 @@ for the SDK panel. Wear the uploaded avatar in VRChat.
 ## 6. Start translation
 
 1. Open XRTranslate and configure your audio input, languages and outputs.
-2. In **Settings → Plugins → Avatar translation controls**, select **VRChat**
-   and enable the plugin. Enable **Send captions to the game component** to use the caption object.
+2. Enable **Avatar** in **Settings → Plugins**, then open **Avatar** from the
+   sidebar. Select **VRChat** and enable **Display content**. Click **Header**,
+   **Messages** or **Footer** in the preview to choose what appears there.
 3. In VRChat's Action Menu, turn on **OSC → Enabled** as described in the
    [official OSC guide](https://docs.vrchat.com/docs/osc-overview#enabling-it).
 4. Wait for XRTranslate to show **Off**, then open
@@ -98,9 +99,11 @@ for the SDK panel. Wear the uploaded avatar in VRChat.
 XRTranslate shows **Starting** while preparing translation, then **Active**.
 Completed translations appear progressively on the caption object. Other players
 can see them when your PC avatar and its shaders are shown.
+Turning translation off removes that task's messages; the header and footer
+keep displaying their selected content. The trash icon clears messages, and
+**Display content** turns the entire display on or off.
 After changing avatars or reconnecting, wait for **Off** and turn translation on
-again. Choose caption, overlay and speech outputs in XRTranslate; Chatbox is in
-its OSC plugin.
+again. Overlay, speech and OSC Chatbox have their own output settings.
 
 ## Remove or update
 

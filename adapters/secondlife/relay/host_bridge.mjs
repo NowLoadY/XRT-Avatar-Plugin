@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { setTimeout as delay } from 'node:timers/promises';
 
-const { layout, lifetime, sourceText, profiles } = createRequire(import.meta.url)('../../../presentation/javascript/bubble.js');
+const { layout, lifetime, sourceText, profiles, CaptionSource } = createRequire(import.meta.url)('../../../presentation/javascript/bubble.js');
 
 const preset = process.env.XRT_CAPTION_PRESET || 'horizontal';
 if (!Object.hasOwn(profiles, preset)) throw new Error('Choose horizontal, vertical or board for XRT_CAPTION_PRESET.');
@@ -27,6 +27,36 @@ function captionFrame(frame) {
     else high = middle - 1;
   }
   return project(sourceText(text, low) + '…');
+}
+
+const source = new CaptionSource();
+function displayFrame(frame, now) {
+  if (!source.accept(frame, now)) return null;
+  const value = source.snapshot(now);
+  const result = {
+    type: 'display', session: frame.session, revision: value.revision,
+    header: value.header, footer: value.footer,
+    messages: value.messages.map(item => ({ id: item.id, text: item.text, ttl_ms: Math.floor(item.expiresAt - now) })),
+  };
+  // The relay envelope carries one bounded snapshot, including its identities.
+  while (Buffer.byteLength(JSON.stringify(result)) > 8192) {
+    const fields = [[result, 'header'], [result, 'footer'], ...result.messages.map(item => [item, 'text'])];
+    fields.sort((a, b) => Buffer.byteLength(b[0][b[1]] || '') - Buffer.byteLength(a[0][a[1]] || ''));
+    const [object, field] = fields[0];
+    const text = object[field] || '';
+    if (!text) throw new Error('Display metadata exceeds the relay frame limit.');
+    object[field] = sourceText(text, Math.max(0, Buffer.byteLength(text) - 256));
+  }
+  return result;
+}
+function remainingFrame(frame, elapsed) {
+  if (frame.type === 'caption') {
+    const expires_ms = frame.expires_ms - elapsed;
+    return expires_ms > 0 ? { ...frame, expires_ms } : null;
+  }
+  if (frame.type === 'display') return { ...frame, messages: frame.messages
+    .filter(item => item.ttl_ms > elapsed).map(item => ({ ...item, ttl_ms: item.ttl_ms - elapsed })) };
+  return frame;
 }
 
 const relay = new URL(process.env.XRT_RELAY_URL || 'https://invalid.example');
@@ -64,6 +94,7 @@ function invalidate() {
 }
 async function openSocket(hello) {
   closeSocket();
+  source.reset();
   const socket = new WebSocket(host);
   websocket = socket;
   socket.addEventListener('message', event => {
@@ -72,17 +103,23 @@ async function openSocket(hello) {
       if (typeof event.data !== 'string' || event.data.length > 32768) throw new Error();
       let frame = JSON.parse(event.data);
       if (!frame || typeof frame !== 'object' || Array.isArray(frame)) throw new Error();
-      let expiresAt = null;
-      if (frame.type === 'caption') {
+      const receivedAt = performance.now();
+      if (frame.type === 'display') {
+        frame = displayFrame(frame, receivedAt);
+        if (!frame) return;
+        outgoing = outgoing.filter(item => !['caption', 'display'].includes(item.frame.type));
+      } else if (frame.type === 'caption') {
+        if (source.displayMode) return;
         frame = captionFrame(frame);
-        expiresAt = performance.now() + frame.expires_ms;
         outgoing = outgoing.filter(item => item.frame.type !== 'caption');
-      } else if (frame.type === 'clear' || frame.type === 'reset' ||
-                 frame.type === 'state' && frame.status !== 'active') {
+      } else if (frame.type === 'clear') {
+        source.clear();
+        outgoing = outgoing.filter(item => !['caption', 'display'].includes(item.frame.type));
+      } else if (frame.type === 'reset' || frame.type === 'state' && frame.status !== 'active') {
         outgoing = outgoing.filter(item => item.frame.type !== 'caption');
       }
-      if (Buffer.byteLength(JSON.stringify(frame)) > 2048 || outgoing.length >= 16) throw new Error();
-      outgoing.push({ frame, expiresAt });
+      if (Buffer.byteLength(JSON.stringify(frame)) > 8192 || outgoing.length >= 16) throw new Error();
+      outgoing.push({ frame, receivedAt });
     } catch {
       restart = true;
       closeSocket();
@@ -111,11 +148,18 @@ console.log('Second Life bridge running.');
 while (!stopping) {
   if (restart) invalidate();
   const now = performance.now();
-  const batch = outgoing.splice(0, 4).flatMap(({ frame, expiresAt }) => {
-    if (expiresAt === null) return [frame];
-    const remaining = Math.floor(expiresAt - now);
-    return remaining > 0 ? [{ ...frame, expires_ms: remaining }] : [];
-  });
+  const batch = [];
+  let payloadSize = 512;
+  while (outgoing.length && batch.length < 4) {
+    const { frame, receivedAt } = outgoing[0];
+    const remaining = remainingFrame(frame, Math.max(0, Math.floor(now - receivedAt)));
+    if (!remaining) { outgoing.shift(); continue; }
+    const size = Buffer.byteLength(JSON.stringify(remaining)) + 1;
+    if (payloadSize + size > 12288) break;
+    outgoing.shift();
+    payloadSize += size;
+    batch.push(remaining);
+  }
   try {
     const response = await fetch(relay, {
       method: 'POST', redirect: 'error', signal: AbortSignal.timeout(5000),

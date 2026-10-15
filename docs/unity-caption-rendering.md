@@ -13,7 +13,9 @@ preview text, and renders the real mesh through `PreviewRenderUtility`.
 
 VRChat fills the material through its Animator buffer. ChilloutVR uses an Avatar
 Lua receiver and two packed integer words. Both consume the connector SDK's
-128-slot BMP layout and reuse the host's pacing, replacement and cancellation.
+128-slot BMP layout and reuse the host's pacing and cancellation. A present
+header/footer occupies the first/last row. The SDK fits recent messages into the
+remaining rows and updates only changed chunks, preserving other regions.
 
 ## Surface and text
 

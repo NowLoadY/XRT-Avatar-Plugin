@@ -52,16 +52,17 @@ share one local worker and one bounded message contract. Switching connectors
 invalidates the old binding and cancels its operation before another can start.
 Existing `vrc_avatar` settings identities migrate to `avatar` at deserialization.
 
-The host's `TextDisplay` publishes plain-text replacement and clear with opaque
-stream/result identities and a renewable lifetime. The selected content producer
-owns meaning and refresh timing. Translation, song text and clock content use
-the same display shape; connectors never select or combine host sources.
+`AvatarPlugin` composes a `DisplaySnapshot` from selected header/footer sources
+and normalized host output events. The internal host `TextOutputPlugin` provides
+shared format controls and one owned system sampler to OSC and Avatar. The host
+fans out lyrics from one worker, activated by either destination's demand.
 
-Translation captions are one explicit output preference. An owner-filtered
-`SessionEventSubscriber` extracts normalized results before publishing to the
-text display. Native-text connections accept revisions; buffered surfaces prefer
-completed text. Reset and cancellation revoke pending presentation, including
-queued transport writes; a new connection receives no previous-session history.
+Message identities and remaining lifetimes survive snapshot replacement.
+Native text accepts previews; buffered surfaces prefer completed captions.
+Stopping translation removes only the affected stream's messages. Independent
+header/footer sources remain visible until disabled or disconnected. Connection
+changes revoke the entire pending display. The connector SDK owns projection,
+region layout and changed-chunk selection; host transports own actual delivery.
 
 See the [connector protocol](connector-protocol.md) and platform guides for
 transport mappings and installation. The [VRChat host guide](adapters/vrchat/host-integration.md)

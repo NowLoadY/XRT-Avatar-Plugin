@@ -3,7 +3,8 @@
 Adds a translation toggle at `Expressions → XRT → Translation` on the player's
 Avatar. The adapter uses the official Avatar SDK and OSC/OSCQuery; XRTranslate
 owns audio, translation and output. Each Avatar using the controls needs its own
-installation. Caption boards display completed translations on editable Avatar objects.
+installation. Caption boards show messages with an optional header and footer
+on editable Avatar objects.
 
 [Installation and removal](installation.md) · [Compatibility](compatibility.md)
 

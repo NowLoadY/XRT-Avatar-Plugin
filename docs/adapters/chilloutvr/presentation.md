@@ -1,6 +1,6 @@
 # ChilloutVR captions
 
-XRTranslate sends completed translations to an Avatar caption object through its
+XRTranslate composes a header, messages and footer on an Avatar caption object through its
 existing OSC connection. ChilloutVR synchronizes a small numeric bus; a
 `CVRLuaClientBehaviour` on each viewer retains the text in an instance material.
 
@@ -12,8 +12,10 @@ release builder checks the adapter's copies against these sources.
 
 `adapters/chilloutvr/` owns the CCK installer, Lua receiver and
 [caption manifest](../../../adapters/chilloutvr/protocol/caption.json).
-XRTranslate owns sentence formatting, transmission and session cancellation.
-The translation control and caption output use the same session and OSC owner.
+The companion SDK owns board layout, packed-word encoding and the latest desired
+glyph buffer. XRTranslate owns content selection, message expiry and paced
+delivery through its shared OSC transport. Display content is independent of
+the menu-controlled translation task.
 
 ## Rendering
 
@@ -23,6 +25,11 @@ background. Placement, scale and colors remain editable. The same SDF assets and
 proportional glyph spacing are used by the VRChat adapter; font coverage and
 resource cost are recorded in
 [`XrtCaptionFont.json`](../../../presentation/unity/Runtime/Caption/XrtCaptionFont.json).
+
+An enabled header occupies the first row and a footer the last. The remaining
+rows show the newest messages that fit, in chronological order. Empty banners
+release their rows to messages. Each message expires independently; cancelling
+a translation task removes its messages while preserving other messages and banners.
 
 The Lua script writes only changed material bytes and runs on local and remote
 copies of the avatar. It uses the documented
@@ -45,11 +52,17 @@ caption adapters, then packs the bytes into ChilloutVR words. Pointer 255 clears
 the display. The Lua receiver re-reads a held pointer so late word updates can
 complete that chunk.
 
-A completed sentence replaces the pending transfer. Stop, avatar changes and
-host expiry clear the display. The receiver also clears after 20 seconds without
-a bus change, keeping the old packet blank until new data arrives. The host
-spaces chunks by 200 ms. State synchronization can skip intermediate updates;
-the next sentence starts a fresh transfer without history replay.
+Each content update replaces the desired buffer. Only changed chunks are sent,
+with message rows ahead of banner rows; an unchanged region remains visible.
+Pending writes that no longer match the buffer are revoked. Message expiry and
+task cancellation update the affected rows. A new binding, an empty display or
+disabling display content requests a whole-surface clear.
+
+The host spaces chunks by 200 ms and renews an unchanged nonempty display before
+the receiver's 20-second idle timeout. After that timeout, the receiver stays
+blank until new data arrives and the host rebuilds the current buffer. State
+synchronization can skip intermediate updates; there is no history replay or
+remote delivery acknowledgement.
 
 ## Installation
 

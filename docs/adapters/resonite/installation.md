@@ -5,7 +5,7 @@ This setup uses Python and a terminal alongside Resonite and XRTranslate.
 
 ## Before you start
 
-Have XRTranslate ready with **Avatar translation controls** available and your
+Have XRTranslate ready with **Avatar** available and your
 audio input and translation provider configured.
 
 You need Python 3.10 or later and a Resonite session that you host, with at least
@@ -78,12 +78,12 @@ material providers with the Avatar; you can clear its displayed text.
 
 For controls and a text source without a new caption, omit both `--preset` and
 `--template`. If an XRT installation already exists, use that installation's slot
-ID when running the bridge; it will add a missing text source automatically.
+ID when running the bridge; it adds missing text-source fields automatically.
 
 ## 3. Connect XRTranslate
 
-In XRTranslate, enable Avatar translation controls, select **Resonite**, and enable
-**Send captions to the game component**. Copy the displayed connector address.
+In XRTranslate, enable **Avatar**, select **Resonite**, and enable
+**Display content**. Copy the displayed connector address.
 Then replace `XRT_SLOT_ID` and `HOST_PORT` below:
 
 ```text
@@ -101,21 +101,32 @@ symbol with `SetValue = true` and a stop square with `SetValue = false`.
 
 ## Customize your display
 
-Drag `XRT/Text → Value` onto your text object's **Text field** and choose a one-way
-ValueCopy. Keep `WriteBack` and rich-text parsing off. You can connect several
-objects to this source and choose each object's font, wrapping, color and placement.
-The source supplies the current translation without display wrapping.
+Choose a source under XRT:
 
-Captions disappear within eight seconds and clear when translation stops.
-They are synchronized world content, so choose objects visible to your intended
-audience. Save your Avatar with `Enabled` off and `Text` empty.
+| Field | Content |
+|---|---|
+| `Text` | Complete display |
+| `Header` | Header text |
+| `Messages` | Current messages, separated by line breaks |
+| `Footer` | Footer text |
+
+Drag its **Value** onto your text object's **Text field** and choose a one-way
+ValueCopy. Keep `WriteBack` and rich-text parsing off. Several objects can share
+a source while keeping their own font, wrapping, color and placement. Add
+`--source header`, `messages` or `footer` to the installation command to bind a
+new preset directly to that region.
+
+Each message follows its display time in XRTranslate. Stopping translation removes
+its messages while independent header and footer content remains. The objects
+are synchronized world content, so choose their audience accordingly. Save your
+Avatar with `Enabled` off and the text-source fields empty.
 
 ## Stop or remove
 
 Press Ctrl+C in the terminal to stop the bridge. If it was forcibly closed or lost
-its ResoniteLink connection, clear `XRT/Text → Value` in the Inspector. To remove
-the installation, stop the bridge, delete its XRT slot and any Caption objects you
-moved elsewhere, and remove references from your buttons or text bindings.
+its ResoniteLink connection, clear the XRT text-source values in the Inspector.
+To remove the installation, stop the bridge, delete its XRT slot and any Caption
+objects you moved elsewhere, and remove references from your buttons or text bindings.
 
 For direct TextRenderer integration, source details and compatibility checks, see
 the [developer guide](development.md).

@@ -10,7 +10,7 @@ from websockets.asyncio.client import connect
 
 
 class Connector:
-    def __init__(self, address, token, connector, *, on_reset, on_state, on_caption, on_clear):
+    def __init__(self, address, token, connector, *, on_reset, on_state, on_caption, on_clear, on_display=None):
         parsed = urlsplit(address)
         if (parsed.scheme != "ws" or parsed.hostname not in ("localhost", "127.0.0.1", "::1")
                 or parsed.username or parsed.password or parsed.query or parsed.fragment):
@@ -19,7 +19,7 @@ class Connector:
         self.token = token
         self.connector = connector
         self.callbacks = {"reset": on_reset, "state": on_state,
-                          "caption": on_caption, "clear": on_clear}
+                          "caption": on_caption, "clear": on_clear, "display": on_display}
         self.socket = None
         self.session = None
         self.ready = False
@@ -34,7 +34,7 @@ class Connector:
             await self.socket.send(json.dumps({
                 "type": "hello", "protocol": 1, "connector": self.connector,
                 "token": self.token, "client_id": str(uuid.uuid4()),
-                "capabilities": ["captions"],
+                "capabilities": ["captions", "display-v1"] if self.callbacks["display"] else ["captions"],
             }))
             self.token = None
             welcome = json.loads(await asyncio.wait_for(self.socket.recv(), 5))
@@ -73,7 +73,7 @@ class Connector:
                 await self.send("reset_ack", reset=reset, enabled=False)
                 self.reset_sequence = reset
                 self.ready = True
-            elif kind in ("state", "caption", "clear"):
+            elif kind in ("state", "caption", "clear", "display") and self.callbacks[kind]:
                 await self.callbacks[kind](message)
             elif kind != "pong":
                 raise RuntimeError("Unknown XRTranslate connector message")

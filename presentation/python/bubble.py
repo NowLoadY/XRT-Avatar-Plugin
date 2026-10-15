@@ -80,12 +80,18 @@ def layout(value, max_bytes=None, max_columns=None, profile='horizontal', max_li
     columns = (max(1, min(120, math.floor(max_columns)))
                if isinstance(max_columns, (int, float)) and math.isfinite(max_columns)
                else selected['maxColumns'])
-    source = re.sub(r'\s+', ' ', source_text(value))
+    source = re.sub(r'[^\S\n]+', ' ', re.sub(r'\r\n?', '\n', source_text(value)))
     queue, lines, line = _clusters(source), [], []
     clipped = False
     while queue:
         item = queue.pop(0)
-        if _width(line) + item[1] > columns:
+        if item[0] == '\n':
+            lines.append(_trim(line))
+            line = []
+            if len(lines) == row_limit:
+                clipped = bool(queue)
+                break
+        elif _width(line) + item[1] > columns:
             if not line:
                 clipped = True
                 break
@@ -149,12 +155,48 @@ class CaptionSource:
     def reset(self):
         self.revisions = {}
         self.identity = None
-        self.value = None
+        self.display_mode = False
+        self.display_revision = -1
+        self.clear()
 
     def clear(self):
         self.value = None
+        self.header = self.footer = None
+        self.messages = []
+
+    def accept_display(self, message, now):
+        revision = message.get('revision')
+        if (type(revision) is not int or not self.display_revision < revision <= 9007199254740991
+                or any(key not in message or (message[key] is not None and not isinstance(message[key], str))
+                       for key in ('header', 'footer'))
+                or not isinstance(message.get('messages'), list) or len(message['messages']) > 8):
+            return False
+        ids, messages = set(), []
+        for item in message['messages']:
+            if (not isinstance(item, dict) or not isinstance(item.get('id'), str) or not item['id']
+                    or item['id'] in ids or not isinstance(item.get('text'), str)
+                    or type(item.get('ttl_ms')) not in (int, float)
+                    or not math.isfinite(item['ttl_ms']) or item['ttl_ms'] < 0):
+                return False
+            ids.add(item['id'])
+            text = source_text(item['text'])[:256]
+            if text and item['ttl_ms'] > 0:
+                messages.append(dict(id=item['id'], text=text, expiresAt=now + min(15000, item['ttl_ms'])))
+        self.display_mode = True
+        self.display_revision = revision
+        self.header = source_text(message.get('header'))[:128] or None
+        self.messages = messages
+        self.footer = source_text(message.get('footer'))[:128] or None
+        self.value = None
+        return True
 
     def accept(self, message, now):
+        if type(now) not in (int, float) or not math.isfinite(now):
+            return False
+        if isinstance(message, dict) and message.get('type') == 'display':
+            return self.accept_display(message, now)
+        if self.display_mode:
+            return False
         if (not isinstance(message, dict) or not all(isinstance(message.get(k), str) for k in ('text', 'stream', 'id'))
                 or type(message.get('revision')) is not int or message['revision'] < 0
                 or type(now) not in (int, float) or not math.isfinite(now)):
@@ -171,7 +213,18 @@ class CaptionSource:
                           revision=message['revision'], expiresAt=now + duration) if text and duration > 0 else None
         return True
 
-    def snapshot(self, now):
+    def snapshot(self, now, region='full'):
+        if self.display_mode:
+            self.messages = [item for item in self.messages if item['expiresAt'] > now]
+            messages = [dict(item) for item in self.messages]
+            body = '\n'.join(item['text'] for item in messages)
+            text = {'header': self.header, 'messages': body, 'footer': self.footer}.get(region)
+            if region not in ('header', 'messages', 'footer'):
+                text = '\n'.join(part for part in (self.header, body, self.footer) if part)
+            return dict(text=text or '', header=self.header, messages=messages, footer=self.footer,
+                        revision=self.display_revision)
+        if region in ('header', 'footer'):
+            return None
         if self.value and now >= self.value['expiresAt']:
             self.clear()
         return dict(self.value) if self.value else None

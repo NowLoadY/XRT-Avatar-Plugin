@@ -28,8 +28,9 @@
     "board": { "columns": 32, "rows": 4 }
   },
   "delivery": {
-    "clearBeforeSentence": true,
-    "clearOnCancellation": true,
+    "updates": "changed-chunks",
+    "cancellation": "remove-stream-messages",
+    "clearOnDisconnect": true,
     "repeatWhilePointerHeld": true,
     "defaultChunkIntervalMs": 200,
     "historyRecovery": false

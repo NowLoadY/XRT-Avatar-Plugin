@@ -21,7 +21,7 @@ function Connector(address, token, connector, callbacks, runtime) {
         try {
             self.socket.send(JSON.stringify({
                 type: "hello", protocol: 1, connector: connector, token: token,
-                client_id: runtime.clientId, capabilities: ["captions"]
+                client_id: runtime.clientId, capabilities: typeof callbacks.display === "function" ? ["captions", "display-v1"] : ["captions"]
             }));
         } catch (error) { self.close("XRTranslate connection failed"); }
         finally { token = null; }
@@ -78,7 +78,7 @@ Connector.prototype.receive = function (raw) {
                     this.ready = true;
                 }
             }
-        } else if (message.type === "state" || message.type === "caption" || message.type === "clear") {
+        } else if (message.type === "state" || message.type === "caption" || message.type === "clear" || message.type === "display") {
             this.callbacks[message.type](message);
         } else if (message.type !== "pong") {
             throw new Error("Unknown message");

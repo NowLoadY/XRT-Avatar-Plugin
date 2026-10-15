@@ -1,6 +1,6 @@
 # Second Life
 
-The Second Life adapter provides translation controls on a wearable attachment.
+The Second Life adapter provides translation controls and text regions on a wearable attachment.
 Touch opens compact controls for the owner. XRTranslate supplies actual session
 state through the [shared connector protocol](../../connector-protocol.md).
 
@@ -19,10 +19,11 @@ inactive peers after 15 seconds. It stores no transcript history. Queue overflow
 peer changes and expired leases invalidate the exchange generation, discard
 pending messages and restart the connector handshake from Off.
 
-The local bridge owns transport connections and derives the native caption
-projection from the shared layout. It also carries an unwrapped text source for
-custom displays. Both bridge and relay subtract time spent buffering a caption
-from its remaining lifetime. Each queue retains only its latest caption.
+The local bridge validates `display-v1` snapshots through the shared text source.
+Snapshots contain a header, up to eight messages and a footer. Each queue keeps
+only its latest snapshot; buffering and response retries reduce each message's
+remaining lifetime. Headers and footers persist until replaced or disconnected.
+Legacy caption frames use the shared caption projection.
 
 XRTranslate owns session requests,
 resource acquisition and cancellation. Relay responses acknowledge delivery;
@@ -55,27 +56,30 @@ invalidated on reset, reconnection and detach. The official
 
 `SHOW_CAPTIONS` enables hover text on the control prim. `PUBLISH_TEXT_SOURCE`
 independently enables text delivery to scripts in the attachment's linkset. Both
-default to false. Either enables the connector's caption capability. With
+default to false. Either advertises `display-v1` and legacy captions. With
 `SHOW_CAPTIONS` disabled, the controller leaves that prim's hover text untouched.
 
 The bridge preserves source line breaks and applies shared text sanitization.
-It bounds the complete encoded caption frame to 2048 UTF-8 bytes, including
-metadata and both text fields. Overflow shortens the source at a grapheme boundary
-and adds an ellipsis; the native projection is derived from that bounded source.
+A display snapshot is bounded to 8192 UTF-8 bytes, including metadata. Overflow
+shortens text at grapheme boundaries. Messages contain up to 256 characters and
+expire independently within 15 seconds; banners contain up to 128 characters.
+Exchanges carry at most four frames within a 12288-byte HTTP envelope.
 
-`XRT_CAPTION_PRESET` selects `horizontal`, `vertical` or `board` from the
-[shared presets](../../../presentation/presets.json). The default is `horizontal`.
-For native hover text these select wrapping and line count only. `vertical` is a
-narrow multiline layout; `board` does not create handwriting or text on a prim
-surface. Native captions keep soft-white text and the viewer's font and
-background behavior. [`llSetText`](https://wiki.secondlife.com/wiki/LlSetText)
-provides text, color and opacity, with a 254-byte UTF-8 limit.
+Native hover text keeps soft-white lettering and the viewer's font and background
+behavior. [`llSetText`](https://wiki.secondlife.com/wiki/LlSetText) provides text,
+color and opacity, with a 254-byte UTF-8 limit. A dedicated receiver can show the
+full display or just the header, messages or footer. Its prim remains editable in
+Build.
 
-Duplicate revisions and updates to replaced results cannot restore expired
-captions. Identity history is bounded and reset with the session. Stopping,
-clearing, reconciling the connection or changing the attachment lifecycle clears
-the display and publishes an empty source. The receiver also expires each value
-independently, with a maximum lifetime of eight seconds.
+Global revisions order full snapshots. Clearing retains the revision fence;
+a new connection resets it. Translation Stop and control reconciliation retain
+banners while XRTranslate removes the stopped task's messages. Disconnect,
+detach and an explicit display clear remove all regions.
+
+Legacy caption frames remain supported with a 2048-byte encoded limit and an
+eight-second lifetime. `XRT_CAPTION_PRESET` chooses their shared `horizontal`,
+`vertical` or `board` wrapping. Native hover text does not draw lettering onto a
+prim surface.
 
 ## Text source
 
@@ -83,15 +87,22 @@ The [connector manifest](../../../adapters/secondlife/connector.json) owns the
 linked-message fields. When enabled, the controller sends JSON through
 [`llMessageLinked`](https://wiki.secondlife.com/wiki/LlMessageLinked) to `LINK_SET`
 with message number `1481790465`. All scripts in that linkset can receive it.
-`text` is unwrapped source text; `display_text` is the native hover projection;
-`expires_ms` is the remaining lifetime. Empty text with zero lifetime clears the
-consumer. Updates replace the previous value; receivers must expire their own
-display and handle detach and region changes.
+`header`, `messages` and `footer` expose the separate regions. Each message has
+an `id`, `text` and remaining `ttl_ms`. `text` also supplies the combined unwrapped
+value; `display_text` is its bounded native hover projection. `revision` identifies
+the host snapshot.
+
+`expires_ms` is the receiver lease. The controller renews it while connected;
+zero clears the receiver. Each message also expires by its own `ttl_ms`, so a
+persistent header cannot keep an old message alive. Receivers clear on detach
+and region changes. The lease clears a dedicated receiver if its controller
+script stops.
 
 [`XRT-TextDisplay.lsl`](../../../adapters/secondlife/attachment/XRT-TextDisplay.lsl)
 owns hover text on its dedicated prim. Place it in an existing editable prim of
-the same linkset and arrange the prim in Build. A custom lettering renderer can
-consume `text` instead; such a renderer owns its geometry, font and layout.
+the same linkset and arrange the prim in Build. Set `REGION` to `full`, `header`,
+`messages` or `footer`. A custom lettering renderer can consume the structured
+regions or combined `text`; it owns its geometry, font and layout.
 Native hover text remains on a prim after its script is removed, so clear it
 before removing the receiver. See [installation](installation.md).
 

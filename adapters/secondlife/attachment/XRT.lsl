@@ -3,7 +3,7 @@ string RELAY_URL = "";       // HTTPS origin, without trailing slash.
 string RELAY_CLIENT_TOKEN = "";
 key PAIRED_OWNER = NULL_KEY;  // The avatar UUID permitted to use this copy.
 integer SHOW_CAPTIONS = FALSE;
-integer PUBLISH_TEXT_SOURCE = FALSE; // Makes translated text available to scripts in this linkset.
+integer PUBLISH_TEXT_SOURCE = FALSE; // Makes display text available to scripts in this linkset.
 integer XRT_TEXT_SOURCE = 1481790465;
 vector CAPTION_COLOR = <0.933333, 0.941176, 0.952941>;
 float CAPTION_ALPHA = 0.94;
@@ -37,6 +37,13 @@ string captionIdentity;
 integer captionRevision;
 float captionUntil;
 list retiredCaptions;
+integer displayMode;
+integer displayRevision = -1;
+integer publishedRevision = -1;
+string headerText;
+string footerText;
+list displayMessages; // id, text, local deadline
+float lastPublish;
 integer dialogChannel;
 integer dialogListener;
 float dialogUntil;
@@ -87,30 +94,145 @@ string jsonString(string value)
     return "\"" + value + "\"";
 }
 
+integer utf8Bytes(string text)
+{
+    string encoded = llStringToBase64(text);
+    integer length = llStringLength(encoded) * 3 / 4;
+    if (llGetSubString(encoded, -2, -1) == "==") return length - 2;
+    if (llGetSubString(encoded, -1, -1) == "=") return length - 1;
+    return length;
+}
+
+string hoverText(string text)
+{
+    if (utf8Bytes(text) <= 254) return text;
+    integer low = 0;
+    integer high = llStringLength(text);
+    while (low < high)
+    {
+        integer middle = (low + high + 1) / 2;
+        if (utf8Bytes(llGetSubString(text, 0, middle - 1)) <= 251) low = middle;
+        else high = middle - 1;
+    }
+    if (!low) return "…";
+    return llGetSubString(text, 0, low - 1) + "…";
+}
+
+string joinText(string first, string second)
+{
+    if (first == "") return second;
+    if (second == "") return first;
+    return first + "\n" + second;
+}
+
 showCaption()
 {
     string text = "";
-    if (llGetAttached() && caption != "" && llGetTime() < captionUntil) text = caption;
-    if (SHOW_CAPTIONS && text != "") llSetText(captionDisplay, CAPTION_COLOR, CAPTION_ALPHA);
+    string display = "";
+    list messages = [];
+    integer index;
+    float now = llGetTime();
+    if (displayMode)
+    {
+        for (index = llGetListLength(displayMessages) - 3; index >= 0; index -= 3)
+            if (llList2Float(displayMessages, index + 2) <= now)
+                displayMessages = llDeleteSubList(displayMessages, index, index + 2);
+        for (index = 0; index < llGetListLength(displayMessages); index += 3)
+        {
+            string content = llList2String(displayMessages, index + 1);
+            text = joinText(text, content);
+            messages += [llList2Json(JSON_OBJECT, [
+                "id", jsonString(llList2String(displayMessages, index)), "text", jsonString(content),
+                "ttl_ms", (integer)((llList2Float(displayMessages, index + 2) - now) * 1000.0)])];
+        }
+        text = joinText(joinText(headerText, text), footerText);
+        display = hoverText(text);
+    }
+    else if (caption != "" && now < captionUntil)
+    {
+        text = caption;
+        display = captionDisplay;
+    }
+    if (!llGetAttached()) { text = ""; display = ""; messages = []; }
+    if (SHOW_CAPTIONS && text != "") llSetText(display, CAPTION_COLOR, CAPTION_ALPHA);
     else if (SHOW_CAPTIONS) llSetText("", ZERO_VECTOR, 0.0);
     if (PUBLISH_TEXT_SOURCE && (publishReset || text != publishedText ||
-        (text != "" && (captionUntil != publishedUntil || captionDisplay != publishedDisplay))))
+        (text != "" && (captionUntil != publishedUntil || display != publishedDisplay)) ||
+        displayMode && (displayRevision != publishedRevision || now - lastPublish >= 5.0)))
     {
         integer remaining = 0;
-        string display = "";
         if (text != "")
         {
-            remaining = (integer)((captionUntil - llGetTime()) * 1000.0);
-            display = captionDisplay;
+            remaining = (integer)((captionUntil - now) * 1000.0);
+            if (displayMode) remaining = 8000;
         }
-        llMessageLinked(LINK_SET, XRT_TEXT_SOURCE,
-            llList2Json(JSON_OBJECT, ["text", jsonString(text), "display_text", jsonString(display),
-                "expires_ms", remaining]), NULL_KEY);
+        string value = llList2Json(JSON_OBJECT, ["text", jsonString(text),
+            "display_text", jsonString(display), "expires_ms", remaining]);
+        if (displayMode)
+        {
+            string header = JSON_NULL;
+            string footer = JSON_NULL;
+            if (llGetAttached() && headerText != "") header = jsonString(headerText);
+            if (llGetAttached() && footerText != "") footer = jsonString(footerText);
+            value = llJsonSetValue(value, ["type"], jsonString("display"));
+            value = llJsonSetValue(value, ["header"], header);
+            value = llJsonSetValue(value, ["messages"], llList2Json(JSON_ARRAY, messages));
+            value = llJsonSetValue(value, ["footer"], footer);
+            value = llJsonSetValue(value, ["revision"], (string)displayRevision);
+        }
+        llMessageLinked(LINK_SET, XRT_TEXT_SOURCE, value, NULL_KEY);
         publishedText = text;
         publishedDisplay = display;
         publishedUntil = captionUntil;
+        publishedRevision = displayRevision;
+        lastPublish = now;
         publishReset = FALSE;
     }
+}
+
+receiveDisplay(string frame)
+{
+    string headerType = llJsonValueType(frame, ["header"]);
+    string footerType = llJsonValueType(frame, ["footer"]);
+    if ((headerType != JSON_NULL && headerType != JSON_STRING) ||
+        (footerType != JSON_NULL && footerType != JSON_STRING) ||
+        llJsonValueType(frame, ["messages"]) != JSON_ARRAY ||
+        llJsonValueType(frame, ["revision"]) != JSON_NUMBER) return;
+    integer revision = (integer)llJsonGetValue(frame, ["revision"]);
+    if (revision < 0 || revision <= displayRevision) return;
+    list incoming = llJson2List(llJsonGetValue(frame, ["messages"]));
+    if (llGetListLength(incoming) > 8) return;
+    list values = [];
+    list ids = [];
+    integer index;
+    // Conservatively include this HTTP exchange's transit time in message age.
+    integer transit = (integer)((llGetTime() - requestStarted) * 1000.0);
+    for (index = 0; index < llGetListLength(incoming); ++index)
+    {
+        string message = llList2String(incoming, index);
+        if (llJsonValueType(message, ["id"]) != JSON_STRING ||
+            llJsonValueType(message, ["text"]) != JSON_STRING ||
+            llJsonValueType(message, ["ttl_ms"]) != JSON_NUMBER) return;
+        string identity = llJsonGetValue(message, ["id"]);
+        if (identity == "" || llListFindList(ids, [identity]) != -1) return;
+        ids += [identity];
+        integer remaining = (integer)llJsonGetValue(message, ["ttl_ms"]);
+        if (remaining < 0 || remaining > 15000) return;
+        remaining -= transit;
+        string content = llGetSubString(llJsonGetValue(message, ["text"]), 0, 255);
+        if (remaining > 0 && content != "")
+            values += [identity, content, llGetTime() + (float)remaining / 1000.0];
+    }
+    headerText = "";
+    footerText = "";
+    if (headerType == JSON_STRING) headerText = llGetSubString(llJsonGetValue(frame, ["header"]), 0, 127);
+    if (footerType == JSON_STRING) footerText = llGetSubString(llJsonGetValue(frame, ["footer"]), 0, 127);
+    displayMessages = values;
+    displayMode = TRUE;
+    displayRevision = revision;
+    caption = "";
+    captionUntil = 0.0;
+    publishReset = TRUE;
 }
 
 clearControl()
@@ -130,6 +252,11 @@ clearControl()
     captionIdentity = "";
     captionRevision = -1;
     retiredCaptions = [];
+    displayMode = FALSE;
+    displayRevision = -1;
+    headerText = "";
+    footerText = "";
+    displayMessages = [];
     status = "unavailable";
     showCaption();
 }
@@ -160,7 +287,7 @@ sendHello()
 {
     if (helloSent) return;
     string capabilities = "[]";
-    if (SHOW_CAPTIONS || PUBLISH_TEXT_SOURCE) capabilities = "[\"captions\"]";
+    if (SHOW_CAPTIONS || PUBLISH_TEXT_SOURCE) capabilities = "[\"captions\",\"display-v1\"]";
     queueFrame(llList2Json(JSON_OBJECT, [
         "type", "hello", "protocol", 1, "connector", "secondlife", "token", "",
         "client_id", (string)llGetOwner() + ":" + instance,
@@ -172,8 +299,7 @@ setEnabled(integer value)
 {
     if (!value && requested) stopPending = TRUE;
     requested = value;
-    caption = "";
-    captionUntil = 0.0;
+    if (!displayMode) { caption = ""; captionUntil = 0.0; }
     if (ready && session != "")
     {
         ++commandSequence;
@@ -224,7 +350,7 @@ receiveFrame(string frame)
         return;
     }
     if (session == "" || llJsonGetValue(frame, ["session"]) != session) return;
-    if (llListFindList(["reset", "state", "caption", "clear", "pong"], [kind]) == -1) return;
+    if (llListFindList(["reset", "state", "caption", "display", "clear", "pong"], [kind]) == -1) return;
     lastHostMessage = llGetTime();
     if (kind == "reset")
     {
@@ -255,11 +381,12 @@ receiveFrame(string frame)
         {
             status = value;
             if (value == "off" || value == "error" || value == "unavailable") stopPending = FALSE;
-            if (value != "active") caption = "";
+            if (value != "active" && !displayMode) caption = "";
         }
         // Status reports never overwrite a newer touch request.
     }
-    else if (kind == "caption" && (SHOW_CAPTIONS || PUBLISH_TEXT_SOURCE) && requested && status == "active")
+    else if (kind == "display" && (SHOW_CAPTIONS || PUBLISH_TEXT_SOURCE)) receiveDisplay(frame);
+    else if (kind == "caption" && !displayMode && (SHOW_CAPTIONS || PUBLISH_TEXT_SOURCE) && requested && status == "active")
     {
         if (llJsonValueType(frame, ["text"]) != JSON_STRING ||
             llJsonValueType(frame, ["stream"]) != JSON_STRING ||
@@ -292,7 +419,14 @@ receiveFrame(string frame)
             captionUntil = llGetTime() + (float)lifetime / 1000.0;
         }
     }
-    else if (kind == "clear") caption = "";
+    else if (kind == "clear")
+    {
+        caption = "";
+        headerText = "";
+        footerText = "";
+        displayMessages = [];
+        publishReset = TRUE;
+    }
     showCaption();
 }
 
@@ -365,7 +499,8 @@ default
             clearControl();
             return;
         }
-        if (caption != "" && llGetTime() >= captionUntil)
+        if (displayMode) showCaption();
+        else if (caption != "" && llGetTime() >= captionUntil)
         {
             caption = "";
             showCaption();

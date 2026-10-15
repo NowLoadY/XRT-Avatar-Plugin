@@ -53,6 +53,7 @@ BOOL_TYPE = "[FrooxEngine]FrooxEngine.ValueField<bool>"
 STRING_TYPE = "[FrooxEngine]FrooxEngine.ValueField<string>"
 TEXT_TYPE = "[FrooxEngine]FrooxEngine.TextRenderer"
 COPY_TYPE = "[FrooxEngine]FrooxEngine.ValueCopy<string>"
+TEXT_SOURCES = {"full": "Text", "header": "Header", "messages": "Messages", "footer": "Footer"}
 
 
 def reference(target_id):
@@ -139,7 +140,7 @@ async def add_preset(link, parent_id, prefix, source_id, preset, profile, member
                      WriteBack=field("bool", False))
 
 
-async def install(link, parent_id, preset=None, template_id=None, profile=None):
+async def install(link, parent_id, preset=None, template_id=None, profile=None, source="full"):
     """Create one owned subtree; never modify existing Avatar components."""
     import uuid
 
@@ -163,11 +164,11 @@ async def install(link, parent_id, preset=None, template_id=None, profile=None):
         for name, kind, value, component_type in (
             ("Enabled", "bool", False, BOOL_TYPE),
             ("Status", "string", "Off", STRING_TYPE),
-            ("Text", "string", "", STRING_TYPE),
+            *((name, "string", "", STRING_TYPE) for name in TEXT_SOURCES.values()),
         ):
             values[name] = await add_value(link, slot_id, prefix, name, kind, value, component_type)
         if preset:
-            await add_preset(link, slot_id, prefix, values["Text"], preset, profile, members)
+            await add_preset(link, slot_id, prefix, values[TEXT_SOURCES[source]], preset, profile, members)
     except BaseException:
         # This subtree was created by this invocation and has not been handed off.
         await link.request("removeSlot", slotId=slot_id)
@@ -180,14 +181,15 @@ async def controls(link, slot_id, ensure_text=False):
     if root.get("tag", {}).get("value") != OWNER_TAG:
         raise ValueError("Select the XRT slot created by the install command")
     result = {}
-    for name, component_type in (("Enabled", BOOL_TYPE), ("Status", STRING_TYPE), ("Text", STRING_TYPE)):
+    for name, component_type in (("Enabled", BOOL_TYPE), ("Status", STRING_TYPE),
+                                 *((name, STRING_TYPE) for name in TEXT_SOURCES.values())):
         children = [child for child in root.get("children", [])
                     if child.get("name", {}).get("value") == name]
-        if name == "Text" and not children:
+        if name in TEXT_SOURCES.values() and not children:
             if ensure_text:
                 import uuid
                 result[name] = await add_value(link, slot_id, "XRT_" + uuid.uuid4().hex,
-                                                "Text", "string", "", STRING_TYPE)
+                                                name, "string", "", STRING_TYPE)
             continue
         if len(children) != 1:
             raise ValueError("XRT control slot is missing or ambiguous: " + name)

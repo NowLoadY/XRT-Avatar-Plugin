@@ -56,7 +56,8 @@ versions and verify the following:
    overlapping input requests are rejected without changing the existing task;
    independent sessions and another OSC application continue operating.
 5. Add each caption preset, preview mixed-language text, move/reparent the object,
-   then upload. Check local and remote text, clear, replacement, 24/40/72-bit
+   then upload. Check local and remote text, changed-chunk updates, independent
+   message expiry and banners persisting after menu Off. Check 24/40/72-bit
    profiles, default/custom FX, original expressions, Undo and removal. Confirm
    material colors and customized objects are preserved.
 6. Record the compatible host version, check generated protocol consistency and

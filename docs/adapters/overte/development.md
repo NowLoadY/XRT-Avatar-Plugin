@@ -40,33 +40,36 @@ actions after those changes.
 Do not embed pairing tokens in hosted scripts or Avatar files. The running script
 receives them from the local XRTranslate instance.
 
-## Local caption source
+## Local text source
 
-The script publishes the current plain-text caption through
-[`Messages.sendLocalMessage`](https://apidocs.overte.org/Messages.html) on
-`XRT/CaptionSource`. Publication is independent of the selected Text object.
-Captions are not saved in entity metadata or settings.
+The script publishes on `XRT/CaptionSource` using
+[`Messages.sendLocalMessage`](https://apidocs.overte.org/Messages.html), independently
+of the selected Text object. The value contains separate regions and their
+combined plain-text projection:
 
 ```json
-{"type":"caption","source":"XRTranslate","value":{"text":"Translated text","stream":"42","id":"turn-1","revision":1,"expiresAt":1790000000000}}
-{"type":"clear","source":"XRTranslate"}
+{"type":"display","source":"XRTranslate","generation":"local-connection-id","value":{"text":"Header\nTranslated text\nFooter","header":"Header","messages":[{"id":"42:1","text":"Translated text","expiresAt":1790000000000}],"footer":"Footer","revision":1}}
+{"type":"clear","source":"XRTranslate","generation":"local-connection-id"}
 ```
 
-`text` is the current source text before display wrapping. `expiresAt` is a Unix
-timestamp in milliseconds. Consumers accept only local messages, replace the
-previous value and clear at that deadline or on `clear`. Apply visual wrapping in
-the renderer instead of changing the shared source.
+Message `expiresAt` values are Unix milliseconds. Headers and footers persist
+until replaced, cleared or disconnected. Consumers accept local messages, retain
+line breaks and apply wrapping in their renderer. Empty display snapshots retain
+their revision. A `clear` removes content while preserving that revision; a new
+`generation` starts a new connection. The shared source also accepts legacy
+single-caption frames.
 
 The [custom renderer example](../../../adapters/overte/examples/caption-source.js)
-subscribes, handles clearing and expires its display. Implement its `render(text)`
-callback to update a custom surface. Authoring previews belong to the selected
-object and are not published as translations.
+uses `CaptionSource.snapshot(now, region)` with `full`, `header`, `messages` or
+`footer`. Implement its `render(text)` callback for a custom surface. Authoring
+preview text stays on the selected object and does not enter the live source.
 
 ## Native authoring
 
 The tablet's **Caption objects** button opens `designer.html` through
 `tablet.gotoWebScreen()`. The page exchanges actions and state with the script
-through `EventBridge`.
+through `EventBridge`. The text-source selector chooses the complete display or
+one region; selection is retained with the local binding preferences.
 
 The designer lists nearby editable Text entities with `Entities.findEntitiesByType`
 and binds the selected ID. It does not depend on Create's internal selection state.
@@ -83,8 +86,9 @@ Native `Entities.textSize` measurements determine wrapping without resizing the
 object or changing its font. Full layout measurements are cached until text, font, dimensions
 or margins change. A small metric probe detects asynchronous font loading; an
 unloaded font is retried on the next update. Unbinding restores fields still controlled by the
-adapter and leaves the object in the scene. The Board preset uses transparent
-text; its native font and any board artwork are authored separately.
+adapter and leaves the object in the scene. Translation control resets preserve
+independent display regions; connection loss clears the source. The Board preset
+uses transparent text; its native font and any board artwork are authored separately.
 
 ## Font resource
 

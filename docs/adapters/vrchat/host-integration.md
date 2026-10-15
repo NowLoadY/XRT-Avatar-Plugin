@@ -3,22 +3,24 @@
 XRTranslate implements this integration as an opt-in built-in plugin. The Avatar
 package and control core are maintained in this repository; the desktop adapter,
 shared transport and session composition are maintained in XRTranslate. A compatible
-host build includes **Settings → Plugins → Avatar translation controls**.
+host build includes the **Avatar** plugin and its display page.
 
 ## Composition
 
 | Host module | Responsibility |
 |---|---|
-| `plugins::avatar` | Adapt verified snapshots to the control core, retain binding/reset identity, queue host actions and parameter feedback |
+| `plugins::avatar` | Bind game connections, adapt menu intent to the control core, compose display content and deliver snapshots |
 | `avatar_host` | Map operations to owned translation tasks, capture startup intent and report readiness/cleanup outcomes |
 | `plugins::osc::transport` | Shared receive owner, local OSCQuery discovery/advertisement, bounded events, fresh queries and epoch-checked parameter writes |
-| `session_coordinator` | Neutral task, input, owner and output contracts |
+| `plugins::text_output` | Shared message formatting, banner selection, lyrics inputs and system metrics |
+| `session_coordinator` | Neutral task, input, owner and host-output subscription contracts |
+| `xrt_connector_core` | Companion SDK: connector contracts, control lifecycle, display snapshots and board encoding |
 | Shared audio/network/output modules | Capture, recognition, translation, session completion and cancellation of owned output |
 
-The plugin has a settings contribution and no separate navigation page. It does
-not receive the root application object. The host adapter composes the existing
+The plugin has connection settings and an **Avatar** page for Header, Messages
+and Footer. It does not receive the root application object. The host adapter composes the existing
 capabilities; inference and backend protocols contain no Avatar-specific branch.
-The control crate is a pinned source dependency, not a dynamically loaded plugin.
+The companion SDK is a pinned source dependency.
 
 The OSC owner serves Avatar control and existing mute-follow. Receive demand is
 separate from Chatbox-output enablement. Avatar control advertises an available
@@ -75,10 +77,14 @@ session completion does not alter Avatar state.
 
 ## Settings and output
 
-The Avatar session publishes through the existing host output path. Its menu
-never enables Chatbox, overlay, TTS or a new audio route automatically. Normalized
-results retain identity, revisions and replacements; cancellation removes pending
-content for that stream without clearing unrelated output.
+Display composition subscribes to the existing host output path, including tasks
+started from the desktop and the Avatar menu. Message settings select audio
+sources, formatting, count and lifetime. The numeric board receives completed
+text; transient recognition previews do not replace a visible translation.
+Cancelling a stream removes its messages without clearing other streams or the
+header and footer. Display enablement is independent of menu translation status.
+
+The menu never enables Chatbox, overlay, TTS or a new audio route automatically.
 
 Language/source selection and recognition profiles apply to the next Avatar
 start. Device and prompt configuration are resolved when the shared session is
@@ -90,10 +96,13 @@ an allocated TTS output capability. Turning playback off takes effect immediatel
 
 Mute-follow suppresses audio admission without releasing capture resources. It
 is not an Off acknowledgement and must not change VRChat's mute/input controls.
-The optional caption sink consumes the same owner's completed translations.
-OSCQuery advertises the installed board's capacity; the Avatar adapter frames
-text for that board and the shared OSC transport sends paced, revocable batches.
-Replacement, expiry and cancellation retire pending batches. See the
+Headers and footers use the shared text-output service for custom text, time,
+system metrics or lyrics. They remain active while menu translation is off.
+OSCQuery advertises the installed board's capacity. The companion SDK maps the
+composed snapshot to its rows and retains the latest desired chunks; the host
+transport sends changed chunks through paced, revocable writes. Message expiry
+updates only the affected content. Disabling display or retiring the connection
+requests a full clear. See the
 [presentation contract](presentation.md) for the renderer and wire format.
 
 ## Integration status

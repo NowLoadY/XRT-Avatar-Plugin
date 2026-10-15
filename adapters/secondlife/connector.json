@@ -7,7 +7,8 @@
   "capabilities": [
     "session-control",
     "status",
-    "captions"
+    "captions",
+    "display-v1"
   ],
   "presentation": {
     "api": "llSetText",
@@ -20,7 +21,13 @@
     "preset_projection": "wrapping-and-line-count",
     "font": "viewer-native",
     "background": "viewer-native",
-    "maximum_lifetime_ms": 8000
+    "maximum_lifetime_ms": 15000,
+    "regions": [
+      "full",
+      "header",
+      "messages",
+      "footer"
+    ]
   },
   "text_source": {
     "api": "llMessageLinked",
@@ -33,12 +40,22 @@
     "fields": {
       "text": "string: sanitized unwrapped source, preserving source line breaks",
       "display_text": "string: native hover projection, at most 254 UTF-8 bytes",
-      "expires_ms": "integer: remaining lifetime from 0 to 8000 milliseconds"
+      "expires_ms": "integer: receiver lease, 0 to 8000 milliseconds; renewed while connected",
+      "header": "string|null: persistent header",
+      "messages": "array of {id,text,ttl_ms}: messages with remaining lifetime, up to 8",
+      "footer": "string|null: persistent footer",
+      "revision": "integer: display snapshot revision"
     },
-    "clear": { "text": "", "display_text": "", "expires_ms": 0 },
+    "clear": {
+      "text": "",
+      "display_text": "",
+      "expires_ms": 0
+    },
     "relay_caption_frame_maximum_utf8_bytes": 2048,
     "source_overflow": "grapheme-boundary truncation with ellipsis within the complete relay frame budget",
-    "receiver": "attachment/XRT-TextDisplay.lsl"
+    "receiver": "attachment/XRT-TextDisplay.lsl",
+    "relay_display_frame_maximum_utf8_bytes": 8192,
+    "receiver_region_setting": "REGION"
   },
   "entrypoint": "attachment/XRT.lsl",
   "host_bridge": "relay/host_bridge.mjs",

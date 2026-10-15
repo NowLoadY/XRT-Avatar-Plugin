@@ -30,15 +30,18 @@ alone, use **Tools → XRT-Avatar-Plugin → ChilloutVR → Avatar Controls**.
 ## Start translation
 
 1. Configure your audio input and languages in XRTranslate.
-2. In **Settings → Plugins → Avatar translation controls**, select **ChilloutVR**,
-   enable the plugin and check **Send captions to the game component**.
+2. Enable **Avatar** in **Settings → Plugins**, then open **Avatar** from the
+   sidebar. Select **ChilloutVR** and enable **Display content**. Click **Header**,
+   **Messages** or **Footer** in the preview to choose what appears there.
 3. In ChilloutVR, enable **Settings → Implementation → OSC**. Wait for XRTranslate
    to show **Off**, then turn on **XRT Translation** in **Advanced Avatar Settings**.
 
-Completed translations appear on your caption object. Turn **XRT Translation**
-off to clear it and stop translation. After changing avatars or reconnecting,
-wait for **Off** and turn it on again. Chatbox output is configured separately in
-XRTranslate's OSC plugin.
+Completed translations appear on your caption object. Turning **XRT Translation**
+off stops that task and removes its messages; the header and footer keep displaying
+their selected content. The trash icon clears messages, and **Display content**
+turns the entire display on or off. After changing avatars or reconnecting, wait
+for **Off** and turn translation on again. Chatbox output is configured separately
+in XRTranslate's OSC plugin.
 
 The avatar uses ChilloutVR's official Lua component and a custom material. Your
 avatar's scripts and shaders must be allowed by the viewer's content settings.

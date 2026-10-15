@@ -10,6 +10,7 @@ function CaptionDisplay(runtime, Bubble) {
     this.original = null;
     this.hideWhenEmpty = false;
     this.profile = "horizontal";
+    this.region = runtime.Settings.getValue("XRT/captionRegion", "full");
     this.preview = false;
     this.message = "";
     this.fontUrl = runtime.fontUrl;
@@ -148,7 +149,7 @@ CaptionDisplay.prototype.update = function (snapshot, now) {
     if (!this.target) { return; }
     var properties = this.properties(this.target);
     if (!this.usable(properties)) { this.unbind(); this.message = "The Text object is no longer available."; return; }
-    var text = snapshot ? snapshot.text : (this.preview ? "Your translation appears here." : "");
+    var text = snapshot && snapshot.text ? snapshot.text : (this.preview ? "Your text appears here." : "");
     // Native font loading is asynchronous; include a small metric probe so the
     // full layout is refreshed when a new font finishes loading.
     var probe = text ? this.runtime.Entities.textSize(this.target, "M") : null;
@@ -177,7 +178,7 @@ CaptionDisplay.prototype.update = function (snapshot, now) {
 
 CaptionDisplay.prototype.state = function () {
     var properties = this.target ? this.properties(this.target) : {};
-    return { target: this.target || "", name: properties.name || "", profile: this.profile,
+    return { target: this.target || "", name: properties.name || "", profile: this.profile, region: this.region,
         hideWhenEmpty: this.hideWhenEmpty, preview: this.preview, shared: this.target && properties.entityHostType !== "local", message: this.message };
 };
 

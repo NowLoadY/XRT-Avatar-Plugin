@@ -5,9 +5,11 @@
 //! [`Controller::confirm_reset`]. Parameter-change events alone cannot confirm
 //! a reset. Host resources remain owned until a terminal host result arrives.
 mod catalog;
+mod display;
 pub mod osc;
 
 pub use catalog::Connector;
+pub use display::{DisplayMessage, DisplaySnapshot};
 /// Identity of one verified client/transport binding attempt.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Generation(u64);

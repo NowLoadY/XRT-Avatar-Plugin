@@ -21,15 +21,17 @@
     var panelUrl = Script.resolvePath("designer.html");
     var panelItems = [];
     var publishedSource = "";
+    var sourceGeneration = String(Uuid.generate());
     var displayedState = "";
     var sourceChannel = "XRT/CaptionSource";
     var displayButton = tablet.addButton({ text: "", icon: Script.resolvePath("icons/display.svg"),
         hoverIcon: Script.resolvePath("icons/display.svg"), hoverText: "Caption objects", sortOrder: 101 });
 
-    function publishSource() {
+    function publishSource(clear) {
         var snapshot = source.snapshot(Date.now());
-        var message = JSON.stringify(snapshot ? { type: "caption", source: "XRTranslate", value: snapshot } :
-            { type: "clear", source: "XRTranslate" });
+        var value = clear !== true && snapshot;
+        var message = JSON.stringify({ type: value ? (source.displayMode ? "display" : "caption") : "clear",
+            source: "XRTranslate", generation: sourceGeneration, value: value || undefined });
         if (message !== publishedSource) {
             publishedSource = message;
             Messages.sendLocalMessage(sourceChannel, message);
@@ -38,10 +40,11 @@
         return snapshot;
     }
 
-    function clearCaption() {
+    function clearCaption(force) {
+        if (source.displayMode && force !== true) { return; }
         source.clear();
         display.preview = false;
-        publishSource();
+        publishSource(true);
         display.update(null, Date.now());
     }
 
@@ -88,7 +91,14 @@
 
     function displayCaption(message) {
         if (!requested || status !== "active" || !source.accept(message, Date.now())) { return; }
-        display.update(publishSource(), Date.now());
+        publishSource();
+        display.update(source.snapshot(Date.now(), display.region), Date.now());
+    }
+
+    function displaySnapshot(message) {
+        if (!source.accept(message, Date.now())) { return; }
+        publishSource();
+        display.update(source.snapshot(Date.now(), display.region), Date.now());
     }
 
     function sendPanelState() {
@@ -112,10 +122,13 @@
         } else if (message.action === "unbind") { display.unbind(); }
         else if (message.action === "visibility" && display.target) {
             display.hideWhenEmpty = message.hideWhenEmpty === true;
+        } else if (message.action === "region" && ["full", "header", "messages", "footer"].indexOf(message.region) !== -1) {
+            display.region = message.region;
+            Settings.setValue("XRT/captionRegion", display.region);
         } else if (message.action === "preview" && display.target) { display.preview = !display.preview; }
         else if (message.action === "control") { clicked(); }
         else { return; }
-        display.update(source.snapshot(Date.now()), Date.now());
+        display.update(source.snapshot(Date.now(), display.region), Date.now());
         sendPanelState();
     }
 
@@ -133,14 +146,16 @@
         var token = Window.prompt("Paste the pairing token from XRTranslate.", "");
         if (token === null || !token.trim()) { pairing = false; updateButton(); return; }
         attemptedPairing = true;
+        sourceGeneration = String(Uuid.generate());
+        source.reset();
+        clearCaption(true);
         try {
             connector = new Connector(address.trim(), token.trim(), "overte", {
                 reset: function () {
                     requested = false;
                     pendingSince = 0;
                     status = "unavailable";
-                    source.reset();
-                    clearCaption();
+                    if (!source.displayMode) { source.reset(); clearCaption(); }
                     updateButton();
                 },
                 state: function (message) {
@@ -159,12 +174,14 @@
                     updateButton();
                 },
                 caption: displayCaption,
-                clear: clearCaption,
+                display: displaySnapshot,
+                clear: function () { clearCaption(true); },
                 disconnect: function () {
                     requested = false;
                     pendingSince = 0;
                     status = "unavailable";
-                    clearCaption();
+                    source.reset();
+                    clearCaption(true);
                     updateButton();
                 }
             }, {
@@ -208,7 +225,8 @@
             connector.close("XRTranslate did not respond");
         }
         updateButton();
-        display.update(publishSource(), now);
+        publishSource();
+        display.update(source.snapshot(now, display.region), now);
         var currentDisplay = JSON.stringify(display.state());
         if (currentDisplay !== displayedState) { displayedState = currentDisplay; sendPanelState(); }
     }, 100);
@@ -229,7 +247,7 @@
         displayButton.clicked.disconnect(openPanel);
         tablet.webEventReceived.disconnect(panelEvent);
         tablet.removeButton(displayButton);
-        clearCaption();
+        clearCaption(true);
         Settings.setValue("XRT/captionHideWhenEmpty", display.hideWhenEmpty);
         display.unbind(true);
     });

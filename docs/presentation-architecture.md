@@ -7,23 +7,22 @@ placement, shape, typography and decoration after creation.
 ## Text source
 
 The shared JavaScript and Python `CaptionSource` implementations live under
-`presentation/`. They accept normalized connector results and expose current
-plain text independently of wrapping, surface dimensions or font choice.
-A source snapshot contains `text`, `stream`, `id`, `revision` and `expiresAt` in
-milliseconds. A missing snapshot means the source is empty.
+`presentation/`. They accept `display-v1` snapshots and legacy captions. A
+structured source exposes `header`, `messages`, `footer`, combined `text` and
+`revision`; messages retain `id`, `text` and local `expiresAt` in milliseconds.
+`snapshot(now, region)` selects `full`, `header`, `messages` or `footer`.
 
-`(stream, id, revision)` identifies an update. A bounded history rejects duplicate
-and retired results. Clearing a display does not erase this history; session
-reset does. Expiry uses the host's remaining lifetime, capped at eight seconds.
-A local Stop or observed reset/disconnection clears the source and its consumers.
-Native connection loss follows the platform's detection deadline. Relays deduct
-buffering time, including cached-response retries.
+Full snapshots replace all regions and reject duplicate or older revisions.
+Messages expire individually using the remaining wire lifetime. Banner updates
+do not extend them. Clearing retains the revision fence; resetting a connection
+starts a new fence. Control resets and translation Stop preserve structured
+banners; explicit display clear and disconnect clear all regions.
 
-Text sources preserve line breaks and are not preformatted to fit a bubble.
-Native transport budgets can shorten the source; adapters document those budgets.
-A view may wrap, clip, orient or decorate the text without changing the source.
-One source can drive several user-selected objects. Presentation never starts
-translation, acquires audio or infers another player's identity.
+Sources preserve line breaks between regions. Views wrap individual lines and
+may clip, orient or decorate text without changing its source. One source can
+drive several user-selected objects. Native transport budgets can shorten the
+source; adapters document those budgets. Presentation never starts translation
+or acquires audio.
 
 ## Display binding
 
@@ -84,7 +83,7 @@ profiles and supports positioning without a game client.
 | Adapter | Text source and display |
 |---|---|
 | Overte | Local `XRT/CaptionSource` messages; editable native Text objects and a tablet object picker |
-| Resonite | `XRT/Text.Value`; native `ValueCopy<string>` binding to template-based TextRenderer presets or custom objects |
+| Resonite | `XRT/Text`, `Header`, `Messages` and `Footer` string fields; native `ValueCopy<string>` binding to template-based TextRenderer presets or custom objects |
 | Second Life | Opt-in linkset messages; separate native hover-text receiver or a creator's renderer |
 | VRChat | Shared Unity SDF renderer; Avatar-specific buffered parameter receiver and editable mesh presets |
 | ChilloutVR | Shared Unity SDF renderer; Avatar Lua buffer fed by packed numeric parameters |

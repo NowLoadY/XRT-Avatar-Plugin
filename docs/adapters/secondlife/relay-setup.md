@@ -52,7 +52,10 @@ attachment verifies the HTTPS certificate using Second Life's
 
 ## Operation
 
-The service retains queues only in memory. Stopping it clears pending data.
+The service retains queues only in memory. Exchanges are limited to 12288 bytes
+and four frames; a display snapshot is limited to 8192 bytes. It keeps the latest
+snapshot and deducts buffering time from each message's remaining lifetime.
+Stopping the service clears pending data.
 Restarting the service or losing a peer resets the connection; the player must
 choose Start again. Retire both tokens when the pairing is removed.
 

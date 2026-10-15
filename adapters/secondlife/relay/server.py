@@ -13,7 +13,7 @@ import uuid
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 MAX_BODY = 12_288
-MAX_FRAME = 2_048
+MAX_FRAME = 8_192
 MAX_QUEUE = 16
 MAX_BATCH = 4
 PEER_TTL = 15.0
@@ -23,6 +23,18 @@ def encode(value: object) -> bytes:
     return json.dumps(value, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
 
+def remaining_frame(frame: dict, elapsed_ms: int) -> dict | None:
+    if frame.get("type") == "caption":
+        remaining = frame["expires_ms"] - elapsed_ms
+        return {**frame, "expires_ms": remaining} if remaining > 0 else None
+    if frame.get("type") == "display":
+        return {**frame, "messages": [
+            {**message, "ttl_ms": message["ttl_ms"] - elapsed_ms}
+            for message in frame["messages"] if message["ttl_ms"] > elapsed_ms
+        ]}
+    return frame
+
+
 class Peer:
     def __init__(self) -> None:
         self.instance = ""
@@ -30,7 +42,7 @@ class Peer:
         self.sequence = -1
         self.response: dict | None = None
         self.response_at = 0.0
-        self.queue: list[tuple[dict, float | None]] = []
+        self.queue: list[tuple[dict, float]] = []
 
 
 class Pair:
@@ -64,6 +76,13 @@ class Pair:
                     lifetime = message.get("expires_ms")
                     if type(lifetime) is not int or not 0 <= lifetime <= 15_000:
                         raise ValueError("Invalid caption expiry")
+                elif message.get("type") == "display":
+                    items = message.get("messages")
+                    if (not isinstance(items, list) or len(items) > 8
+                            or any(not isinstance(item, dict)
+                                   or type(item.get("ttl_ms")) is not int
+                                   or not 0 <= item["ttl_ms"] <= 15_000 for item in items)):
+                        raise ValueError("Invalid display expiry")
 
         for peer in self.peers.values():
             if peer.instance and now - peer.seen >= PEER_TTL:
@@ -79,12 +98,8 @@ class Pair:
         local.seen = now
         if sequence == local.sequence and local.response is not None:
             elapsed_ms = max(0, int((now - local.response_at) * 1000))
-            replay = []
-            for frame in local.response["messages"]:
-                if role != "client" or frame.get("type") != "caption":
-                    replay.append(frame)
-                elif frame["expires_ms"] > elapsed_ms:
-                    replay.append({**frame, "expires_ms": frame["expires_ms"] - elapsed_ms})
+            replay = [aged for frame in local.response["messages"]
+                      if (aged := remaining_frame(frame, elapsed_ms) if role == "client" else frame) is not None]
             return {**local.response, "messages": replay}
         if sequence <= local.sequence:
             # A new generation can invalidate a response before its retry arrives.
@@ -97,25 +112,30 @@ class Pair:
             synchronized = False
         if synchronized:
             for message in messages:
-                expires = None
-                if role == "host" and message.get("type") == "caption":
-                    lifetime = message.get("expires_ms")
-                    expires = now + lifetime / 1000
-                    other.queue = [(frame, deadline) for frame, deadline in other.queue
-                                   if frame.get("type") != "caption"]
-                elif role == "host" and (message.get("type") in ("clear", "reset")
-                        or message.get("type") == "state" and message.get("status") != "active"):
-                    other.queue = [(frame, deadline) for frame, deadline in other.queue
-                                   if frame.get("type") != "caption"]
-                other.queue.append((message, expires))
-            pending = local.queue[:MAX_BATCH]
-            del local.queue[:MAX_BATCH]
+                if role == "host":
+                    kind = message.get("type")
+                    if kind in ("caption", "display", "clear"):
+                        other.queue = [(frame, received) for frame, received in other.queue
+                                       if frame.get("type") not in ("caption", "display")]
+                    elif kind == "reset" or kind == "state" and message.get("status") != "active":
+                        other.queue = [(frame, received) for frame, received in other.queue
+                                       if frame.get("type") != "caption"]
+                other.queue.append((message, now))
             incoming = []
-            for message, expires in pending:
-                if expires is None:
-                    incoming.append(message)
-                elif expires > now:
-                    incoming.append({**message, "expires_ms": int((expires - now) * 1000)})
+            payload_size = 512
+            while local.queue and len(incoming) < MAX_BATCH:
+                message, received = local.queue[0]
+                aged = (remaining_frame(message, max(0, int((now - received) * 1000)))
+                        if role == "client" else message)
+                if aged is None:
+                    local.queue.pop(0)
+                    continue
+                size = len(encode(aged)) + 1
+                if payload_size + size > MAX_BODY:
+                    break
+                payload_size += size
+                local.queue.pop(0)
+                incoming.append(aged)
         else:
             incoming = []
         response = {

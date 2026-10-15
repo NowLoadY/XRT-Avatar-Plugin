@@ -88,11 +88,14 @@
             ? Math.max(1, Math.min(12, Math.floor(options.maxLines))) : selected.maxLines;
         var columns = typeof options.maxColumns === "number" && isFinite(options.maxColumns)
             ? Math.max(1, Math.min(120, Math.floor(options.maxColumns))) : selected.maxColumns;
-        var source = sourceText(value).replace(/\s+/g, " ");
+        var source = sourceText(value).replace(/\r\n?/g, "\n").replace(/[^\S\n]+/g, " ");
         var queue = clusters(source), lines = [], line = [], clipped = false;
         while (queue.length) {
             var item = queue.shift();
-            if (width(line) + item.width > columns) {
+            if (item.text === "\n") {
+                lines.push(trim(line)); line = [];
+                if (lines.length === maxLines) { clipped = queue.length > 0; break; }
+            } else if (width(line) + item.width > columns) {
                 if (!line.length) { clipped = true; break; }
                 var boundary = -1, j;
                 for (j = line.length - 1; j >= 0; j--) {
@@ -139,10 +142,44 @@
     }
     function CaptionSource() { this.reset(); }
     CaptionSource.prototype.reset = function () {
-        this.revisions = Object.create(null); this.order = []; this.identity = null; this.value = null;
+        this.revisions = Object.create(null); this.order = []; this.identity = null;
+        this.displayMode = false; this.displayRevision = -1;
+        this.clear();
     };
-    CaptionSource.prototype.clear = function () { this.value = null; };
+    CaptionSource.prototype.clear = function () {
+        this.value = null; this.header = null; this.messages = []; this.footer = null;
+    };
+    CaptionSource.prototype.acceptDisplay = function (message, now) {
+        if (typeof message.revision !== "number" || !isFinite(message.revision) ||
+                message.revision % 1 || message.revision <= this.displayRevision ||
+                message.revision > 9007199254740991 ||
+                !(message.header === null || typeof message.header === "string") ||
+                !(message.footer === null || typeof message.footer === "string") ||
+                !Array.isArray(message.messages) || message.messages.length > 8) { return false; }
+        var ids = Object.create(null), messages = [], valid = true;
+        message.messages.forEach(function (item) {
+            if (!item || typeof item.id !== "string" || !item.id || ids[item.id] ||
+                    typeof item.text !== "string" || typeof item.ttl_ms !== "number" ||
+                    !isFinite(item.ttl_ms) || item.ttl_ms < 0) { valid = false; return; }
+            ids[item.id] = true;
+            var text = points(sourceText(item.text)).slice(0, 256).map(function (p) { return p.text; }).join("");
+            if (text && item.ttl_ms > 0) {
+                messages.push({ id: item.id, text: text, expiresAt: now + Math.min(15000, item.ttl_ms) });
+            }
+        });
+        if (!valid) { return false; }
+        function banner(value) {
+            return points(sourceText(value)).slice(0, 128).map(function (p) { return p.text; }).join("") || null;
+        }
+        this.displayMode = true; this.displayRevision = message.revision;
+        this.header = banner(message.header); this.messages = messages; this.footer = banner(message.footer);
+        this.value = null;
+        return true;
+    };
     CaptionSource.prototype.accept = function (message, now) {
+        if (typeof now !== "number" || !isFinite(now)) { return false; }
+        if (message && message.type === "display") { return this.acceptDisplay(message, now); }
+        if (this.displayMode) { return false; }
         if (!message || typeof message.text !== "string" || typeof message.stream !== "string" ||
                 typeof message.id !== "string" || typeof message.revision !== "number" ||
                 !isFinite(message.revision) || message.revision < 0 || message.revision % 1 ||
@@ -158,7 +195,19 @@
             revision: message.revision, expiresAt: now + duration } : null;
         return true;
     };
-    CaptionSource.prototype.snapshot = function (now) {
+    CaptionSource.prototype.snapshot = function (now, region) {
+        if (this.displayMode) {
+            this.messages = this.messages.filter(function (item) { return item.expiresAt > now; });
+            var messages = this.messages.map(function (item) {
+                return { id: item.id, text: item.text, expiresAt: item.expiresAt };
+            });
+            var body = messages.map(function (item) { return item.text; }).join("\n");
+            var text = region === "header" ? this.header : region === "footer" ? this.footer :
+                region === "messages" ? body : [this.header, body, this.footer].filter(function (part) { return !!part; }).join("\n");
+            return { text: text || "", header: this.header, messages: messages, footer: this.footer,
+                revision: this.displayRevision };
+        }
+        if (region === "header" || region === "footer") { return null; }
         if (this.value && now >= this.value.expiresAt) { this.clear(); }
         if (!this.value) { return null; }
         var copy = {}, value = this.value;

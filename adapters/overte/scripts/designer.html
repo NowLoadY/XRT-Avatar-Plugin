@@ -12,9 +12,10 @@
 <button class="preset" data-profile="board" title="Create text for a board" aria-label="Create text for a board"><span class="sample"><svg viewBox="0 0 90 70"><path d="M12 48l5-32 62 4-4 36-63-8z" stroke-dasharray="3 4"/><path d="M24 29q7-7 10 0t10-1 10 0 10-1M22 39q7-5 13 0t13 0"/></svg></span><span>Board</span></button>
 </div></section>
 <section><label class="field" for="targets">Text object</label><div class="row"><select id="targets"><option value="">Choose an object</option></select><button id="refresh" title="Refresh nearby objects" aria-label="Refresh nearby objects"><svg viewBox="0 0 24 24"><path d="M19 9a8 8 0 1 0 1 7M19 3v6h-6"/></svg></button><button id="bind" title="Bind selected object" aria-label="Bind selected object" disabled><svg viewBox="0 0 24 24"><path d="M9 15l-2 2a4 4 0 0 1-5-5l5-5a4 4 0 0 1 5 0M15 9l2-2a4 4 0 0 1 5 5l-5 5a4 4 0 0 1-5 0M8 16l8-8"/></svg></button></div>
+<div class="row" style="margin-top:12px"><select id="region" aria-label="Text source"><option value="full">All text</option><option value="header">Header</option><option value="messages">Messages</option><option value="footer">Footer</option></select></div>
 <p id="bound" class="muted">No object selected</p><div class="tools"><label class="check"><input type="checkbox" id="hide">Hide when empty</label><div class="row"><button id="preview" title="Preview text" aria-label="Preview text" disabled><svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button><button id="unbind" title="Unbind object" aria-label="Unbind object" disabled><svg viewBox="0 0 24 24"><path d="M9 15l-2 2a4 4 0 0 1-5-5l3-3M15 9l2-2a4 4 0 0 1 5 5l-3 3M3 3l18 18"/></svg></button></div></div>
 <p class="muted">Move, resize and style the object in Create.</p><p id="message" role="status"></p></section>
-<section><h2>Translation</h2><div id="source" class="source muted">Waiting for translation</div></section>
+<section><h2>Text</h2><div id="source" class="source muted">Waiting for text</div></section>
 </main><script>
 (function(){
 'use strict';
@@ -23,6 +24,7 @@ function send(action,fields){if(!bridge)return;var message={app:'xrt-caption-des
 function button(name,action){document.getElementById(name).addEventListener('click',function(){send(action);});}
 button('refresh','refresh');button('preview','preview');button('unbind','unbind');button('control','control');
 document.getElementById('bind').addEventListener('click',function(){send('bind',{id:targets.value,hideWhenEmpty:document.getElementById('hide').checked});});
+document.getElementById('region').addEventListener('change',function(){send('region',{region:this.value});});
 document.getElementById('hide').addEventListener('change',function(){send('visibility',{hideWhenEmpty:this.checked});});
 targets.addEventListener('change',function(){document.getElementById('bind').disabled=!targets.value;});
 Array.prototype.forEach.call(document.querySelectorAll('[data-profile]'),function(button){button.addEventListener('click',function(){send('create',{profile:button.getAttribute('data-profile'),audience:document.getElementById('audience').value});});});
@@ -33,10 +35,11 @@ connected=true;var previousTarget=state&&state.binding.target;state=message;var 
 message.items.forEach(function(item){var option=document.createElement('option');option.value=item.id;option.textContent=item.name+(item.shared?' · visible to others':' · only you');targets.appendChild(option);});
 if(message.binding.target&&(!selected||selected===message.binding.target))selected=message.binding.target;targets.value=selected;
 document.getElementById('bind').disabled=!targets.value;document.getElementById('unbind').disabled=!message.binding.target;document.getElementById('preview').disabled=!message.binding.target;document.getElementById('preview').setAttribute('aria-pressed',message.binding.preview?'true':'false');document.getElementById('preview').title=message.binding.preview?'Stop preview':'Preview text';document.getElementById('preview').setAttribute('aria-label',message.binding.preview?'Stop preview':'Preview text');
+document.getElementById('region').value=message.binding.region||'full';document.getElementById('region').disabled=!message.binding.target;
 document.getElementById('hide').checked=message.binding.hideWhenEmpty;document.getElementById('hide').disabled=!message.binding.target;
 document.getElementById('bound').textContent=message.binding.target?'Bound to '+message.binding.name+(message.binding.shared?' · visible to others':' · only you'):'No object selected';
 document.getElementById('message').textContent=message.binding.message||'';
-document.getElementById('source').textContent=message.caption?message.caption.text:'Waiting for translation';
+document.getElementById('source').textContent=message.caption&&message.caption.text?message.caption.text:'Waiting for text';
 var control=document.getElementById('control');control.title=message.control.hint;control.setAttribute('aria-label',message.control.hint);control.disabled=!message.control.enabled;control.className=message.control.active?'active':'';control.innerHTML='<svg viewBox="0 0 24 24">'+icons[message.control.icon]+'</svg>';
 document.getElementById('connection').textContent=message.control.active?'Translating':message.control.icon==='waiting'?'Waiting':message.control.action==='pair'?'Disconnected':'Ready';
 }

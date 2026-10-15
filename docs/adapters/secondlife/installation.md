@@ -8,7 +8,7 @@ bridge.
 
 Prepare these items first:
 
-- XRTranslate with **Avatar translation controls** available, and your audio
+- XRTranslate with the **Avatar** plugin enabled, and your audio
   input and translation provider configured.
 - An editable attachment or HUD, and permission to run scripts where you use it.
 - Node.js 22.4 or later on the computer running XRTranslate.
@@ -50,7 +50,7 @@ returns the object's owner UUID.
 
 ## 2. Connect XRTranslate
 
-Enable Avatar translation controls in XRTranslate and select **Second Life**.
+Open **Avatar** in XRTranslate and select **Second Life**.
 Copy its connector address and pairing token. In a terminal, replace the example
 values below and start the bridge.
 
@@ -87,8 +87,8 @@ reconnecting, open a fresh dialog and choose **Start** again.
 The included displays use native text floating above a prim. Letters drawn on a
 board surface use a custom renderer connected to the dynamic text source.
 
-Enable **Send captions to the game component** in XRTranslate, then choose one
-option before starting translation:
+Enable **Display content** on XRTranslate's **Avatar** page. Select the header,
+messages or footer in its preview to choose the content. Then choose a display:
 
 | Display | Setup |
 |---|---|
@@ -96,20 +96,24 @@ option before starting translation:
 | Above another prim in the same attachment | Set `PUBLISH_TEXT_SOURCE = TRUE` and leave `SHOW_CAPTIONS = FALSE`. Add `adapters/secondlife/attachment/XRT-TextDisplay.lsl` to that display prim and compile with Mono. |
 
 For the second option, keep both prims in the same linkset. Move the display prim
-in Build to place the captions. Text sharing supplies translated text to scripts
-throughout that linkset. World attachment captions are visible to nearby
-residents; use a HUD for a personal display.
+in Build to place the text. In `XRT-TextDisplay.lsl`, choose what it shows:
 
-The default layout is horizontal. To use `vertical` or `board`, set
-`XRT_CAPTION_PRESET` before the `node` command. For example, use
-`$env:XRT_CAPTION_PRESET = 'vertical'` in PowerShell or
-`export XRT_CAPTION_PRESET=vertical` on Linux. These presets change wrapping;
-font and hover-text appearance follow the viewer. Board wrapping is useful above
-a board object. A custom lettering renderer can use the
+| `REGION` | Content |
+|---|---|
+| `"full"` | Header, messages and footer together |
+| `"header"` | Header only |
+| `"messages"` | Messages only |
+| `"footer"` | Footer only |
+
+Use separate display prims to arrange the regions independently. Text sharing
+supplies the same regions to custom scripts in the linkset. World attachment
+text is visible to nearby residents; use a HUD for a personal display. Font and
+hover-text appearance follow the viewer. Custom lettering can use the
 [dynamic text source](README.md#text-source).
 
-Captions stay empty between results and clear when stopped or expired. The dialog
-shows connection and translation status separately from the captions.
+Messages disappear when their lifetime ends. **Stop** ends the translation task;
+configured lyrics, time and other banner content remain visible. Disconnecting
+or disabling **Display content** clears the display.
 
 ## Stop or remove
 

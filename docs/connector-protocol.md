@@ -3,20 +3,20 @@
 Protocol `xrt-avatar/1` carries game-component control and optional text display over
 JSON WebSocket messages. XRTranslate serves `ws://127.0.0.1:<port>/xrt` while a
 WebSocket connector is enabled. The settings page supplies the current address
-and pairing token. A connection serves one selected game connector and one
-translation owner. OSC adapters map the same lifecycle to their parameter manifests.
+and pairing token. A connection serves one selected game connector and its display; translation requests retain their own operation owner. OSC adapters map the same lifecycle to their parameter manifests.
 
 ## Pairing and reset
 
 The client sends this as its first frame:
 
 ```json
-{"type":"hello","protocol":1,"connector":"overte","token":"<pairing token>","client_id":"<unique client ID>","capabilities":["captions"]}
+{"type":"hello","protocol":1,"connector":"overte","token":"<pairing token>","client_id":"<unique client ID>","capabilities":["captions","display-v1"]}
 ```
 
 `connector` is `overte`, `resonite` or `secondlife`. Client IDs are nonempty strings
-up to 128 bytes. `captions` advertises a renderer; XRTranslate's caption output
-setting separately controls delivery. Credentials stay in local runtime memory.
+up to 128 bytes. `display-v1` advertises structured display support; `captions`
+advertises the legacy plain-text receiver. The host selects one format per
+connection. XRTranslate's display setting separately controls delivery. Credentials stay in local runtime memory.
 The Second Life bridge inserts the local pairing token after relay delivery.
 
 The host responds with `welcome`, then a reset barrier:
@@ -26,7 +26,9 @@ The host responds with `welcome`, then a reset barrier:
 {"type":"reset","session":"<host session ID>","reset":1}
 ```
 
-The client clears its toggle and pending display before acknowledging:
+The client clears its toggle before acknowledging. Structured display receivers
+retain independent banner content across control resets; legacy receivers clear
+their single caption. A new connection always begins with an empty display:
 
 ```json
 {"type":"reset_ack","session":"<host session ID>","reset":1,"enabled":false}
@@ -60,29 +62,44 @@ Reconnection starts a fresh pairing/reset lifecycle; it never restores On.
 
 ## Text display
 
-The compatible `caption` message carries plain text from the host-selected
-producer. `stream` and `id` are opaque identities, not translation-specific
-fields. Lyrics, clock text and other sources use the same message shape.
+`display` replaces the complete header, visible messages and footer:
 
 ```json
-{"type":"caption","session":"<host session ID>","stream":"42","id":"turn-1","revision":1,"text":"Translated text","expires_ms":15000}
-{"type":"clear","session":"<host session ID>"}
+{"type":"display","session":"<session>","revision":42,"header":"Artist · Song","messages":[{"id":"42:7","text":"Meet at the entrance.","ttl_ms":6000}],"footer":"21:30"}
+{"type":"clear","session":"<session>"}
 ```
 
-Each caption replaces the displayed value for its stream. `(stream, id)` identifies
-a result and `revision` orders its updates. Consumers reject older revisions,
-expire captions within `expires_ms` (at most 15 seconds), and clear on reset or
-disconnection. `clear` removes this connection's display. Text is plain Unicode,
-up to 256 characters; IDs are bounded to 64 characters. Platform adapters may
-shorten content to their display limits. Captions carry no audio and cannot start
-sessions. Host output contains only results belonging to the connection's owner.
+The revision increases within a connection. Receivers reject older or duplicate
+snapshots. `header` and `footer` are nullable plain-text values, each at most
+128 characters. `messages` contains up to eight entries, each with an opaque
+ID of at most 64 characters, at most 256 text characters and a remaining lifetime
+of at most 15,000 ms. Empty regions remove their previous contents.
+
+Each message expires independently. Queues and relays subtract their elapsed
+buffering time; updating a banner cannot renew an older message. Banners remain
+until their source is cleared or the connection ends. Control Stop removes the
+operation's messages through a subsequent snapshot. `clear`, disconnect and
+plugin disable remove all regions. Content never starts translation sessions.
+
+The host selects content and formats text. Game-side bindings select the full
+display or one region; their objects determine placement, fonts and appearance.
+The protocol contains no lyric, clock or translation message variants.
+
+Older clients receive one `caption` projection from the connector SDK:
+
+```json
+{"type":"caption","session":"<session>","stream":"display","id":"current","revision":42,"text":"Meet at the entrance.","expires_ms":6000}
+```
+
+The projection prioritizes the latest message within the existing 256-character
+budget. Legacy receivers retain their existing identity, expiry and reset rules.
 
 ## Transport bounds
 
 Frames are JSON text, at most 16 KiB inbound. The host rejects browser Origin
 headers, validates the selected connector and pairing token, and accepts one
-active peer. Queues are bounded; overflow closes the connection and cancels its
-operation. Socket and heartbeat work run outside the UI thread. Session IDs fence
+active peer. Control queues are bounded; overflow closes the connection and cancels its
+operation. Display output uses a single replaceable pending snapshot. Socket and heartbeat work run outside the UI thread. Session IDs fence
 late traffic. No token is embedded in shared Avatar assets or public relay frames.
 
 Shared clients live under `connectors/websocket/`. Platform bridges translate
@@ -91,4 +108,9 @@ catalogue, generated native contracts and pure codecs through one host dependenc
 For numeric OSC displays, the host supplies a typed parameter lookup and receives
 integer frames and their send interval. The same SDK maps payload width and local capability names
 from each adapter's manifest; host code does not branch on a game to encode text.
+The SDK maps regions into the existing glyph buffer and selects changed chunks.
+A present header/footer uses the first/last row; messages use the remaining rows,
+with recent messages taking precedence. Layout and payload width come from the
+installed capability. Cached chunks are confirmed only after actual transmission.
+Updates preserve unaffected regions, including during static-content renewal.
 Socket, send-time pacing and cancellation remain with the host transport owner.

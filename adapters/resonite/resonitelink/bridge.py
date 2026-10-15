@@ -12,7 +12,7 @@ import time
 
 from websockets.asyncio.client import connect
 
-from link import Link, controls, field, install, loopback_url, STRING_TYPE, TEXT_TYPE
+from link import Link, controls, field, install, loopback_url, STRING_TYPE, TEXT_TYPE, TEXT_SOURCES
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "connectors/websocket/python"))
 from xrt_connector import Connector  # noqa: E402
@@ -28,12 +28,13 @@ STATUS_LABELS = {
 
 
 class ResoniteAdapter:
-    def __init__(self, link, components, text_id):
+    def __init__(self, link, components, text_id, region="full"):
         self.link = link
         self.components = components
         self.text_id = text_id
-        self.source_id = components.get("Text")
-        self.last_source = None
+        self.source_ids = {key: components[name] for key, name in TEXT_SOURCES.items() if name in components}
+        self.region = region
+        self.last_sources = {}
         self.publish_lock = asyncio.Lock()
         self.original_fields = {}
         self.applied_fields = {}
@@ -45,8 +46,8 @@ class ResoniteAdapter:
         self.connector = None
 
     async def prepare(self):
-        if self.source_id:
-            component = await self.link.component(self.source_id)
+        for source_id in self.source_ids.values():
+            component = await self.link.component(source_id)
             if (component.get("componentType") != STRING_TYPE
                     or component.get("members", {}).get("Value", {}).get("$type") != "string"):
                 raise ValueError("The XRT Text source must be a string ValueField")
@@ -66,11 +67,15 @@ class ResoniteAdapter:
         # Resolve after acquiring the lock: a queued update must not revive text
         # cleared by Stop, expiry or a connection reset while native writes wait.
         async with self.publish_lock:
-            value = self.captions.snapshot(time.monotonic() * 1000)
+            now = time.monotonic() * 1000
+            for region, source_id in self.source_ids.items():
+                value = self.captions.snapshot(now, region)
+                text = value["text"] if value else ""
+                if self.last_sources.get(region) != text:
+                    await self.link.write(source_id, Value=field("string", text))
+                    self.last_sources[region] = text
+            value = self.captions.snapshot(now, self.region)
             text = value["text"] if value else ""
-            if self.source_id and self.last_source != text:
-                await self.link.write(self.source_id, Value=field("string", text))
-                self.last_source = text
             if self.text_id and self.applied_fields.get("Text", {}).get("value") != text:
                 await self.write_text(Text=field("string", text))
 
@@ -81,10 +86,11 @@ class ResoniteAdapter:
     async def reset(self, _message):
         self.requested = False
         self.stop_pending = False
-        self.captions.reset()
+        if not self.captions.display_mode:
+            self.captions.reset()
         await self.link.write(self.components["Enabled"], Value=field("bool", False))
         await self.state({"status": "off"})
-        await self.clear({})
+        await self.clear({}, force=False)
 
     async def show_status(self):
         label = "Stopping…" if self.stop_pending else STATUS_LABELS.get(self.last_status, "Disconnected")
@@ -100,18 +106,23 @@ class ResoniteAdapter:
         self.last_status = status
         await self.show_status()
         if status != "active":
-            await self.clear({})
+            await self.clear({}, force=False)
 
     async def caption(self, message):
-        if not (self.source_id or self.text_id) or not self.requested or self.last_status != "active":
+        if not (self.source_ids or self.text_id) or not self.requested or self.last_status != "active":
             return
         now = time.monotonic() * 1000
         if self.captions.accept(message, now):
             await self.publish_text()
 
-    async def clear(self, _message):
-        self.captions.clear()
-        await self.publish_text()
+    async def display(self, message):
+        if self.captions.accept(message, time.monotonic() * 1000):
+            await self.publish_text()
+
+    async def clear(self, _message, force=True):
+        if force or not self.captions.display_mode:
+            self.captions.clear()
+            await self.publish_text()
 
     async def poll(self):
         while True:
@@ -130,11 +141,10 @@ class ResoniteAdapter:
                         self.requested = enabled
                         if not enabled:
                             self.stop_pending = True
-                            await self.clear({})
+                            await self.clear({}, force=False)
                             await self.show_status()
                         await self.connector.set_enabled(enabled)
-            if self.captions.snapshot(time.monotonic() * 1000) is None:
-                await self.publish_text()
+            await self.publish_text()
             await asyncio.sleep(0.25)
 
     async def finish(self):
@@ -144,11 +154,13 @@ class ResoniteAdapter:
         with contextlib.suppress(Exception):
             await self.link.write(self.components["Enabled"], Value=field("bool", False))
             await self.link.write(self.components["Status"], Value=field("string", "Disconnected"))
-        if self.source_id and self.last_source is not None:
+        for region, source_id in self.source_ids.items():
+            if region not in self.last_sources:
+                continue
             with contextlib.suppress(Exception):
-                current = (await self.link.component(self.source_id))["members"]["Value"]["value"]
-                if current == self.last_source:
-                    await self.link.write(self.source_id, Value=field("string", ""))
+                current = (await self.link.component(source_id))["members"]["Value"]["value"]
+                if current == self.last_sources[region]:
+                    await self.link.write(source_id, Value=field("string", ""))
         if self.text_id and self.applied_fields:
             with contextlib.suppress(Exception):
                 members = (await self.link.component(self.text_id))["members"]
@@ -171,13 +183,13 @@ async def run(args):
             print(json.dumps(await link.slot(args.slot, args.depth), indent=2, ensure_ascii=False))
         elif args.command == "install":
             profile = PROFILES[args.preset] if args.preset else None
-            print(json.dumps(await install(link, args.parent, args.preset, args.template, profile),
+            print(json.dumps(await install(link, args.parent, args.preset, args.template, profile, args.source),
                              indent=2, ensure_ascii=False))
         else:
-            adapter = ResoniteAdapter(link, await controls(link, args.slot, ensure_text=True), args.text)
+            adapter = ResoniteAdapter(link, await controls(link, args.slot, ensure_text=True), args.text, args.source)
             adapter.connector = Connector(
                 args.host, token, "resonite", on_reset=adapter.reset, on_state=adapter.state,
-                on_caption=adapter.caption, on_clear=adapter.clear,
+                on_caption=adapter.caption, on_clear=adapter.clear, on_display=adapter.display,
             )
             tasks = []
             try:
@@ -210,6 +222,8 @@ def main():
     bridge.add_argument("--slot", required=True, help="Current XRT slot ID")
     bridge.add_argument("--host", required=True, help="Local XRTranslate ws:// address")
     bridge.add_argument("--text", help="TextRenderer component ID for synchronized captions")
+    for command in (setup, bridge):
+        command.add_argument("--source", choices=tuple(TEXT_SOURCES), default="full", help="Text region for the renderer")
     args = parser.parse_args()
     if args.command == "install" and bool(args.preset) != bool(args.template):
         parser.error("Use --preset and --template together to create a caption object")

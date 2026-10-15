@@ -14,7 +14,7 @@ by each platform. XRTranslate provides the translation runtime.
 | XRTranslate host adapter | Validate requests, compose host capabilities and return actual operation state |
 | XRTranslate session infrastructure | Session ownership, input acquisition, cancellation and resource cleanup |
 | XRTranslate translation infrastructure | Audio, recognition, translation, scheduling and normalized results |
-| Caption source | Expose current plain text and result lifetime independently of its display |
+| Caption source | Expose header, messages, footer and their plain-text projections independently of display |
 | Presentation adapter | Bind native fields and create editable objects within platform permissions |
 
 ```mermaid
@@ -83,11 +83,11 @@ packaging checks that these copies match. Each installer owns its validation,
 asset creation and restoration. Caption windows reuse `CaptionAuthoring` and
 `CaptionPreview` while retaining their platform-specific selection and install actions.
 
-Text display accepts replacement, clear and lifetime with opaque source/result
-identity. Translation, lyrics and clock content belong to host producers; no
-content category enters the game protocol. The host selects the producer and
-retains its ownership. Native text and buffered parameter displays share this
-contract while retaining their actual update capacity.
+Text display is one full snapshot with header, visible messages and footer.
+Message expiry is independent of banner updates. Host output plugins select
+content; the companion SDK and receivers own region layout, native binding and
+buffered chunk updates. OSC and Avatar share the host's internal TextOutputPlugin
+for formatting and system sampling while retaining independent preferences.
 
 The Unity caption renderer is shared source under `presentation/unity/`. An
 installable adapter receives a checked resource copy and provides its own

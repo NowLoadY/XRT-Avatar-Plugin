@@ -6,8 +6,8 @@ place and style yourself.
 ## Install and connect
 
 1. Download and extract [the Overte script bundle](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.7/XRT-Avatar-Plugin-Overte-0.1.0-preview.7.zip).
-2. Start XRTranslate on the same computer. In **Avatar translation controls**,
-   select **Overte**, enable the plugin and **Send captions to the game component**.
+2. Start XRTranslate on the same computer. In **Avatar**,
+   select **Overte**, enable the plugin and **Display content**.
    Keep the connection address and pairing token available.
 3. In Overte, open **Edit → Running Scripts → From Disk** and select
    `adapters/overte/scripts/xrt-avatar.js` inside the extracted folder. Keep the
@@ -49,6 +49,7 @@ a location where Create is available.
 To use an existing object, choose it from the **Text object** list and select the
 **link icon**. The list shows editable Text objects within 30 meters and whether
 others can see them. Select **refresh** after adding or moving an object.
+Choose **All text**, **Header**, **Messages** or **Footer** as the object's text source.
 
 Use the **eye icon** to keep sample text visible while editing. Select it again
 to end the preview; starting translation also ends it. **Hide when empty** hides
@@ -62,9 +63,10 @@ for the current Interface session.
 
 ## Appearance
 
-Translation preserves the object's position, size, font and colors. Text wraps to
-fit, with an ellipsis when it is too long, and clears within eight seconds or when
-translation stops.
+Live text preserves the object's position, size, font and colors. It wraps to
+fit, with an ellipsis when it is too long. Messages disappear after their display
+time in XRTranslate. Stopping translation removes its messages; a configured
+header or footer remains until its source is cleared or the connection closes.
 
 New objects use the included Noto caption font, loaded over HTTPS, for common
 Chinese, Japanese, Korean, Latin, Greek and Cyrillic text. For a handwritten or

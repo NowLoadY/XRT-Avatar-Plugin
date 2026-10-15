@@ -1,4 +1,5 @@
 //! OSC connector metadata and buffered plain-text encoding. The host owns I/O.
+use crate::DisplaySnapshot;
 use std::{collections::VecDeque, time::Duration};
 use unicode_normalization::UnicodeNormalization;
 
@@ -64,6 +65,7 @@ pub struct CaptionContract {
     pub column_counts: &'static [usize],
     pub bytes_per_chunk: &'static [usize],
     pub interval_ms: u64,
+    pub receiver_idle_ms: Option<u64>,
 }
 
 impl CaptionContract {
@@ -131,6 +133,10 @@ impl CaptionLayout {
     }
 
     fn glyphs(self, text: &str) -> Vec<u16> {
+        self.glyphs_with_limit(text, self.contract.slots)
+    }
+
+    fn glyphs_with_limit(self, text: &str, limit: usize) -> Vec<u16> {
         let normalized: String = text
             .chars()
             .map(|c| {
@@ -144,13 +150,13 @@ impl CaptionLayout {
             })
             .nfc()
             .collect();
-        let mut glyphs = Vec::with_capacity(self.contract.slots + 1);
+        let mut glyphs = Vec::with_capacity(limit + 1);
         let mut previous_line_empty = false;
         'lines: for (line_index, line) in normalized.trim().split('\n').enumerate() {
             if line_index > 0 {
                 let remaining = self.columns - glyphs.len() % self.columns;
                 if remaining != self.columns || previous_line_empty {
-                    glyphs.resize((glyphs.len() + remaining).min(self.contract.slots + 1), 0);
+                    glyphs.resize((glyphs.len() + remaining).min(limit + 1), 0);
                 }
             }
             previous_line_empty = line.trim().is_empty();
@@ -159,28 +165,25 @@ impl CaptionLayout {
                 let column = glyphs.len() % self.columns;
                 if word_index > 0 && column != 0 {
                     if width <= self.columns && column + width + 1 > self.columns {
-                        glyphs.resize(
-                            (glyphs.len() + self.columns - column).min(self.contract.slots + 1),
-                            0,
-                        );
+                        glyphs.resize((glyphs.len() + self.columns - column).min(limit + 1), 0);
                     } else {
                         glyphs.push(0x20);
                     }
                 }
                 for character in word.chars().filter(|c| !c.is_control()) {
-                    if glyphs.len() > self.contract.slots {
+                    if glyphs.len() > limit {
                         break 'lines;
                     }
                     glyphs.push(u16::try_from(character as u32).unwrap_or(0xfffd));
                 }
             }
-            if glyphs.len() > self.contract.slots {
+            if glyphs.len() > limit {
                 break;
             }
         }
-        if glyphs.len() > self.contract.slots {
-            glyphs.truncate(self.contract.slots);
-            glyphs[self.contract.slots - 1] = 0x2026;
+        if glyphs.len() > limit {
+            glyphs.truncate(limit);
+            glyphs[limit - 1] = 0x2026;
         }
         glyphs
     }
@@ -189,26 +192,199 @@ impl CaptionLayout {
         let glyphs = self.glyphs(text);
         let mut frames = VecDeque::from([vec![self.clear_write()]]);
         for (pointer, chunk) in glyphs.chunks(self.bytes / 2).enumerate() {
-            let mut bytes = chunk
-                .iter()
-                .flat_map(|glyph| glyph.to_be_bytes())
-                .chain(std::iter::repeat(0));
-            let mut values = Vec::with_capacity(self.bytes / self.contract.integer_bytes + 1);
-            for index in 0..self.bytes / self.contract.integer_bytes {
-                let packed = bytes
-                    .by_ref()
-                    .take(self.contract.integer_bytes)
-                    .fold(0u32, |value, byte| (value << 8) | u32::from(byte));
-                values.push((
-                    format!("{}{index}", self.contract.data_prefix),
-                    packed as i32,
-                ));
-            }
-            // One OSC bundle writes payload before committing its chunk pointer.
-            values.push((self.contract.pointer.into(), pointer as i32));
-            frames.push_back(values);
+            frames.push_back(self.write_chunk(pointer, &self.pack(chunk)));
         }
         frames
+    }
+
+    fn pack(self, chunk: &[u16]) -> Vec<i32> {
+        let mut bytes = chunk
+            .iter()
+            .flat_map(|glyph| glyph.to_be_bytes())
+            .chain(std::iter::repeat(0));
+        (0..self.bytes / self.contract.integer_bytes)
+            .map(|_| {
+                bytes
+                    .by_ref()
+                    .take(self.contract.integer_bytes)
+                    .fold(0u32, |value, byte| (value << 8) | u32::from(byte)) as i32
+            })
+            .collect()
+    }
+
+    fn write_chunk(self, pointer: usize, data: &[i32]) -> Vec<(String, i32)> {
+        let mut values: Vec<_> = data
+            .iter()
+            .enumerate()
+            .map(|(index, value)| (format!("{}{index}", self.contract.data_prefix), *value))
+            .collect();
+        // One OSC bundle writes payload before committing its chunk pointer.
+        values.push((self.contract.pointer.into(), pointer as i32));
+        values
+    }
+
+    fn canvas(self, snapshot: &DisplaySnapshot) -> (Vec<Vec<i32>>, Vec<usize>) {
+        let snapshot = snapshot.normalized();
+        let start = if snapshot.header.is_some() {
+            self.columns
+        } else {
+            0
+        };
+        let end = self.contract.slots
+            - if snapshot.footer.is_some() {
+                self.columns
+            } else {
+                0
+            };
+        let capacity = end - start;
+        let mut body = String::new();
+        for message in snapshot.messages.iter().rev() {
+            let candidate = if body.is_empty() {
+                message.text.clone()
+            } else {
+                format!("{}\n{body}", message.text)
+            };
+            if body.is_empty() || self.glyphs_with_limit(&candidate, capacity + 1).len() <= capacity
+            {
+                body = candidate;
+            } else {
+                break;
+            }
+        }
+        let mut cells = vec![0; self.contract.slots];
+        for (offset, capacity, text) in [
+            (0, self.columns, snapshot.header.as_deref().unwrap_or("")),
+            (start, capacity, body.as_str()),
+            (end, self.columns, snapshot.footer.as_deref().unwrap_or("")),
+        ] {
+            if text.is_empty() {
+                continue;
+            }
+            let glyphs = self.glyphs_with_limit(text, capacity);
+            cells[offset..offset + glyphs.len()].copy_from_slice(&glyphs);
+        }
+        let size = self.bytes / 2;
+        let priority = (start / size..end / size)
+            .chain(0..start / size)
+            .chain(end / size..cells.len() / size)
+            .collect();
+        (
+            cells.chunks(size).map(|chunk| self.pack(chunk)).collect(),
+            priority,
+        )
+    }
+}
+
+/// One pending write; the delivery owner must confirm only actual sends.
+#[derive(Clone, Debug)]
+pub struct CaptionFrame {
+    pub values: Vec<(String, i32)>,
+    chunk: Option<usize>,
+    data: Vec<i32>,
+}
+
+/// Latest desired display and locally delivered chunks. It performs no I/O.
+pub struct CaptionBuffer {
+    layout: CaptionLayout,
+    desired: Vec<Vec<i32>>,
+    delivered: Vec<Option<Vec<i32>>>,
+    priority: Vec<usize>,
+    clear_pending: bool,
+    last_pointer: Option<usize>,
+}
+
+impl CaptionBuffer {
+    pub fn new(layout: CaptionLayout) -> Self {
+        let (desired, priority) = layout.canvas(&DisplaySnapshot::default());
+        let delivered = vec![None; desired.len()];
+        Self {
+            layout,
+            desired,
+            delivered,
+            priority,
+            clear_pending: true,
+            last_pointer: None,
+        }
+    }
+
+    pub fn replace(&mut self, snapshot: &DisplaySnapshot) {
+        (self.desired, self.priority) = self.layout.canvas(snapshot);
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.desired.iter().flatten().all(|value| *value == 0)
+    }
+
+    pub fn clear(&mut self) {
+        self.replace(&DisplaySnapshot::default());
+        self.delivered.fill(None);
+        self.clear_pending = true;
+        self.last_pointer = None;
+    }
+
+    pub fn is_current(&self, frame: &CaptionFrame) -> bool {
+        match frame.chunk {
+            None => self.clear_pending,
+            Some(index) => !self.clear_pending && self.desired[index] == frame.data,
+        }
+    }
+
+    pub fn discard(&mut self, frame: &CaptionFrame) {
+        if let Some(index) = frame.chunk {
+            self.delivered[index] = None;
+        }
+        self.last_pointer = None;
+    }
+
+    pub fn confirm(&mut self, frame: CaptionFrame) {
+        if let Some(index) = frame.chunk {
+            self.delivered[index] = Some(frame.data);
+            self.last_pointer = Some(index);
+        } else {
+            for entry in &mut self.delivered {
+                *entry = Some(vec![
+                    0;
+                    self.layout.bytes / self.layout.contract.integer_bytes
+                ]);
+            }
+            self.clear_pending = false;
+            self.last_pointer = None;
+        }
+    }
+
+    /// Empty receivers need no heartbeat. An idle receiver is rebuilt from the
+    /// desired snapshot; otherwise a changed pointer renews its existing text.
+    pub fn next_frame(&mut self, idle: Duration) -> Option<CaptionFrame> {
+        if self.clear_pending {
+            return Some(CaptionFrame {
+                values: vec![self.layout.clear_write()],
+                chunk: None,
+                data: Vec::new(),
+            });
+        }
+        let timeout = self
+            .layout
+            .contract
+            .receiver_idle_ms
+            .map(Duration::from_millis);
+        if timeout.is_some_and(|timeout| idle >= timeout) {
+            self.delivered.fill(None);
+        }
+        let changed = self
+            .priority
+            .iter()
+            .copied()
+            .find(|index| self.delivered[*index].as_ref() != Some(&self.desired[*index]));
+        let renewal = timeout.is_some_and(|timeout| idle >= timeout / 2) && !self.is_empty();
+        let index = changed.or_else(|| {
+            renewal.then(|| (self.last_pointer.unwrap_or(0) + 1) % self.desired.len())
+        })?;
+        let data = self.desired[index].clone();
+        Some(CaptionFrame {
+            values: self.layout.write_chunk(index, &data),
+            chunk: Some(index),
+            data,
+        })
     }
 }
 
@@ -296,5 +472,67 @@ mod tests {
         let truncated = layout.glyphs(&"文".repeat(130));
         assert_eq!(truncated.len(), layout.contract.slots);
         assert_eq!(truncated[layout.contract.slots - 1], 0x2026);
+    }
+
+    #[test]
+    fn sections_update_without_clearing_and_only_confirmed_chunks_are_cached() {
+        let layout = CaptionLayout {
+            contract: &Connector::Chilloutvr.osc().unwrap().caption,
+            columns: 32,
+            bytes: 8,
+        };
+        let mut buffer = CaptionBuffer::new(layout);
+        let mut snapshot = DisplaySnapshot {
+            header: Some("12:00".into()),
+            footer: Some("XRT".into()),
+            messages: vec![crate::DisplayMessage {
+                id: "1".into(),
+                text: "Meet by the stairs".into(),
+                ttl_ms: 8000,
+            }],
+        };
+        buffer.replace(&snapshot);
+        let clear = buffer.next_frame(Duration::ZERO).unwrap();
+        assert!(clear.chunk.is_none());
+        buffer.confirm(clear);
+        let first = buffer.next_frame(Duration::ZERO).unwrap();
+        assert_eq!(first.chunk, Some(8)); // The body precedes clock/footer updates.
+        buffer.confirm(first);
+        while let Some(frame) = buffer.next_frame(Duration::ZERO) {
+            buffer.confirm(frame);
+        }
+
+        snapshot.header = Some("12:01".into());
+        buffer.replace(&snapshot);
+        let clock = buffer.next_frame(Duration::ZERO).unwrap();
+        assert_eq!(clock.chunk, Some(1));
+        assert_eq!(buffer.next_frame(Duration::ZERO).unwrap().data, clock.data);
+        snapshot.header = Some("12:02".into());
+        buffer.replace(&snapshot);
+        assert!(!buffer.is_current(&clock));
+        buffer.discard(&clock);
+        let replacement = buffer.next_frame(Duration::ZERO).unwrap();
+        assert_eq!(replacement.chunk, clock.chunk);
+        assert_ne!(replacement.data, clock.data);
+        buffer.confirm(replacement);
+        assert!(buffer.next_frame(Duration::ZERO).is_none());
+
+        snapshot.messages.clear();
+        buffer.replace(&snapshot);
+        let mut erased = 0;
+        while let Some(frame) = buffer.next_frame(Duration::ZERO) {
+            assert!((8..24).contains(&frame.chunk.unwrap()));
+            assert!(frame.data.iter().all(|value| *value == 0));
+            buffer.confirm(frame);
+            erased += 1;
+        }
+        assert!(erased > 0);
+        let previous = buffer.last_pointer;
+        let renewal = buffer.next_frame(Duration::from_secs(10)).unwrap();
+        assert!(renewal.chunk.is_some() && renewal.chunk != previous);
+        assert!(buffer.is_current(&renewal));
+        buffer.confirm(renewal);
+        assert!(buffer.next_frame(Duration::ZERO).is_none());
+        assert!(buffer.next_frame(Duration::from_secs(21)).is_some());
     }
 }
