@@ -8,6 +8,12 @@
 
 Start and stop [XRTranslate](https://github.com/NowLoadY/XRTranslate) from your avatar's menu or in-game controls. Display translations on editable text objects in Overte and Resonite, or on attachments in Second Life.
 
+<p align="center">
+  <img src="docs/adapters/vrchat/images/board-placement-concept.jpg" alt="Kipfel, Mamehinata and Usasaki holding white translation boards, shown in full body" width="900" />
+  <br />
+  <sub>Board concept · <a href="https://mukumi.booth.pm/items/5813187">Kipfel</a> · <a href="https://mukumi.booth.pm/items/4340548">Mamehinata</a> · <a href="https://mukumi.booth.pm/items/3550881">Usasaki</a> by もち山金魚</sub>
+</p>
+
 ## Preview
 
 *AI-generated illustrations.*
