@@ -70,7 +70,7 @@ The authoring interface follows XRTranslate's light surfaces, dark gray text,
 8 px corner radii and restrained blue interaction feedback. Shared browser styles
 live in `presentation/designer/theme.css`. Theme changes are scoped to the tool;
 they do not change the user's game or editor theme. The
-[layout preview](../tools/preview-presentation.html) uses the same source and
+[layout preview](tools/layout-preview.md) uses the same source and
 profiles and supports positioning without a game client.
 
 ## Native integration

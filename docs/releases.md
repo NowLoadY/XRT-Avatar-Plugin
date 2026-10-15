@@ -2,7 +2,8 @@
 
 Releases provide installable platform components with explicit XRTranslate
 host requirements. The primary user entry is the root README and each platform's installation
-guide. Source archives are for development.
+guide. Resonite and Second Life use the source archive with their platform setup
+guides.
 
 ## Downloads
 
@@ -19,9 +20,7 @@ to `dist/release/metadata/` and remain available in the Actions artifact. Publis
 the VPM index at `vpm/index.json` and include checksums in the release notes.
 
 `release/compatibility.json` owns the target host version, development revision
-and setup guide. The root README owns the user-facing host requirement;
-platform guides and release notes link to its installation section.
-Host releases follow XRTranslate's own release cycle.
+and setup guide. Host releases follow XRTranslate's own release cycle.
 The Unity package's `package.json` owns its package version and SDK range. Release
 tags use `v<package version>`. Connector-core crate versions follow their Rust API
 lifecycle and remain independently pinned by the host.

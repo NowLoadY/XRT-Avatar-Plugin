@@ -64,6 +64,10 @@ object and are not published as translations.
 
 ## Native authoring
 
+The tablet's **Caption objects** button opens `designer.html` through
+`tablet.gotoWebScreen()`. The page exchanges actions and state with the script
+through `EventBridge`.
+
 The designer lists nearby editable Text entities with `Entities.findEntitiesByType`
 and binds the selected ID. It does not depend on Create's internal selection state.
 Create's Entity List includes local objects when its **Local entities** filter is
