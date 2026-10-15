@@ -1,11 +1,8 @@
 # ChilloutVR adapter
 
-Adds **XRT Translation** to Advanced Avatar Settings. XRTranslate handles audio,
-translation and session status through the shared OSCQuery connector.
-
-Copy `Assets/XRT-Avatar-Plugin/Editor/` into a CCK project, select the avatar and
-use **Tools → XRT-Avatar-Plugin → ChilloutVR → Avatar Controls**.
+Adds **XRT Translation** to your avatar's Advanced Avatar Settings so you can
+start and stop XRTranslate in ChilloutVR. Install the downloadable Unity package
+in your CCK avatar project.
 
 [Installation and operation](../../docs/adapters/chilloutvr/installation.md) ·
-[Protocol](protocol/avatar-parameters.json) ·
 [Compatibility](../../docs/adapters/chilloutvr/compatibility.md)

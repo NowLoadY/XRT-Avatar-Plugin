@@ -100,5 +100,5 @@ before removing the receiver. See [installation](installation.md).
 The source uses documented LSL JSON, HTTP, attachment and touch APIs. The relay
 requires Python 3.10 or later; the local bridge requires Node.js 22.4 or later.
 Source and protocol checks do not establish an in-world simulator or viewer
-compatibility result. See [installation](installation.md) for setup and a focused
-in-world acceptance procedure.
+compatibility result. See [installation](installation.md) for setup and
+[development](development.md#in-world-checks) for the in-world acceptance procedure.

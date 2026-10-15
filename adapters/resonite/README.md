@@ -1,12 +1,10 @@
-# Resonite adapter
+# Resonite
 
 Translation controls, a live text source and editable caption objects for
-Resonite Avatars. Bind the source to your own native text, UI or ProtoFlux graph,
-or start with a horizontal, vertical or board caption object.
+Resonite Avatars. Fonts, colors and placement remain editable in Resonite.
 
-The ResoniteLink bridge updates the source while native components own its
-appearance. Fonts, colors and placement remain editable in Resonite.
+[Set up Resonite](../../docs/adapters/resonite/installation.md)
 
-[Installation and use](../../docs/adapters/resonite/installation.md)
-
-Source: [`resonitelink/`](resonitelink/).
+This setup uses Python and a terminal, in a session where you can enable
+ResoniteLink. [Development](../../docs/adapters/resonite/development.md)
+covers integrations and verification.

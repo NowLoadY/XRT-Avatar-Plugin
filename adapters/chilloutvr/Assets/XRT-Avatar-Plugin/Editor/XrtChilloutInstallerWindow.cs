@@ -103,7 +103,7 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
             showInGame = EditorGUILayout.Foldout(showInGame, "In game", true);
             if (showInGame)
                 EditorGUILayout.LabelField(
-                    "Upload this avatar, then enable OSC in ChilloutVR and the ChilloutVR Avatar connector in XRTranslate. Use XRT Translation in Advanced Avatar Settings to turn translation on or off.",
+                    "Upload this avatar, then turn on Settings > Implementation > OSC in ChilloutVR. In XRTranslate, enable Avatar translation controls and select ChilloutVR. Use XRT Translation in Advanced Avatar Settings to start or stop.",
                     EditorStyles.wordWrappedLabel);
             EditorGUILayout.EndScrollView();
         }

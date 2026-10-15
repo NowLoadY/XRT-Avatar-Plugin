@@ -1,116 +1,83 @@
-# Overte
+# Install in Overte
 
-Control translation from the tablet and place captions on a Text object of your
-choice.
+Use the tablet to control translation and display captions on an object you can
+place and style yourself.
 
-## Install
+## Install and connect
 
-1. Download and extract [the Overte script bundle](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.3/XRT-Avatar-Plugin-Overte-0.1.0-preview.3.zip).
-   Start an [XRTranslate development build](https://github.com/NowLoadY/XRTranslate/blob/main/docs/avatar-connectors.md) with Avatar controls (planned for XRTranslate 0.3.4).
-   In Avatar translation controls, select **Overte**, enable the plugin, and copy
-   its connection address and pairing token. Enable **Send captions to the game
-   component**.
-2. In Overte, open **Edit → Running Scripts → From Disk** and select
-   `adapters/overte/scripts/xrt-avatar.js` from the extracted bundle. Keep its
-   directory structure intact.
-3. Open the tablet and select the **link icon**. Paste the address and pairing
-   token from XRTranslate. Connecting does not start translation.
-4. Select the **play icon** to start. The control becomes a **square**; select it
-   to stop, including while translation is starting.
+1. Download and extract [the Overte script bundle](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.4/XRT-Avatar-Plugin-Overte-0.1.0-preview.4.zip).
+2. Start XRTranslate on the same computer. In **Avatar translation controls**,
+   select **Overte**, enable the plugin and **Send captions to the game component**.
+   Keep the connection address and pairing token available.
+3. In Overte, open **Edit → Running Scripts → From Disk** and select
+   `adapters/overte/scripts/xrt-avatar.js` inside the extracted folder. Keep the
+   rest of the extracted files in place.
+4. Open the tablet and select the **link icon**. Paste the address and pairing
+   token from XRTranslate. Connecting leaves translation off.
 
-Hover over an icon to see its action. The square is highlighted while translation
-is running. An hourglass means the control is waiting. The arrow retries after an
-error; the link reconnects after a lost connection.
+Avatar controls are planned for XRTranslate 0.3.4. This preview currently requires
+an [XRTranslate development build](https://github.com/NowLoadY/XRTranslate/blob/main/docs/avatar-connectors.md).
 
-Run XRTranslate on the same computer. Pairing tokens are not saved in the script
-or Avatar; copy a fresh token from XRTranslate when needed.
+## Start and stop
 
-## Choose a caption object
+Select the **play icon** to start translation. It becomes a **square** that stops
+translation or cancels startup. The square is highlighted while translation is
+running.
 
-Open **Caption objects** using the tablet's display icon. Select one of the three
-cards to create and bind a Text object:
+Hover over an icon to see its action. An hourglass means the control is waiting.
+The arrow retries after an error; the link reconnects after a lost connection.
+After changing Avatar or visiting another domain, connect again and press play.
+Copy a fresh pairing token from XRTranslate when needed.
+
+## Add captions
+
+Open **Caption objects** using the tablet's display icon. Select a card to create
+and connect an object:
 
 | Object | Appearance |
 | --- | --- |
 | Horizontal | A wide, light caption panel. |
-| Portrait | A narrow panel with ordinary horizontal lines. |
-| Board | Transparent text to place on a board or drawing surface. |
+| Portrait | A narrow panel with horizontal lines of text. |
+| Board | Transparent text to place on your own board or drawing surface. |
 
-The object starts in front of you. Open **Create → Entity List**, enable its
-**Local entities** filter and choose the object by name. Move, rotate and resize
-it with the normal Create tools. Adjust its font, colors, margins and background
-in Properties. You can attach it to a prop or Avatar using the normal parenting
-controls. Work in a location where Create is available.
+The object appears in front of you. Open **Create → Entity List**, enable
+**Local entities** and choose the object by name. Use Create to move, rotate and
+resize it, then change its font, colors, margins and background in Properties.
+The object stays where you place it. Work in a location where Create is available.
 
-To use your own Text object, select it from the **Text object** list and press the
-**link icon**. The list includes editable objects within 30 meters. Its label
-shows whether the object is visible only to you or to others. Press **refresh**
-after adding or moving an object.
+To use an existing object, choose it from the **Text object** list and select the
+**link icon**. The list shows editable Text objects within 30 meters and whether
+others can see them. Select **refresh** after adding or moving an object.
 
-Use the **eye icon** to hold a sample caption while editing. Select it again to
-stop the preview; starting translation also ends the sample preview. **Hide when empty** controls whether
-the whole object disappears between captions. The **broken-link icon** unbinds the
-object and restores the text and visibility it had before binding. The object and
-its design remain in your scene.
+Use the **eye icon** to keep sample text visible while editing. Select it again
+to end the preview; starting translation also ends it. **Hide when empty** hides
+the object between captions. The **broken-link icon** disconnects the object and
+restores its previous text and visibility while keeping your design.
 
-New presets are local and visible only to you. Binding an existing shared object
-makes captions visible wherever that object is visible. Export objects from Create
-to keep a reusable copy. Local objects last for the current Interface session.
+New objects are visible only to you. An existing shared object shows captions
+to the people who can see that object. Export objects from Create to keep a
+reusable copy; local objects last for the current Interface session.
 
-## Text and placement
+## Appearance
 
-Translation updates the bound object's text. Position, rotation, size, font and
-colors stay as you set them. Long text wraps to the available space and ends in an
-ellipsis when it cannot fit. Custom renderers can read the current plain text
-without display wrapping. Captions clear within eight seconds and when translation stops.
+Translation preserves the object's position, size, font and colors. Text wraps to
+fit, with an ellipsis when it is too long, and clears within eight seconds or when
+translation stops.
 
-The Board preset adds transparent text; use your own board artwork and font to
-make a handwritten or illustrated sign. No preset follows your head or changes
-its position when a new caption arrives.
+For a handwritten or illustrated sign, place the Board text on your own artwork
+and choose its font in Create.
 
-## Custom rendering
+## Remove and restore
 
-The script publishes the current plain-text caption through Overte's local Messages API
-on `XRT/CaptionSource`. It is independent of the selected Text object and is not
-saved in entity metadata or settings.
+Stop the script in **Running Scripts**. Its tablet controls disappear, translation
+stops and the bound object's previous text is restored. Objects you created or
+edited remain available.
 
-```json
-{"type":"caption","source":"XRTranslate","value":{"text":"Translated text","stream":"42","id":"turn-1","revision":1,"expiresAt":1790000000000}}
-{"type":"clear","source":"XRTranslate"}
-```
+To use it again, load `xrt-avatar.js` and reconnect. The previous object binding is
+reused if the object still exists.
 
-`expiresAt` is a Unix timestamp in milliseconds. Consumers clear at that deadline
-and on `clear`, and accept only local messages. Use
-[`caption-source.js`](../../../adapters/overte/examples/caption-source.js) as a
-small starting point for a custom renderer. Apply visual wrapping in the renderer
-instead of changing the shared source.
+This is a preview. Installation, VR interaction and text appearance still need
+verification in the Overte client.
 
-## Avatar installation and removal
-
-To bind the script to an Avatar, host `adapters/overte/scripts/`,
-`connectors/websocket/javascript/` and `presentation/` with the repository's
-relative directory layout, then add `script = <xrt-avatar.js URL>` to its FST.
-Use one installation method at a time. Avatar scripts stop when their Avatar is
-removed. Interface scripts disconnect when the Avatar or domain session changes;
-pair again to use the new session.
-
-Stop the script in **Running Scripts**, or remove its FST entry. The adapter stops
-translation, removes its tablet controls and restores the bound object's text.
-Objects you created or edited remain available. The last binding is reused if the
-same object still exists when the script restarts.
-
-## Compatibility
-
-Game-client and VR acceptance still require a real Overte run, including Create's
-local-object editing, multilingual font coverage, native text measurements,
-parented objects and controller hover states.
-
-- [Avatar script lifecycle and FST installation](https://docs.overte.org/en/latest/script/avatar-scripts.html)
-- [Interface script installation](https://docs.overte.org/en/latest/script/interface-scripts.html)
-- [WebSocket API](https://apidocs.overte.org/WebSocket.html)
-- [Tablet API](https://apidocs.overte.org/TabletProxy.html)
-- [Tablet button icons and states](https://apidocs.overte.org/TabletButtonProxy.html)
-- [Text entities and editable properties](https://apidocs.overte.org/Entities.html#EntityProperties-Text)
-- [Native text measurement](https://apidocs.overte.org/Entities.html#.textSize)
-- [Local Messages API](https://apidocs.overte.org/Messages.html)
-- [Create entity list and local-object filter](https://github.com/overte-org/overte/blob/master/scripts/system/create/entityList/entityList.js)
+For Avatar script installation or custom displays, see the
+[development guide](https://github.com/NowLoadY/XRT-Avatar-Plugin/blob/main/docs/adapters/overte/development.md).

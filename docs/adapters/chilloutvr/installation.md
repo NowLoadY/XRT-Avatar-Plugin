@@ -1,68 +1,79 @@
 # Install for ChilloutVR
 
-## Add the translation menu
+Add **XRT Translation** to your avatar's Advanced Avatar Settings to start and
+stop translation in XRTranslate.
 
-1. Open your ChilloutVR CCK project and finish the avatar's normal animator
-   setup. The CCK's **Create Animator** and **Attach created Override to Avatar**
-   controls provide this setup for an avatar using generated settings.
-2. Download [the ChilloutVR Unity package](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.3/XRT-Avatar-Plugin-ChilloutVR-0.1.0-preview.3.unitypackage).
-   In Unity, choose **Assets → Import Package → Custom Package** and import it.
-3. Open **Tools → XRT-Avatar-Plugin → ChilloutVR → Avatar Controls**. Save the
-   scene, then drag the avatar into the **Avatar** field. You can also select it
-   in the Hierarchy and click the avatar icon beside the field.
-4. Click **+** beside **Translation menu**. Your existing avatar controls and
-   animation overrides are kept.
-5. Click the save icon and upload through the CCK.
+## Before you start
 
-The status changes to **Added** when the avatar is ready. Hover over an icon for
-its action. The help icon opens this guide; **In game** expands the connection
-instructions.
+Use ChilloutVR and XRTranslate on the same PC, and have an avatar Unity project
+you can edit and upload. Make a backup of the project.
 
-## Start translation
+XRTranslate must include **Avatar translation controls**, planned for **0.3.4**.
+The current **0.3.3** release cannot use this plugin. See
+[XRTranslate's Avatar controls guide](https://github.com/NowLoadY/XRTranslate/blob/main/docs/avatar-connectors.md)
+for host setup.
 
-1. Run an [XRTranslate development build](https://github.com/NowLoadY/XRTranslate/blob/main/docs/avatar-connectors.md)
-   with Avatar controls, planned for XRTranslate 0.3.4. Configure the audio
-   source, languages and translation services.
-2. Enable OSC in **Settings → Implementation → OSC** in ChilloutVR.
-3. In XRTranslate, enable Avatar translation controls and select **ChilloutVR**.
-4. Wear the uploaded avatar and wait for the connection to show **Off**.
-5. Turn **XRT Translation** on in Advanced Avatar Settings to start translation,
-   and off to stop it.
+## 1. Prepare your avatar project
 
-After changing avatars or reconnecting, wait for **Off** and turn translation
-on again. Configure Chatbox output in XRTranslate's OSC plugin.
+Use a **CCK 4** project. Follow the official
+[Unity and CCK setup](https://docs.chilloutvr.net/cck/setup/) for its downloads,
+recommended Unity version and import steps. Import your avatar using its creator's
+instructions and open its scene.
 
-## Check or remove
+Sign in to the CCK with your username and **CCK Master Key**, available in
+**Community Hub → Profile settings → Access Key Management**.
 
-The refresh icon checks the selected avatar. Click **−** beside **Translation
-menu** to remove XRT, then save and upload the avatar again. Keep the plugin and
-its generated folders in the project until you have removed XRT from each avatar.
+Finish the avatar's normal animation setup before adding XRT. If XRT asks for an
+animator, follow [animator setup](troubleshooting.md#animator-setup).
 
-If you need to regenerate the avatar's animator, remove XRT first. Regenerate
-and attach the controller in the CCK, then add XRT again.
+## 2. Import XRT
 
-## Recover an edited setup
+1. Download [XRT-Avatar-Plugin for ChilloutVR](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.4/XRT-Avatar-Plugin-ChilloutVR-0.1.0-preview.4.unitypackage).
+2. In Unity, choose **Assets → Import Package → Custom Package**, select the
+   downloaded `.unitypackage` and import all its contents.
+3. Open **Tools → XRT-Avatar-Plugin → ChilloutVR → Avatar Controls**.
 
-If the window reports an edited or duplicate XRT setup:
+## 3. Add the menu and upload
 
-1. Save a copy of the project to keep your current changes.
-2. Restore the avatar's XRT setup and its generated folder from a known working
-   project backup. Keep the scene and assets from the same backup together.
-3. Refresh the window, remove XRT with **−**, then make your intended changes to
-   the avatar. Add XRT again after finishing its animator setup.
+1. Save your avatar scene and leave Unity's Play mode off. Drag the avatar from
+   the Hierarchy into the **Avatar** field, or select it and click the avatar icon.
+2. Click **+** beside **Translation menu**. When the status shows **Added**, click
+   the save icon. Existing avatar controls and animations are kept.
+3. In the CCK Control Panel, open **Builder**, select this avatar and complete
+   its details. Resolve any validation errors, then build and upload it.
+4. Open ChilloutVR and wear the uploaded avatar.
 
-Ask the avatar author for help if you are unsure which controller or settings to
-restore. Removing the editor package alone does not remove the avatar controls.
+Hover over an icon in the XRT window to see its action. The help icon opens this
+guide. CCK 4's [upload workflow](https://docs.chilloutvr.net/cck/setup/) runs in
+the Builder panel; leave Unity Play mode off.
 
-## Troubleshooting
+## 4. Start translation
 
-- **No toggle in the game:** save and upload the modified avatar, then wear
-  that uploaded version.
-- **Connection unavailable:** check OSC, the selected XRTranslate connector and
-  the installed avatar. Keep ChilloutVR's default OSCQuery service prefix.
-- **Audio source busy:** stop the task already using that source in XRTranslate.
+1. Open XRTranslate and configure your audio input, languages and outputs.
+2. In **Settings → Plugins → Avatar translation controls**, select **ChilloutVR**
+   and enable the plugin.
+3. In ChilloutVR, enable OSC under **Settings → Implementation → OSC**, as shown
+   in the [official OSC guide](https://docs.chilloutvr.net/chilloutvr/game/osc/).
+4. Wait for XRTranslate to show **Off**, then turn **XRT Translation** on in
+   **Advanced Avatar Settings**. Turn it off to stop translation.
 
-See [compatibility](compatibility.md) for supported versions and verification.
+After changing avatars or reconnecting, wait for **Off** and turn translation on
+again. Choose caption and speech outputs in XRTranslate; Chatbox is in its OSC
+plugin.
 
-Official guides: [CCK avatar settings](https://docs.chilloutvr.net/cck/components/cvr-avatar/),
-[OSC settings](https://docs.chilloutvr.net/chilloutvr/game/osc/).
+## Remove or update
+
+To remove XRT, select the avatar in the XRT window, click **−** beside
+**Translation menu**, save and upload again. Keep XRT installed until you have
+removed its menu from every avatar that uses it.
+
+To update, import the newer Unity package and keep the project's generated XRT
+folders. The refresh icon checks the selected avatar. Remove XRT before
+regenerating its animator, then add it again after attaching the new controller.
+If the window reports an edited setup, follow
+[recovery](troubleshooting.md#recover-an-edited-setup) before continuing.
+
+[Setup help](troubleshooting.md) · [Compatibility](compatibility.md)
+
+This is a preview; Unity import, upload and in-game operation still need live
+validation. The package currently adds translation menu controls.

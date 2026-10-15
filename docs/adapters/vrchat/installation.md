@@ -1,139 +1,103 @@
 # Install for VRChat
 
-Use your existing VRChat Avatar project in Creator Companion (VCC), with Unity
-2022.3.22f1 and Avatar SDK 3.10.x. This plugin targets XRTranslate **0.3.4**.
-Until that host release is available, use an [XRTranslate development build](https://github.com/NowLoadY/XRTranslate/blob/main/docs/avatar-connectors.md)
-with Avatar controls. XRTranslate 0.3.3 does not contain the Avatar connector.
+Add **XRT → Translation** to your avatar's Expressions menu to start and stop
+translation in XRTranslate.
 
-## Import the Unity package
+## Before you start
 
-1. Download [XRT-Avatar-Plugin-VRChat-0.1.0-preview.3.unitypackage](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.3/XRT-Avatar-Plugin-VRChat-0.1.0-preview.3.unitypackage).
-2. Open your Avatar project through VCC. In Unity, choose **Assets → Import
-   Package → Custom Package**, select the downloaded file and import its contents.
-3. Open **Tools → XRT-Avatar-Plugin → Avatar Controls**.
+Use VRChat and XRTranslate on the same PC, and have an avatar Unity project you
+can edit and upload. Make a backup of the project.
 
-The package contains the editor tool. You do not need to clone this repository,
-compile Rust or copy source folders. Keep the imported files together under
-`Assets/XRT-Avatar-Plugin/VRChat`.
+XRTranslate must include **Avatar translation controls**, planned for **0.3.4**.
+The current **0.3.3** release cannot use this plugin. See
+[XRTranslate's Avatar controls guide](https://github.com/NowLoadY/XRTranslate/blob/main/docs/avatar-connectors.md)
+for host setup.
 
-## Install through VCC
+## 1. Prepare your avatar project
 
-VCC manages package updates and dependencies. Use this path when managing your
-Avatar tools through Creator Companion:
+Open your existing project in **VRChat Creator Companion (VCC)**. If you are
+starting fresh, follow [VCC setup](https://vcc.docs.vrchat.com/guides/getting-started/),
+create an **Avatar** project and import your avatar using its creator's instructions.
+VCC helps install the Unity version required by VRChat.
 
-1. In VCC, open **Settings → Packages → Add Repository** and enter:
+Your account needs **New User** rank or higher to upload. Steam or Meta accounts
+must first be linked to a VRChat account. See
+[VRChat's upload requirements](https://creators.vrchat.com/avatars/creating-your-first-avatar/#requirements).
+
+## 2. Install XRT
+
+### Through VCC
+
+1. Open **Settings → Packages → Add Repository** and paste:
 
    ```text
    https://raw.githubusercontent.com/NowLoadY/XRT-Avatar-Plugin/main/vpm/index.json
    ```
 
-2. Add and enable the **XRT-Avatar-Plugin** repository. Enable **Show Pre-Release
-   Packages** to see the preview.
-3. Open **Manage Project** for your Avatar project and add
-   **XRT-Avatar-Plugin (VRChat)**.
-4. Open the project and choose **Tools → XRT-Avatar-Plugin → Avatar Controls**.
+2. Confirm and enable **XRT-Avatar-Plugin**. Enable **Show Pre-Release Packages**
+   to see this preview.
+3. Open your project's **Manage Project**, add **XRT-Avatar-Plugin (VRChat)**,
+   then open the project in Unity.
 
-VCC can migrate the tool folder from the Unity-package installation. Generated
-Avatar assets and restore records are stored separately and remain in the project.
-After moving to VCC, use VCC for updates.
+VCC manages later updates. These steps follow its
+[community repository workflow](https://vcc.docs.vrchat.com/guides/community-repositories/).
 
-## Add controls to your avatar
+### Or import the download
 
-1. Open and save the scene containing your avatar. Select the avatar in the
-   Hierarchy, then click the avatar icon beside the **Avatar** field, or drag
-   its Avatar Descriptor into that field.
-2. Review the status shown in the window. If the avatar needs expression setup,
-   follow the displayed instructions in its SDK **Expressions** panel.
-3. Click **+** beside **Translation menu**. Existing controls are preserved; a full menu
-   is retained in an **Avatar** submenu beside the new **XRT** submenu.
-4. Click the save icon, then upload your avatar using the VRChat SDK's normal
-   build and upload panel.
+Download [XRT-Avatar-Plugin for VRChat](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.4/XRT-Avatar-Plugin-VRChat-0.1.0-preview.4.unitypackage).
+In your avatar project, choose **Assets → Import Package → Custom Package**,
+select the downloaded `.unitypackage` and import all its contents. Use one
+installation method for the project.
 
-The tool adds an **XRT → Translation** toggle. The status changes to **Added**
-when the avatar is ready. Hover over any icon for its action; the help icon opens
-this guide. **In game** expands the short connection instructions.
+## 3. Add the menu
 
-## Avatars that use default Expressions
+1. Open and save the scene containing your avatar. Leave Unity's Play mode off.
+2. Open **Tools → XRT-Avatar-Plugin → Avatar Controls**.
+3. Drag the avatar from the Hierarchy into the **Avatar** field. Alternatively,
+   select it and click the avatar icon beside the field.
+4. Click **+** beside **Translation menu**. When the status shows **Added**, click
+   the save icon.
 
-If your avatar already has a custom menu, keep its assigned Menu and Parameters.
-For an avatar using VRChat's implicit default menu, create the custom Expressions
-that you want to retain before adding XRT:
+Existing menu controls are kept. If the menu was full, they appear in an
+**Avatar** submenu beside **XRT**. Hover over any icon to see its action.
+If the window asks for an Expressions menu, follow
+[Expressions setup](troubleshooting.md#expressions-setup), then return here.
 
-1. In the Project window, create **VRChat → Avatars → Expressions Menu** from the
-   **Assets → Create** menu. Select it and click **Create** beside Parameters.
-   Keep the SDK's default parameters when using its default action animations.
-2. Select the avatar's **VRC Avatar Descriptor → Expressions → Customize** and
-   assign these saved Menu and Parameters assets.
-3. Add the controls you want in the menu. For the SDK's default Action layer,
-   the standard emote controls are **Button** controls using the `VRCEmote` Int
-   parameter: Wave 1, Clap 2, Point 3, Cheer 4, Dance 5, Backflip 6, Sadness 7,
-   and Die 8. Custom Action layers may use a different mapping; retain the
-   avatar author's supplied assets for those avatars.
-4. Save the assets and return to the XRT window. Click the refresh icon,
-   then **+** beside **Translation menu**.
+## 4. Upload the avatar
 
-The custom menu becomes your avatar's Expressions menu. The installer preserves
-its controls and does not replace the Action animator.
+Open **VRChat SDK → Show Control Panel**, sign in and select **Builder**. Select
+your avatar, complete its details and resolve the listed errors. Choose the PC
+platform and **Build & Publish**. See the
+[official upload steps](https://creators.vrchat.com/avatars/creating-your-first-avatar/#step-6---going-to-the-build-tab--checking-if-the-avatar-is-ok)
+for the SDK panel. Wear the uploaded avatar in VRChat.
 
-## Start translation in VRChat
+## 5. Start translation
 
-1. Start a compatible XRTranslate development build. Complete audio and model setup, then choose
-   your input, languages and desired outputs.
+1. Open XRTranslate and configure your audio input, languages and outputs.
 2. In **Settings → Plugins → Avatar translation controls**, select **VRChat**
    and enable the plugin.
-3. Wear the uploaded avatar and enable **OSC** in VRChat's Action Menu.
-4. Wait for the host to show **Off**, then use **Expressions → XRT → Translation**.
-   Turn it on to start, and off to stop its translation session.
+3. In VRChat's Action Menu, turn on **OSC → Enabled** as described in the
+   [official OSC guide](https://docs.vrchat.com/docs/osc-overview#enabling-it).
+4. Wait for XRTranslate to show **Off**, then open
+   **Expressions → XRT → Translation**. Turn it on to start and off to stop.
 
-The menu checkmark is your request. XRTranslate reports Starting until audio and
-translation are ready, then Active. Connection changes reset the control to Off.
-Configure OSC Chatbox, overlays and TTS in XRTranslate according to your needs.
+XRTranslate shows **Starting** while preparing translation, then **Active**.
+After changing avatars or reconnecting, wait for **Off** and turn translation on
+again. Choose caption, overlay and speech outputs in XRTranslate; Chatbox is in
+its OSC plugin.
 
-## Check, update or remove
+## Remove or update
 
-The refresh icon checks the selected avatar. To remove its controls, click **−**
-beside **Translation menu**, save and upload the avatar again.
-Keep the editor package installed until you have restored every avatar that uses
-it. Then remove the VCC package or the imported `VRChat` tool folder.
+To remove XRT from an avatar, select it in the XRT window, click **−** beside
+**Translation menu**, save and upload again. Keep XRT installed until you have
+removed its menu from every avatar that uses it.
 
-Keep the generated XRT folders with your Avatar project. Remove the translation
-menu before deleting the editor package.
+For updates, use VCC if it manages your installation; otherwise import the newer
+Unity package. Keep the project's generated XRT folders. The refresh icon checks
+the selected avatar. If it reports an edited setup, follow
+[recovery](troubleshooting.md#recover-an-edited-setup) before continuing.
 
-## Recover an edited setup
+[Setup help](troubleshooting.md) · [Compatibility](compatibility.md)
 
-If the window reports an edited or duplicate XRT setup:
-
-1. Save a copy of the project to keep your current changes.
-2. Restore the avatar's XRT setup and its generated folder from a known working
-   project backup. Keep the scene and assets from the same backup together.
-3. Refresh the window, remove XRT with **−**, then make your intended changes to
-   the avatar's original Expressions. Add XRT again when those assets are saved.
-
-For a setup that was removed before its original Expressions changed, keep a
-project backup and inspect the retained `Installation.asset` in the generated
-XRT folder. Remove that record only after checking the avatar uses the original
-Menu and Parameters and that no avatar still uses the generated copies. The
-next **+** operation creates a fresh copy of the current Expressions. Ask the
-avatar author for help if you are unsure which assets are in use.
-
-## Troubleshooting
-
-- **No menu in the game:** save and upload the modified avatar, then wear that
-  uploaded version.
-- **Control stays unavailable:** check that the correct XRTranslate version is
-  running, the VRChat connector and OSC are enabled, and the installed avatar is
-  selected. Read the diagnostic in XRTranslate's plugin settings.
-- **Input is busy:** stop the task already using the selected microphone or
-  system input before starting this avatar's session.
-- **Compilation errors after import:** confirm the project is an Avatar project
-  with the supported SDK. Use one installation method and resolve Console
-  errors before uploading.
-
-This preview has package and protocol checks; Unity import and game-client
-acceptance remain pending. See [compatibility](compatibility.md) for version and
-release criteria. The current package installs menu controls; custom Avatar
-bubble rendering has a separate [presentation contract](presentation.md).
-
-Official guides: [VCC community repositories](https://vcc.docs.vrchat.com/guides/community-repositories/),
-[Unity package import](https://docs.unity3d.com/2022.3/Documentation/Manual/AssetPackagesImport.html),
-[VRChat Avatar upload](https://creators.vrchat.com/avatars/creating-your-first-avatar/).
+This is a preview; Unity import, upload and in-game operation still need live
+validation. The package currently adds translation menu controls.

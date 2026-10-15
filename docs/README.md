@@ -1,29 +1,37 @@
 # Documentation
 
-XRT-Avatar-Plugin connects virtual social platforms to XRTranslate. Project
-contracts define ownership and host integration; each platform adapter owns its
-interaction, transport mapping, installation and compatibility documentation.
+## Player guides
 
-## Using releases
+Choose your platform for setup, controls, captions and removal.
 
-- [Release packaging](releases.md): artifact formats and the release workflow.
-- [VRChat installation](adapters/vrchat/installation.md): install through Unity or VCC.
+| Platform | Guide |
+| --- | --- |
+| VRChat | [Install in Unity or VCC](adapters/vrchat/installation.md) |
+| ChilloutVR | [Install in an Avatar project](adapters/chilloutvr/installation.md) |
+| Overte | [Load the script and choose caption objects](adapters/overte/installation.md) |
+| Resonite | [Avatar controls and text objects](adapters/resonite/installation.md) — separate setup |
+| Second Life | [Attachment and relay](adapters/secondlife/installation.md) — separate setup |
 
-## Project contracts
+See the [project introduction and downloads](../README.md) for available packages
+and XRTranslate requirements.
 
-- [Architecture](architecture.md): repository layout and component ownership.
-- [Connector protocol](connector-protocol.md): pairing, reset, heartbeat and captions.
-- [Host integration](host-integration.md): session acquisition, results and cleanup.
-- [Presentation architecture](presentation-architecture.md): shared caption appearance, lifetime and visibility.
-- [Interaction](interaction.md): control states, icons and user-facing copy.
-- [Refactoring contract](refactoring-contract.md): stable interfaces and verification.
+## Development
 
-## Platform adapters
+- [Architecture](architecture.md): components, ownership and repository layout.
+- [Connector protocol](connector-protocol.md): pairing, controls and caption messages.
+- [Host integration](host-integration.md): XRTranslate sessions, results and cleanup.
+- [Presentation architecture](presentation-architecture.md): text sources, native bindings and presets.
+- [Interaction](interaction.md): control states, icons and wording.
+- [Refactoring contract](refactoring-contract.md): stable interfaces and focused verification.
+- [Release packaging](releases.md): package formats, building and publishing.
+- [README previews](previews.md): screenshot sources and capture steps.
 
-| Adapter | Documentation | Source |
-|---|---|---|
-| VRChat | [Overview and setup](adapters/vrchat/README.md) | [`adapters/vrchat`](../adapters/vrchat/README.md) |
-| ChilloutVR | [Setup](adapters/chilloutvr/installation.md) | [`adapters/chilloutvr`](../adapters/chilloutvr/README.md) |
-| Overte | [Setup](adapters/overte/installation.md) | [`adapters/overte`](../adapters/overte/README.md) |
-| Resonite | [Setup](adapters/resonite/installation.md) | [`adapters/resonite`](../adapters/resonite/README.md) |
-| Second Life | [Setup](adapters/secondlife/installation.md) | [`adapters/secondlife`](../adapters/secondlife/README.md) |
+## Platform reference
+
+| Platform | Development and compatibility |
+| --- | --- |
+| VRChat | [Development](adapters/vrchat/development.md) · [Adapter contracts](adapters/vrchat/README.md) · [Compatibility](adapters/vrchat/compatibility.md) |
+| ChilloutVR | [Presentation](adapters/chilloutvr/presentation.md) · [Compatibility](adapters/chilloutvr/compatibility.md) |
+| Overte | [Development guide](adapters/overte/development.md) |
+| Resonite | [Development guide](adapters/resonite/development.md) |
+| Second Life | [Development](adapters/secondlife/development.md) · [Relay setup](adapters/secondlife/relay-setup.md) · [Adapter architecture](adapters/secondlife/README.md) |

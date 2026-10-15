@@ -103,7 +103,7 @@ namespace XrtAvatarPlugin.Editor
             showInGame = EditorGUILayout.Foldout(showInGame, "In game", true);
             if (showInGame)
                 EditorGUILayout.LabelField(
-                    "Upload this avatar, then enable OSC in VRChat and the VRChat Avatar connector in XRTranslate. Use Expressions > XRT > Translation to turn translation on or off.",
+                    "Upload this avatar, then turn on OSC > Enabled in VRChat. In XRTranslate, enable Avatar translation controls and select VRChat. Use Expressions > XRT > Translation to start or stop.",
                     EditorStyles.wordWrappedLabel);
             EditorGUILayout.EndScrollView();
         }
