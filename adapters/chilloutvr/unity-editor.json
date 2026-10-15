@@ -1,0 +1,12 @@
+{
+  "output": "Assets/XRT-Avatar-Plugin/Editor/XrtChilloutInstallerWindow.cs",
+  "sdk_namespace": "ABI.CCK.Components",
+  "namespace": "XrtAvatarPlugin.ChilloutVR.Editor",
+  "window": "XrtChilloutInstallerWindow",
+  "avatar_type": "CVRAvatar",
+  "installer": "XrtChilloutInstaller",
+  "remove_method": "Remove",
+  "platform": "ChilloutVR",
+  "menu_path": "Tools/XRT-Avatar-Plugin/ChilloutVR/Avatar Controls",
+  "in_game": "Upload this avatar, then turn on Settings > Implementation > OSC in ChilloutVR. In XRTranslate, enable Avatar translation controls and select ChilloutVR. Use XRT Translation in Advanced Avatar Settings to start or stop."
+}

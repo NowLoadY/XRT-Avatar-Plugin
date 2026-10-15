@@ -26,6 +26,8 @@ The integration target is VRChat on Windows with XRTranslate running on the
 same PC, in desktop or PCVR mode.
 
 The editor source targets Unity 2022.3.22f1 and the Avatar SDK 3.10.x API family.
+The default-parameter API and its editor assembly reference have been checked
+against the official SDK 3.10.0 and 3.10.5 source packages.
 Follow the [official Unity version](https://creators.vrchat.com/sdk/upgrade/current-unity-version/)
 and [SDK releases](https://creators.vrchat.com/releases/) when updating the target.
 
@@ -36,7 +38,10 @@ versions and verify the following:
 
 1. Install on a copy of an Avatar, preserve original menu/parameters, reject
    collisions, retain a full root menu in a submenu, and restore an unchanged installation. An
-   edited installation must produce a diagnostic without destructive removal.
+   edited installation must produce a diagnostic without destructive removal. Check
+   Undo/Redo, discarded scene changes and reinstallation after editing the originals.
+   Cover default avatars, missing Parameters references, and existing MA/VRCFury
+   menu components without changing their original assets.
 2. Confirm generated parameters are unsaved/unsynchronized; upload with the
    official SDK, enable OSC and observe values on the correct Avatar.
 3. Validate the implemented [host integration](host-integration.md) against the

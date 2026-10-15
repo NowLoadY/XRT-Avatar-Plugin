@@ -176,7 +176,8 @@ def main() -> None:
     dirty = bool(git("status", "--porcelain", "--untracked-files=normal").strip())
     if args.require_clean and dirty:
         parser.error("The source checkout must be clean for release packaging")
-    subprocess.run([sys.executable, str(ROOT / "tools/generate_presentation.py"), "--check"], check=True)
+    for generator in ("generate_presentation.py", "generate_unity_editor.py"):
+        subprocess.run([sys.executable, str(ROOT / "tools" / generator), "--check"], check=True)
     tracked = tracked_files()
     compatibility = json.loads(read_source("release/compatibility.json", tracked))
     host = compatibility["host"]

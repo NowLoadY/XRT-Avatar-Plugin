@@ -1,7 +1,7 @@
 <h1 align="center">XRT-Avatar-Plugin</h1>
 
 <p align="center">
-  <a href="https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/tag/v0.1.0-preview.4">Download</a> ·
+  <a href="https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/tag/v0.1.0-preview.5">Download</a> ·
   <a href="#install">Install</a> ·
   <a href="docs/README.md">Guides</a>
 </p>
@@ -50,11 +50,11 @@ Choose your game and follow its setup guide:
 
 | Game | Features | Download | Setup |
 |---|---|---|---|
-| VRChat | Avatar translation menu | [Unity package](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.4/XRT-Avatar-Plugin-VRChat-0.1.0-preview.4.unitypackage) | [Unity / VCC](docs/adapters/vrchat/installation.md) |
-| ChilloutVR | Avatar translation toggle | [Unity package](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.4/XRT-Avatar-Plugin-ChilloutVR-0.1.0-preview.4.unitypackage) | [CCK project](docs/adapters/chilloutvr/installation.md) |
-| Overte | Tablet controls and caption objects | [Script bundle](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.4/XRT-Avatar-Plugin-Overte-0.1.0-preview.4.zip) | [Running Scripts](docs/adapters/overte/installation.md) |
-| Resonite | Avatar controls and caption objects | [Source archive](https://github.com/NowLoadY/XRT-Avatar-Plugin/archive/refs/tags/v0.1.0-preview.4.zip) | [ResoniteLink](docs/adapters/resonite/installation.md) |
-| Second Life | Attachment controls and captions | [Source archive](https://github.com/NowLoadY/XRT-Avatar-Plugin/archive/refs/tags/v0.1.0-preview.4.zip) | [Attachment / relay](docs/adapters/secondlife/installation.md) |
+| VRChat | Avatar translation menu | [Unity package](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.5/XRT-Avatar-Plugin-VRChat-0.1.0-preview.5.unitypackage) | [Unity / VCC](docs/adapters/vrchat/installation.md) |
+| ChilloutVR | Avatar translation toggle | [Unity package](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.5/XRT-Avatar-Plugin-ChilloutVR-0.1.0-preview.5.unitypackage) | [CCK project](docs/adapters/chilloutvr/installation.md) |
+| Overte | Tablet controls and caption objects | [Script bundle](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.5/XRT-Avatar-Plugin-Overte-0.1.0-preview.5.zip) | [Running Scripts](docs/adapters/overte/installation.md) |
+| Resonite | Avatar controls and caption objects | [Source archive](https://github.com/NowLoadY/XRT-Avatar-Plugin/archive/refs/tags/v0.1.0-preview.5.zip) | [ResoniteLink](docs/adapters/resonite/installation.md) |
+| Second Life | Attachment controls and captions | [Source archive](https://github.com/NowLoadY/XRT-Avatar-Plugin/archive/refs/tags/v0.1.0-preview.5.zip) | [Attachment / relay](docs/adapters/secondlife/installation.md) |
 
 In XRTranslate, set your audio input, languages and outputs. Open **Settings → Plugins → Avatar translation controls**, select your game and enable the plugin. Follow your game's guide to connect it and use the translation switch.
 

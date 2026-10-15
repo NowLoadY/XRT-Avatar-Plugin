@@ -23,21 +23,22 @@ animator, follow [animator setup](troubleshooting.md#animator-setup).
 
 ## 2. Import XRT
 
-1. Download [XRT-Avatar-Plugin for ChilloutVR](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.4/XRT-Avatar-Plugin-ChilloutVR-0.1.0-preview.4.unitypackage).
+1. Download [XRT-Avatar-Plugin for ChilloutVR](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.5/XRT-Avatar-Plugin-ChilloutVR-0.1.0-preview.5.unitypackage).
 2. In Unity, choose **Assets → Import Package → Custom Package**, select the
    downloaded `.unitypackage` and import all its contents.
 3. Open **Tools → XRT-Avatar-Plugin → ChilloutVR → Avatar Controls**.
 
 ## 3. Add the menu and upload
 
-1. Save your avatar scene and leave Unity's Play mode off. Drag the avatar from
-   the Hierarchy into the **Avatar** field, or select it and click the avatar icon.
+1. Save your avatar scene and leave Unity's Play mode off. Select your avatar in
+   the Hierarchy; the **Avatar** field follows your selection. You can also drag it in.
 2. Click **+** beside **Translation menu**. When the status shows **Added**, click
    the save icon. Existing avatar controls and animations are kept.
 3. In the CCK Control Panel, open **Builder**, select this avatar and complete
    its details. Resolve any validation errors, then build and upload it.
 4. Open ChilloutVR and wear the uploaded avatar.
 
+You can also open the window from the CVR Avatar component's context menu.
 Hover over an icon in the XRT window to see its action. The help icon opens this
 guide. CCK 4's [upload workflow](https://docs.chilloutvr.net/cck/setup/) runs in
 the Builder panel; leave Unity Play mode off.
@@ -61,6 +62,8 @@ plugin.
 To remove XRT, select the avatar in the XRT window, click **−** beside
 **Translation menu**, save and upload again. Keep XRT installed until you have
 removed its menu from every avatar that uses it.
+
+Use Unity's **Edit → Undo / Redo** to reverse an add or removal.
 
 To update, import the newer Unity package and keep the project's generated XRT
 folders. The refresh icon checks the selected avatar. Remove XRT before

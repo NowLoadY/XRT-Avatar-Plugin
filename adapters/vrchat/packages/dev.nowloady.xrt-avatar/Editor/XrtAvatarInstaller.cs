@@ -43,7 +43,7 @@ namespace XrtAvatarPlugin.Editor
             try
             {
                 string ownerId = ValidateAvatar(avatar);
-                XrtAvatarInstallationRecord record = FindRecord(ownerId);
+                XrtAvatarInstallationRecord record = FindAssignedRecord(avatar, ownerId);
                 if (record != null)
                 {
                     ValidateRecord(record);
@@ -57,24 +57,17 @@ namespace XrtAvatarPlugin.Editor
                                     "Upload the avatar with the VRChat SDK when ready."),
                             CanRemove = true
                         };
-                    if (!UsesOriginalExpressions(avatar, record))
-                        throw ExternalChanges(record);
-                    ValidateOriginalSourceUnchanged(record);
-                    return new InstallationStatus
-                    {
-                        Title = "Not added",
-                        Detail = "Your original menu is restored. You can add translation again.",
-                        CanInstall = true
-                    };
+                    throw ExternalChanges(record);
                 }
-                ValidateSourceAssets(avatar);
+                ValidateSourceAssets(avatar, out VRCExpressionsMenu sourceMenu, out _);
                 return new InstallationStatus
                 {
                     Title = "Not added",
-                    Detail = avatar.expressionsMenu.controls != null &&
-                        avatar.expressionsMenu.controls.Count == MaxMenuControls
-                        ? "Your menu is full. Its controls will stay together under Avatar, beside the new XRT menu."
-                        : "Adds XRT > Translation. Your existing controls are kept.",
+                    Detail = sourceMenu == null
+                        ? "Replaces VRChat's default menu with XRT > Translation. Remove to restore it."
+                        : sourceMenu.controls != null && sourceMenu.controls.Count == MaxMenuControls
+                            ? "Your menu is full. Its controls will stay together under Avatar, beside the new XRT menu."
+                            : "Adds XRT > Translation. Your existing controls are kept.",
                     CanInstall = true
                 };
             }
@@ -93,23 +86,18 @@ namespace XrtAvatarPlugin.Editor
         internal static string Install(VRCAvatarDescriptor avatar)
         {
             string ownerId = ValidateAvatar(avatar);
-            XrtAvatarInstallationRecord existing = FindRecord(ownerId);
+            XrtAvatarInstallationRecord existing = FindAssignedRecord(avatar, ownerId);
             if (existing != null)
             {
                 ValidateRecord(existing);
                 ValidateOwnedAssets(existing);
                 if (UsesInstalledExpressions(avatar, existing))
                     return "Translation menu is already added.";
-                if (!UsesOriginalExpressions(avatar, existing))
-                    throw ExternalChanges(existing);
-                ValidateOriginalSourceUnchanged(existing);
-
-                // Recover a previous installation whose scene assignment was not saved.
-                ApplyExpressions(avatar, existing.installedMenu, existing.installedParameters, true);
-                return "Translation menu added again. Save the scene before uploading.";
+                throw ExternalChanges(existing);
             }
 
-            ValidateSourceAssets(avatar);
+            ValidateSourceAssets(avatar, out VRCExpressionsMenu sourceMenu,
+                out VRCExpressionParameters sourceParameters);
             Texture2D menuIcon = AssetDatabase.LoadAssetAtPath<Texture2D>(AssetDatabase.GUIDToAssetPath(MenuIconGuid));
             if (menuIcon == null)
                 throw new InvalidOperationException("The translation menu icon is missing. Reimport the XRT package, then try again.");
@@ -138,11 +126,11 @@ namespace XrtAvatarPlugin.Editor
                         value = 1
                     }
                 };
-                bool wrapOriginalMenu = originalMenu.controls != null &&
-                    originalMenu.controls.Count == MaxMenuControls;
+                bool wrapOriginalMenu = sourceMenu != null && sourceMenu.controls != null &&
+                    sourceMenu.controls.Count == MaxMenuControls;
                 var menu = wrapOriginalMenu
                     ? NewAsset<VRCExpressionsMenu>(transientObjects)
-                    : CloneOrCreate(originalMenu, transientObjects);
+                    : CloneOrCreate(sourceMenu, transientObjects);
                 menu.name = "XRT Root";
                 if (menu.controls == null)
                     menu.controls = new List<VRCExpressionsMenu.Control>();
@@ -151,7 +139,7 @@ namespace XrtAvatarPlugin.Editor
                     {
                         name = "Avatar",
                         type = VRCExpressionsMenu.Control.ControlType.SubMenu,
-                        subMenu = originalMenu,
+                        subMenu = sourceMenu,
                         parameter = new VRCExpressionsMenu.Control.Parameter { name = string.Empty }
                     });
                 menu.controls.Add(new VRCExpressionsMenu.Control
@@ -162,11 +150,10 @@ namespace XrtAvatarPlugin.Editor
                     subMenu = submenu,
                     parameter = new VRCExpressionsMenu.Control.Parameter { name = string.Empty }
                 });
-                var parameters = CloneOrCreate(originalParameters, transientObjects);
+                var parameters = CloneOrCreate(sourceParameters, transientObjects);
                 parameters.name = "XRT Parameters";
-                var entries = new List<VRCExpressionParameters.Parameter>(
-                    originalParameters == null ? Array.Empty<VRCExpressionParameters.Parameter>() :
-                    parameters.parameters ?? Array.Empty<VRCExpressionParameters.Parameter>());
+                var entries = new List<VRCExpressionParameters.Parameter>(SourceParameters(
+                    sourceParameters == null ? null : parameters));
                 entries.Add(Parameter(XrtAvatarProtocol.Enabled, VRCExpressionParameters.ValueType.Bool, 0));
                 entries.Add(Parameter(XrtAvatarProtocol.Status, VRCExpressionParameters.ValueType.Int, 0));
                 entries.Add(Parameter(XrtAvatarProtocol.VersionParameter, VRCExpressionParameters.ValueType.Int,
@@ -188,8 +175,6 @@ namespace XrtAvatarPlugin.Editor
                 record.hadOriginalParameters = originalParameters != null;
                 record.originalMenu = originalMenu;
                 record.originalParameters = originalParameters;
-                record.originalMenuSourceHash = SourceHash(originalMenu);
-                record.originalParametersSourceHash = SourceHash(originalParameters);
                 record.installedMenu = menu;
                 record.installedParameters = parameters;
                 record.xrtMenu = submenu;
@@ -199,7 +184,7 @@ namespace XrtAvatarPlugin.Editor
                 Persist(record, folder + "/Installation.asset", createdPaths);
 
                 descriptorTouched = true;
-                ApplyExpressions(avatar, menu, parameters, true);
+                ApplyExpressions(avatar, menu, parameters, true, "Add XRT Translation");
                 return "Added XRT > Translation. Save the scene, then upload this avatar with the VRChat SDK.";
             }
             catch (Exception failure)
@@ -235,23 +220,17 @@ namespace XrtAvatarPlugin.Editor
         internal static string Restore(VRCAvatarDescriptor avatar)
         {
             string ownerId = ValidateAvatar(avatar);
-            XrtAvatarInstallationRecord record = FindRecord(ownerId);
+            XrtAvatarInstallationRecord record = FindAssignedRecord(avatar, ownerId);
             if (record == null)
                 return "Translation menu is not added to this avatar.";
             ValidateRecord(record);
-            bool alreadyRestored = UsesOriginalExpressions(avatar, record);
-            if (!alreadyRestored)
-            {
-                if (!UsesInstalledExpressions(avatar, record))
-                    throw ExternalChanges(record);
-                ValidateOwnedAssets(record);
-            }
+            if (!UsesInstalledExpressions(avatar, record))
+                throw ExternalChanges(record);
+            ValidateOwnedAssets(record);
 
-            // Retain the record even after restoration. The scene and asset database are saved
-            // separately; an "uninstalled" flag could otherwise strand an unsaved scene.
-            if (!alreadyRestored)
-                ApplyExpressions(avatar, record.originalMenu, record.originalParameters,
-                    record.originalCustomExpressions);
+            // Keep generated assets for Undo/Redo and for scenes saved before removal.
+            ApplyExpressions(avatar, record.originalMenu, record.originalParameters,
+                record.originalCustomExpressions, "Remove XRT Translation");
             return "Translation menu removed. Save the scene, then upload this avatar again.";
         }
 
@@ -271,28 +250,51 @@ namespace XrtAvatarPlugin.Editor
             return id.ToString();
         }
 
-        private static void ValidateSourceAssets(VRCAvatarDescriptor avatar)
+        private static void ValidateSourceAssets(VRCAvatarDescriptor avatar,
+            out VRCExpressionsMenu menu, out VRCExpressionParameters parameterAsset)
         {
-            if (!avatar.customExpressions)
-                throw new InvalidOperationException("Set up this avatar's Expressions menu first. Open the setup guide with the help icon for the steps.");
-            if (avatar.expressionsMenu == null || avatar.expressionParameters == null)
-                throw new InvalidOperationException("Assign Menu and Parameters in VRC Avatar Descriptor > Expressions, then save them. The setup guide has the steps.");
-            RequirePersistentSource(avatar.expressionsMenu);
-            RequirePersistentSource(avatar.expressionParameters);
-            var controls = avatar.expressionsMenu != null ? avatar.expressionsMenu.controls : null;
+            menu = avatar.customExpressions ? avatar.expressionsMenu : null;
+            parameterAsset = avatar.customExpressions ? avatar.expressionParameters : null;
+            // A menu created in the SDK inspector may already carry its parameter asset.
+            if (parameterAsset == null && menu != null)
+                parameterAsset = menu.Parameters;
+            RequirePersistentSource(menu);
+            RequirePersistentSource(parameterAsset);
+            var controls = menu != null ? menu.controls : null;
             if (controls != null && controls.Count > MaxMenuControls)
                 throw new InvalidOperationException("The existing root menu exceeds VRChat's limit of 8 controls. " +
                     "Move extra controls into submenus before adding XRT.");
             if (controls != null && controls.Any(control => control != null && control.name == "XRT"))
                 throw new InvalidOperationException("This avatar already has an XRT menu. Follow the recovery steps in the setup guide before adding it again.");
-            var parameters = avatar.expressionParameters != null ? avatar.expressionParameters.parameters : null;
-            if (parameters == null)
-                return;
+            var parameters = SourceParameters(parameterAsset);
             if (parameters.Length + ReservedParameters.Length > MaxExpressionParameters)
                 throw new InvalidOperationException("This avatar has no room for the translation controls. Free space in its Expressions Parameters before adding XRT.");
             foreach (var parameter in parameters)
                 if (parameter != null && ReservedParameters.Contains(parameter.name))
                     throw new InvalidOperationException("This avatar already has XRT controls. Follow the recovery steps in the setup guide before adding them again.");
+            if (menu != null && parameterAsset == null)
+                ValidateDefaultParameterReferences(menu, new HashSet<VRCExpressionsMenu>(),
+                    new HashSet<string>(parameters.Where(p => p != null).Select(p => p.name)));
+        }
+
+        private static VRCExpressionParameters.Parameter[] SourceParameters(VRCExpressionParameters source) =>
+            source != null ? source.parameters ?? Array.Empty<VRCExpressionParameters.Parameter>() :
+                VRC.SDK3.Editor.VRCExpressionParametersEditor.GetDefaultParameters();
+
+        private static void ValidateDefaultParameterReferences(VRCExpressionsMenu menu,
+            HashSet<VRCExpressionsMenu> visited, HashSet<string> names)
+        {
+            if (menu == null || !visited.Add(menu) || menu.controls == null)
+                return;
+            foreach (var control in menu.controls)
+            {
+                if (control == null) continue;
+                var references = new[] { control.parameter }.Concat(
+                    control.subParameters ?? Array.Empty<VRCExpressionsMenu.Control.Parameter>());
+                if (references.Any(p => p != null && !string.IsNullOrEmpty(p.name) && !names.Contains(p.name)))
+                    throw new InvalidOperationException("Assign this avatar's original Parameters asset in VRC Avatar Descriptor > Expressions, then save it.");
+                ValidateDefaultParameterReferences(control.subMenu, visited, names);
+            }
         }
 
         private static void RequirePersistentSource(Object asset)
@@ -301,28 +303,17 @@ namespace XrtAvatarPlugin.Editor
                 throw new InvalidOperationException("Save the existing Expressions assets before installing.");
         }
 
-        private static void ValidateOriginalSourceUnchanged(XrtAvatarInstallationRecord record)
-        {
-            RequirePersistentSource(record.originalMenu);
-            RequirePersistentSource(record.originalParameters);
-            if (SourceHash(record.originalMenu) != record.originalMenuSourceHash ||
-                SourceHash(record.originalParameters) != record.originalParametersSourceHash)
-                throw new InvalidOperationException("Your original Expressions have changed. Follow the recovery steps in the setup guide before adding XRT again.");
-        }
-
-        private static string SourceHash(Object asset)
-        {
-            return asset == null ? string.Empty :
-                AssetDatabase.GetAssetDependencyHash(AssetDatabase.GetAssetPath(asset)).ToString();
-        }
-
-        private static XrtAvatarInstallationRecord FindRecord(string ownerId)
+        private static XrtAvatarInstallationRecord FindAssignedRecord(VRCAvatarDescriptor avatar, string ownerId)
         {
             XrtAvatarInstallationRecord result = null;
             foreach (string guid in AssetDatabase.FindAssets("t:XrtAvatarInstallationRecord", new[] { "Assets" }))
             {
                 var record = AssetDatabase.LoadAssetAtPath<XrtAvatarInstallationRecord>(AssetDatabase.GUIDToAssetPath(guid));
-                if (record == null || record.avatarGlobalId != ownerId)
+                // Scene references own state; retained records support Undo and discarded saves.
+                // Match either reference so a partially edited setup is still protected.
+                if (record == null || record.avatarGlobalId != ownerId ||
+                    !((record.installedMenu != null && avatar.expressionsMenu == record.installedMenu) ||
+                      (record.installedParameters != null && avatar.expressionParameters == record.installedParameters)))
                     continue;
                 if (result != null)
                     throw new InvalidOperationException("More than one XRT setup was found for this avatar. Follow the recovery steps in the setup guide.");
@@ -344,12 +335,6 @@ namespace XrtAvatarPlugin.Editor
         {
             return record.installedMenu != null && record.installedParameters != null && avatar.customExpressions &&
                 avatar.expressionsMenu == record.installedMenu && avatar.expressionParameters == record.installedParameters;
-        }
-
-        private static bool UsesOriginalExpressions(VRCAvatarDescriptor avatar, XrtAvatarInstallationRecord record)
-        {
-            return avatar.customExpressions == record.originalCustomExpressions &&
-                avatar.expressionsMenu == record.originalMenu && avatar.expressionParameters == record.originalParameters;
         }
 
         private static void ValidateOwnedAssets(XrtAvatarInstallationRecord record)
@@ -439,11 +424,13 @@ namespace XrtAvatarPlugin.Editor
         }
 
         private static void ApplyExpressions(VRCAvatarDescriptor avatar, VRCExpressionsMenu menu,
-            VRCExpressionParameters parameters, bool custom)
+            VRCExpressionParameters parameters, bool custom, string undoName = null)
         {
             VRCExpressionsMenu previousMenu = avatar.expressionsMenu;
             VRCExpressionParameters previousParameters = avatar.expressionParameters;
             bool previousCustom = avatar.customExpressions;
+            if (undoName != null)
+                Undo.RecordObject(avatar, undoName);
             try
             {
                 avatar.expressionsMenu = menu;

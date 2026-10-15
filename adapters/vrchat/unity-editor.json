@@ -1,0 +1,12 @@
+{
+  "output": "packages/dev.nowloady.xrt-avatar/Editor/XrtAvatarInstallerWindow.cs",
+  "sdk_namespace": "VRC.SDK3.Avatars.Components",
+  "namespace": "XrtAvatarPlugin.Editor",
+  "window": "XrtAvatarInstallerWindow",
+  "avatar_type": "VRCAvatarDescriptor",
+  "installer": "XrtAvatarInstaller",
+  "remove_method": "Restore",
+  "platform": "VRChat",
+  "menu_path": "Tools/XRT-Avatar-Plugin/Avatar Controls",
+  "in_game": "Upload this avatar, then turn on OSC > Enabled in VRChat. In XRTranslate, enable Avatar translation controls and select VRChat. Use Expressions > XRT > Translation to start or stop."
+}

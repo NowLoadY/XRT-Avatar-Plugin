@@ -8,6 +8,7 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
     {
         [SerializeField, HideInInspector] internal int recordVersion = 1;
         [SerializeField, HideInInspector] internal string avatarGlobalId;
+        // Retained for version-1 assets; current state comes from the avatar's references.
         [SerializeField, HideInInspector] internal bool installed;
         [SerializeField, HideInInspector] internal bool originalUsesAdvancedSettings;
         [SerializeField, HideInInspector] internal bool originalHadSettings;

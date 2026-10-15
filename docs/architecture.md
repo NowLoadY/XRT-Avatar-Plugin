@@ -44,6 +44,7 @@ defines shared appearance, result lifetime and native rendering ownership.
 | `docs/` | Repository architecture and common host contracts |
 | `crates/connector-core/` | I/O-free lifecycle shared by every platform |
 | `connectors/websocket/` | Common JavaScript and Python wire clients |
+| `authoring/unity/` | Shared Unity window template; SDK-specific installers remain in adapters |
 | `presentation/` | Text source, optional layout, preset profiles and authoring styles |
 | `tools/` | Generated bindings, release packaging and visual preview |
 
@@ -65,5 +66,14 @@ that adapter. Shared abstractions follow concrete contracts established by
 implemented adapters.
 
 Installation preserves user-authored assets and records ownership of generated
-changes. Removal restores references only while that ownership remains
-verifiable. Platform-specific installation rules belong to the adapter guide.
+changes. Scene references determine whether an installation is active; records
+and generated assets remain available for Undo/Redo and previously saved scenes.
+Adding again copies the current source assets. Removal restores references only
+while ownership remains verifiable. Platform-specific installation rules belong
+to the adapter guide.
+
+The Unity window template shares selection, status, save and Undo interaction.
+`adapters/<platform>/unity-editor.json` supplies SDK bindings and labels.
+`tools/generate_unity_editor.py` emits the two SDK-specific windows; release
+packaging checks that these copies match. Each installer owns its validation,
+asset creation and restoration.

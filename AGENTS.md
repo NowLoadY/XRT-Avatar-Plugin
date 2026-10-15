@@ -5,7 +5,8 @@ platform-specific control; XRTranslate owns sessions, audio, translation and
 results. Share host capabilities through their existing owners.
 
 Keep SDK integration and platform interaction under `adapters/<platform>/`.
-Shared lifecycle belongs in `crates/connector-core`; shared wire clients belong
+Shared Unity editor interaction belongs in `authoring/unity/`; adapter profiles
+provide SDK bindings and labels. Shared lifecycle belongs in `crates/connector-core`; shared wire clients belong
 in `connectors/`; shared text sources, caption layouts and presets belong in `presentation/`. XRTranslate owns host transports and session composition. Platform details belong in
 `docs/adapters/<platform>/`; top-level documents own repository and host rules.
 

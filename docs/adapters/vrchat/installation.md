@@ -39,7 +39,7 @@ VCC manages later updates. These steps follow its
 
 ### Or import the download
 
-Download [XRT-Avatar-Plugin for VRChat](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.4/XRT-Avatar-Plugin-VRChat-0.1.0-preview.4.unitypackage).
+Download [XRT-Avatar-Plugin for VRChat](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.5/XRT-Avatar-Plugin-VRChat-0.1.0-preview.5.unitypackage).
 In your avatar project, choose **Assets → Import Package → Custom Package**,
 select the downloaded `.unitypackage` and import all its contents. Use one
 installation method for the project.
@@ -48,15 +48,17 @@ installation method for the project.
 
 1. Open and save the scene containing your avatar. Leave Unity's Play mode off.
 2. Open **Tools → XRT-Avatar-Plugin → Avatar Controls**.
-3. Drag the avatar from the Hierarchy into the **Avatar** field. Alternatively,
-   select it and click the avatar icon beside the field.
+3. Select your avatar in the Hierarchy. The **Avatar** field follows your selection;
+   you can also drag an avatar into it.
 4. Click **+** beside **Translation menu**. When the status shows **Added**, click
    the save icon.
 
+You can also open the window from the Avatar Descriptor component's context menu.
 Existing menu controls are kept. If the menu was full, they appear in an
 **Avatar** submenu beside **XRT**. Hover over any icon to see its action.
-If the window asks for an Expressions menu, follow
-[Expressions setup](troubleshooting.md#expressions-setup), then return here.
+For a default avatar, **+** creates its XRT menu and parameters automatically;
+**−** restores VRChat's default menu. If the avatar has custom controls but is
+missing their Parameters asset, see [Expressions setup](troubleshooting.md#expressions-setup).
 
 ## 4. Upload the avatar
 
@@ -86,6 +88,9 @@ its OSC plugin.
 To remove XRT from an avatar, select it in the XRT window, click **−** beside
 **Translation menu**, save and upload again. Keep XRT installed until you have
 removed its menu from every avatar that uses it.
+
+Use Unity's **Edit → Undo / Redo** to reverse an add or removal. After removing
+XRT, you can edit the original menu and add XRT again.
 
 For updates, use VCC if it manages your installation; otherwise import the newer
 Unity package. Keep the project's generated XRT folders. The refresh icon checks

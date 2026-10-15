@@ -31,11 +31,12 @@ lifecycle and remain independently pinned by the host.
    download links and installation guides. Keep existing parameter and package
    identities stable. Check generated bindings with
    `python3 tools/generate_protocol.py --check`. The packager also checks the
-   shared presentation binding with `tools/generate_presentation.py --check`.
+   shared presentation binding and Unity windows with
+   `tools/generate_presentation.py --check` and `tools/generate_unity_editor.py --check`.
 2. Commit the source and create its version tag. Use a clean checkout to build:
 
    ```sh
-   python3 tools/build_release.py --version 0.1.0-preview.4 \
+   python3 tools/build_release.py --version 0.1.0-preview.5 \
      --output dist/release --require-clean
    ```
 

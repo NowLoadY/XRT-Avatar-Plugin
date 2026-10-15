@@ -20,6 +20,30 @@ The Rust package name `xrt-avatar-control`, VPM package ID
 XRTranslate owns sessions and the shared OSC/OSCQuery transport; see
 [host integration](host-integration.md) and [control protocol](control-protocol.md).
 
+## Unity authoring
+
+The shared window is generated from `authoring/unity/AvatarControlsWindow.cs.template`.
+Edit that template and run `python3 tools/generate_unity_editor.py` from the repository
+root. The installer remains here and uses the native Avatar Descriptor and
+Expressions assets. It leaves the Action/FX controllers and other tools' components
+in place. Generated controls keep their OSC parameter names, with saving and network
+sync disabled.
+
+When the descriptor has no custom menu, installation creates one and records
+the original references and `customExpressions` flag. The SDK's public
+`VRCExpressionParametersEditor.GetDefaultParameters()` supplies missing defaults;
+an existing menu's `Parameters` reference takes precedence. The installer rejects
+undeclared custom menu parameters instead of guessing types. The SDK sample
+`DefaultExpressionsMenu.asset` is empty and is not a copy of the client's default
+menu.
+
+This follows [Modular Avatar's menu composition](https://modular-avatar.nadena.dev/docs/reference/menu-installer)
+and [VRCFury's prefab workflow](https://vrcfury.com/getting-started/) principles of
+preserving author assets. Optional future integrations belong in this adapter;
+external OSC names must remain global, as described by
+[VRCFury](https://vrcfury.com/components/full-controller/#global-parameters) and
+[Modular Avatar](https://modular-avatar.nadena.dev/docs/reference/parameters).
+
 ## Generated bindings and lifecycle example
 
 Run from the repository root when changing the parameter contract:

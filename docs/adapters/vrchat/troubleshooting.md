@@ -4,28 +4,19 @@ Return to the [installation guide](installation.md) after completing these steps
 
 ## Expressions setup
 
-If your avatar already has a custom menu, keep its assigned Menu and Parameters.
-For an avatar using VRChat's implicit default menu, create the custom Expressions
-that you want to retain before adding XRT:
+XRT creates missing menu and default parameter assets when you click **+**.
+For an avatar with existing custom controls, it uses the Parameters assigned
+in the Avatar Descriptor or the menu's own Parameters field.
 
-1. In the Project window, create **VRChat → Avatars → Expressions Menu** from the
-   **Assets → Create** menu. Select it and click **Create** beside Parameters.
-   Keep the SDK's default parameters when using its default action animations.
-2. Select the avatar's **VRC Avatar Descriptor → Expressions → Customize** and
-   assign these saved Menu and Parameters assets.
-3. Add the controls you want in the menu. For the SDK's default Action layer,
-   the standard emote controls are **Button** controls using the `VRCEmote` Int
-   parameter: Wave 1, Clap 2, Point 3, Cheer 4, Dance 5, Backflip 6, Sadness 7,
-   and Die 8. Custom Action layers may use a different mapping; retain the
-   avatar author's supplied assets for those avatars.
-4. Save the assets and return to the XRT window. Click the refresh icon,
-   then **+** beside **Translation menu**.
+If XRT asks for the original Parameters asset, select **VRC Avatar Descriptor →
+Expressions** and assign the asset supplied with your avatar. Save the project
+and click the refresh icon in the XRT window. This preserves the types and
+settings required by the avatar's custom controls.
 
-The custom menu becomes your avatar's Expressions menu. The installer preserves
-its controls and does not replace the Action animator.
-
-See VRChat's [Expressions setup guide](https://creators.vrchat.com/avatars/expression-menu-and-controls/)
-for the SDK's menu and parameter fields.
+For a default avatar, adding XRT creates a custom Expressions menu in place of
+VRChat's default menu. Click **−** to restore the original setup. To create your
+own emote controls, follow VRChat's
+[Expressions guide](https://creators.vrchat.com/avatars/expression-menu-and-controls/).
 
 ## Recover an edited setup
 
@@ -36,13 +27,6 @@ If the window reports an edited or duplicate XRT setup:
    project backup. Keep the scene and assets from the same backup together.
 3. Refresh the window, remove XRT with **−**, then make your intended changes to
    the avatar's original Expressions. Add XRT again when those assets are saved.
-
-For a setup that was removed before its original Expressions changed, keep a
-project backup and inspect the retained `Installation.asset` in the generated
-XRT folder. Remove that record only after checking the avatar uses the original
-Menu and Parameters and that no avatar still uses the generated copies. The
-next **+** operation creates a fresh copy of the current Expressions. Ask the
-avatar author for help if you are unsure which assets are in use.
 
 ## Connection or upload problems
 
