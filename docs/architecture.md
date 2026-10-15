@@ -65,9 +65,10 @@ OSC Chatbox sending, formatting and destination settings belong to XRTranslate's
 OSC plugin; game adapters consume existing host outputs where applicable.
 
 Each adapter declares its supported platform capabilities, installation method,
-protocol and compatible host versions. SDK and transport details remain within
-that adapter. Shared abstractions follow concrete contracts established by
-implemented adapters.
+protocol and compatible host versions. Public protocol and package identity
+changes are versioned with their host requirements. SDK and transport details
+remain within that adapter. Shared abstractions follow concrete contracts
+established by implemented adapters.
 
 Installation records identify contributed menu controls, parameters, animation
 layers, receivers and text objects through assigned assets and components.

@@ -7,9 +7,8 @@ received glyphs. Other players see the text on the Avatar's surface.
 
 ## Ownership
 
-`presentation/unity/` owns the SDK-independent SDF font, shader, mesh and material
-helpers. `tools/sync_unity_presentation.py` copies these resources into the VRChat
-package. The release builder checks that the copies match their source.
+The [shared Unity renderer](../../unity-caption-rendering.md) owns the SDF font,
+shader, mesh, material helpers and package synchronization.
 
 `adapters/vrchat/` owns the expression parameters, Parameter Driver receiver,
 FX bindings, capability declaration and reversible installation. The companion
@@ -23,30 +22,15 @@ continues to own translation intent and runtime status.
 
 ## Display
 
-Each text object contains a background quad and 128 glyph quads. One unlit, transparent
-material renders a light rounded surface and dark text; the Board preset starts
-with a transparent background for custom signs and artwork. Horizontal uses four
-rows; Portrait uses sixteen. Parent, position, size and material colors remain
-editable. No head attachment is imposed.
+Each text object uses the shared 128-glyph mesh and material. Horizontal and Board
+use four rows; Portrait uses sixteen. The Board preset supplies transparent
+lettering for custom signs and artwork. Objects mirror one receiver and layout
+without adding synchronized parameters; each retains its own editable mesh,
+material and transform. They can follow a prop, bone or animated parent.
 
-Multiple text objects mirror one shared receiver and layout without adding
-synchronized parameters. Each object has its own mesh and material. A transparent
-text child can follow a user's prop, bone or animated parent; XRT does not drive
-its transform. Renaming or reparenting inside the avatar updates only its owned
-material animation bindings.
-
-An enabled header occupies the first row and a footer the last. The remaining
-rows show the newest messages that fit, in chronological order. Empty banners
-release their rows to messages. Each message expires independently; cancelling
-a translation task removes its messages while preserving other messages and banners.
-
-The renderer maps Unicode BMP values through a lookup texture to the bundled
-Noto Sans CJK SDF atlas. It uses proportional advances for Latin and other narrow
-glyphs. Unsupported characters use the replacement glyph. Font coverage,
-provenance and texture cost are recorded in
-[`XrtCaptionFont.json`](../../../presentation/unity/Runtime/Caption/XrtCaptionFont.json).
-The font license is packaged with the textures. This path uses no runtime font
-component, script or TextMeshPro dependency.
+The [shared presentation contract](../../presentation-architecture.md) defines
+region layout, message selection and expiry. The Unity renderer documents font
+coverage, resource costs and appearance controls.
 
 ## Synchronization and retention
 
@@ -70,12 +54,8 @@ A second FX layer drives all material bytes from the retained values using a
 Direct Blend Tree. The display state enables Write Defaults as recommended for
 direct blending; receive states use timed clips instead of zero-length loops.
 
-Each content update replaces the desired buffer. Only changed chunks are sent;
-the shared scheduler favors messages while reserving writes for pending header
-and footer changes. An unchanged region remains visible.
-Pending writes that no longer match the buffer are revoked. Message expiry and
-task cancellation update the affected rows. A new binding, an empty display or
-disabling display content requests a whole-surface clear.
+The [shared numeric display contract](../../connector-protocol.md#transport-bounds)
+owns changed-chunk selection, region scheduling and cancellation.
 
 The host leaves 200 ms between sent chunks and does not accumulate catch-up
 bursts. VRChat's state synchronization can skip updates, so text may briefly be
@@ -90,17 +70,20 @@ retained in [`third_party/VRCBitmapLed`](../../../third_party/VRCBitmapLed).
 The first text object copies the current expression parameters and FX controller,
 then adds one receiver and display layer. Default FX uses the SDK's face controller.
 The installation record tracks the added parameters, layer references, generated
-clips and each text renderer. Later objects add bindings to those clips.
-Each modification uses independent working assets, so duplicated Avatars and
-saved scene copies can be edited separately. At upload, bindings are rebuilt for
-the current hierarchy in temporary build assets.
+clips and each text renderer. Later objects add bindings to those clips. Operations
+follow the [shared asset ownership rules](../../architecture.md).
+
+Renderer identity, owned mesh/material and local paths resolve text objects.
+Bindings are derived from the current hierarchy during authoring operations and
+SDK preprocessing; moving objects alone does not write assets or add Undo steps.
+Preprocessing saves a separate controller and clips for the build Avatar, then
+postprocessing removes them. The original scene need not be open. Older records
+are read without saving during inspection and persisted by an authoring operation.
 
 Removal deletes the selected object's bindings and matching generated components.
 The final object also removes the recorded caption parameters and layers. User
-menu controls, animator additions and customized objects remain; working asset
-copies stay assigned so their edits are preserved. Remove caption objects before
-their translation menu. Generated assets remain available for Undo and saved
-scene references. Older records adopt the same ownership model when used.
+menu controls, animator additions and customized objects remain. Remove caption
+objects before their translation menu.
 
 ## Platform support
 

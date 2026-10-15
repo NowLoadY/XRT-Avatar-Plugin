@@ -50,9 +50,6 @@ namespace XrtAvatarPlugin.Editor
                 copies.Remap();
                 var workingControls = copies.Get(controls);
                 var workingCaption = copies.Get(caption);
-                string owner = GlobalObjectId.GetGlobalObjectIdSlow(avatar).ToString();
-                if (workingControls != null) workingControls.avatarGlobalId = owner;
-                if (workingCaption != null) workingCaption.avatarGlobalId = owner;
                 folder = CreateFolder("Edit-");
                 copies.Save(folder);
                 copies.RemapScene(avatar.gameObject, action);

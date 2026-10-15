@@ -18,7 +18,6 @@
 - [Host integration](host-integration.md) and [connector protocol](connector-protocol.md): sessions, controls and caption messages.
 - [Presentation](presentation-architecture.md) and [interaction](interaction.md): text sources, native objects and controls.
 - [Unity caption rendering](unity-caption-rendering.md): shared font, shader and editable surfaces.
-- [Refactoring](refactoring-contract.md): interfaces and verification.
 
 ## Tools
 

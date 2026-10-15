@@ -7,7 +7,6 @@ namespace XrtAvatarPlugin.Editor
     public sealed class XrtAvatarInstallationRecord : ScriptableObject
     {
         [SerializeField, HideInInspector] internal int recordVersion = 1;
-        [SerializeField, HideInInspector] internal string avatarGlobalId;
         [SerializeField, HideInInspector] internal bool originalCustomExpressions;
         [SerializeField, HideInInspector] internal bool hadOriginalMenu;
         [SerializeField, HideInInspector] internal bool hadOriginalParameters;

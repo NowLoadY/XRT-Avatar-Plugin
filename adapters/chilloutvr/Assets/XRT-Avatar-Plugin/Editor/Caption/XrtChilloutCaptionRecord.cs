@@ -9,7 +9,6 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
     public sealed class XrtChilloutCaptionRecord : ScriptableObject
     {
         [SerializeField, HideInInspector] internal int recordVersion = 1;
-        [SerializeField, HideInInspector] internal string avatarGlobalId;
         [SerializeField, HideInInspector] internal string rendererGlobalId;
         [SerializeField, HideInInspector] internal AnimatorOverrideController originalOverride;
         [SerializeField, HideInInspector] internal AnimatorController installedController;

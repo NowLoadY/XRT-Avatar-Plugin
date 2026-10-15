@@ -144,7 +144,6 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
                     if (record == null)
                     {
                         record = ScriptableObject.CreateInstance<XrtChilloutCaptionRecord>();
-                        record.avatarGlobalId = GlobalObjectId.GetGlobalObjectIdSlow(avatar).ToString();
                         record.originalOverride = avatar.overrides;
                         record.installedController = controller;
                         record.columns = columns;
@@ -200,9 +199,10 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
 
         // Version-1 captions copied the control controller. Keep that provenance so
         // their menu record remains usable after removing the last caption.
-        internal static bool UsesControl(CVRAvatar avatar, AnimatorOverrideController control) => control != null &&
-            Records(avatar).Any(record => record.originalOverride == control &&
-                record.installedController == XrtChilloutInstaller.CurrentController(avatar));
+        internal static HashSet<AnimatorOverrideController> ControlOverrides(AnimatorController controller) =>
+            new HashSet<AnimatorOverrideController>(Records().Where(record =>
+                record.installedController == controller && record.originalOverride != null)
+                .Select(record => record.originalOverride));
 
         private static bool HasBus(CVRAvatar avatar) =>
             XrtChilloutInstaller.CurrentController(avatar)?.parameters.Any(p => Parameters.Contains(p.name)) ?? false;
@@ -230,19 +230,16 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
                 throw new InvalidOperationException("Free 96 synced bits in the avatar's animator before adding captions.");
         }
 
-        private static IEnumerable<XrtChilloutCaptionRecord> Records(CVRAvatar avatar)
-        {
-            if (avatar == null) return Enumerable.Empty<XrtChilloutCaptionRecord>();
-            return AssetDatabase.FindAssets("t:XrtChilloutCaptionRecord")
+        private static IEnumerable<XrtChilloutCaptionRecord> Records() =>
+            AssetDatabase.FindAssets("t:XrtChilloutCaptionRecord")
                 .Select(g => AssetDatabase.LoadAssetAtPath<XrtChilloutCaptionRecord>(AssetDatabase.GUIDToAssetPath(g)))
                 .Where(record => record != null);
-        }
 
         internal static XrtChilloutCaptionRecord FindRecord(CVRAvatar avatar)
         {
             if (avatar == null) return null;
             var controller = XrtChilloutInstaller.CurrentController(avatar);
-            var all = Records(avatar).ToArray();
+            var all = Records().ToArray();
             var records = all.Where(record => controller != null && record.installedController == controller).ToArray();
             if (records.Length == 0)
                 records = all.Where(record => Displays(record).Any(display => Resolve(avatar, display).Any(renderer =>
@@ -282,7 +279,6 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
                     displays.Add(renderer, new XrtChilloutCaptionRecord.Display {
                         rendererGlobalId = GlobalObjectId.GetGlobalObjectIdSlow(renderer).ToString()
                     });
-            record.avatarGlobalId = GlobalObjectId.GetGlobalObjectIdSlow(avatar).ToString();
             record.installedController = XrtChilloutInstaller.CurrentController(avatar);
             record.originalOverride = avatar.overrides;
             record.displays = displays.Values.ToList();

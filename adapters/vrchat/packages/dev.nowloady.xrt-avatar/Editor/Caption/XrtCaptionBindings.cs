@@ -18,9 +18,10 @@ namespace XrtAvatarPlugin.Editor
             try
             {
                 var avatar = avatarGameObject.GetComponent<VRCAvatarDescriptor>();
-                if (XrtCaptionInstaller.FindRecord(avatar) == null) return true;
+                var record = XrtCaptionInstaller.FindRecord(avatar);
+                if (record == null) return true;
                 folder = XrtAvatarAssets.CreateFolder("Build-");
-                XrtCaptionInstaller.RefreshBuildPlacement(avatar, folder);
+                XrtCaptionInstaller.RefreshBuildPlacement(avatar, record, folder);
                 folders.Add(folder);
                 return true;
             }

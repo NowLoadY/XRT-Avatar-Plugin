@@ -27,17 +27,9 @@ The shared window is generated from `authoring/unity/AvatarControlsWindow.cs.tem
 Edit that template and run `python3 tools/generate_unity_editor.py` from the repository
 root. The installer remains here and uses the native Avatar Descriptor and
 Expressions assets. Menu installation leaves playable layers and other tools' components in place.
-Caption installation clones FX and appends its receiver and display layers.
-Additional text objects share those layers, clips and synchronization parameters.
-Records identify owned contributions through the assigned menu, parameters and
-controller. Authoring operations copy the affected graph before modifying it.
-Renderer identity, owned mesh/material and local paths resolve text objects on
-duplicated Avatars and in saved scene copies. Bindings are derived from the current
-hierarchy during an operation or SDK preprocessing; moving objects does not write
-assets or add Undo steps. SDK preprocessing saves a separate controller and clips
-for the build Avatar and removes them during postprocessing. It does not require
-the original scene to be open. Existing records are hydrated without saving during
-inspection and persisted by an authoring operation.
+Caption installation and build-time bindings follow the
+[presentation contract](presentation.md#installation-ownership); shared asset
+isolation is defined in the [project architecture](../../architecture.md).
 Control parameters remain unsaved and unsynchronized; the caption bus uses the
 budget declared in its manifest. When NDMF is present, its public parameter
 providers supply the effective names and usage of build-time contributions for
@@ -73,10 +65,6 @@ example can exercise control-state scenarios:
 cargo run -p xrt-avatar-control --example lifecycle
 ```
 
-These checks do not establish Unity or game compatibility. The
-[compatibility document](compatibility.md) owns target versions and acceptance;
-the [presentation contract](presentation.md) owns Avatar text rendering.
-
-Shared render assets live under `presentation/unity/`; run
-`python3 tools/sync_unity_presentation.py` after editing them. Font generation is
-documented in [Unity caption rendering](../../unity-caption-rendering.md). The package copies are generated release inputs.
+The [compatibility document](compatibility.md) owns target versions, verification
+status and runtime acceptance. Shared asset generation and synchronization are
+documented in [Unity caption rendering](../../unity-caption-rendering.md).

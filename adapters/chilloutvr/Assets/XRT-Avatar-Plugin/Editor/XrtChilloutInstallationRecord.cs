@@ -7,7 +7,6 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
     public sealed class XrtChilloutInstallationRecord : ScriptableObject
     {
         [SerializeField, HideInInspector] internal int recordVersion = 1;
-        [SerializeField, HideInInspector] internal string avatarGlobalId;
         [SerializeField, HideInInspector] internal bool originalUsesAdvancedSettings;
         [SerializeField, HideInInspector] internal bool originalHadSettings;
         [SerializeField, HideInInspector] internal AnimatorOverrideController installedOverride;

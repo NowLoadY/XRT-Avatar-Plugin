@@ -16,7 +16,6 @@ namespace XrtAvatarPlugin.Editor
     internal static class XrtCaptionInstaller
     {
         internal enum Preset { Horizontal, Portrait, Board }
-        private const string Root = "Assets/XRT-Avatar-Plugin";
         internal sealed class Status
         {
             internal string Title;
@@ -37,11 +36,12 @@ namespace XrtAvatarPlugin.Editor
                 if (record != null)
                 {
                     var renderers = FindRenderers(avatar, record);
+                    bool receiverAssigned = ReceiverAssigned(avatar, record);
                     return new Status
                     {
-                        Title = "Added", CanAdd = ReceiverAssigned(avatar, record), CanRemove = true, Record = record,
+                        Title = "Added", CanAdd = receiverAssigned, CanRemove = true, Record = record,
                         ByteCount = record.byteCount, Renderers = renderers,
-                        Detail = !ReceiverAssigned(avatar, record)
+                        Detail = !receiverAssigned
                             ? "Restore the caption FX controller and parameters before adding more text objects."
                             : renderers.Length == 0 ? "Add a text object or remove this caption setup."
                             : "Move, rotate and scale each object in the Scene view."
@@ -84,7 +84,7 @@ namespace XrtAvatarPlugin.Editor
             Undo.IncrementCurrentGroup();
             int undo = Undo.GetCurrentGroup();
             Undo.SetCurrentGroupName("Add XRT Caption");
-            var paths = new List<string>();
+            string folder = null;
             var originals = Snapshot(avatar);
             GameObject board = null;
             try
@@ -93,15 +93,12 @@ namespace XrtAvatarPlugin.Editor
                 var sourceParameters = avatar.expressionParameters;
                 int bytes = AvailableBytes(avatar);
                 int columns = preset == Preset.Portrait ? XrtCaptionProtocol.PortraitColumns : XrtCaptionProtocol.HorizontalColumns;
-                EnsureRoot(paths);
-                string folder = Root + "/Caption-" + Guid.NewGuid().ToString("N");
-                AssetDatabase.CreateFolder(Root, Path.GetFileName(folder));
-                paths.Add(folder);
+                folder = XrtAvatarAssets.CreateFolder("Caption-");
 
-                var renderer = CreateObject(avatar, parent, preset, columns, folder, paths);
+                var renderer = CreateObject(avatar, parent, preset, columns, folder);
                 board = renderer.gameObject;
                 string rendererPath = AnimationUtility.CalculateTransformPath(board.transform, avatar.transform);
-                var controller = CloneController(sourceController, folder + "/FX.controller", paths);
+                var controller = CloneController(sourceController, folder + "/FX.controller");
                 XrtCaptionAnimator.Build(controller, rendererPath, bytes, columns,
                     out AnimatorStateMachine[] ownedLayers, out AnimationClip[] bindingClips);
                 var parameters = Object.Instantiate(sourceParameters);
@@ -114,11 +111,10 @@ namespace XrtAvatarPlugin.Editor
                 entries.Add(Parameter(XrtCaptionProtocol.Pointer, XrtCaptionProtocol.ClearPointer, true));
                 for (int i = 0; i < bytes; i++) entries.Add(Parameter(XrtCaptionProtocol.BytePrefix + i, 0, true));
                 parameters.parameters = entries.ToArray();
-                Save(parameters, folder + "/Parameters.asset", paths);
+                Save(parameters, folder + "/Parameters.asset");
 
                 var record = ScriptableObject.CreateInstance<XrtCaptionInstallationRecord>();
                 record.name = "XRT Caption Installation";
-                record.avatarGlobalId = GlobalObjectId.GetGlobalObjectIdSlow(avatar).ToString();
                 record.objects.Add(ObjectRecord(renderer, avatar));
                 record.originalParameters = sourceParameters;
                 var specialLayers = avatar.customizeAnimationLayers
@@ -132,7 +128,7 @@ namespace XrtAvatarPlugin.Editor
                 record.columns = columns;
                 record.byteCount = bytes;
                 var baseLayers = WithFx(avatar.baseAnimationLayers, controller, avatar.customizeAnimationLayers);
-                Save(record, folder + "/Installation.asset", paths);
+                Save(record, folder + "/Installation.asset");
                 Undo.RecordObject(avatar, "Add XRT Caption");
                 avatar.expressionParameters = parameters;
                 avatar.customExpressions = true;
@@ -148,23 +144,20 @@ namespace XrtAvatarPlugin.Editor
                 Undo.RevertAllDownToGroup(undo);
                 RestoreSnapshot(avatar, originals);
                 if (board != null) Object.DestroyImmediate(board);
-                for (int i = paths.Count - 1; i >= 0; i--)
-                    if (!AssetDatabase.IsValidFolder(paths[i]) ||
-                        !Directory.EnumerateFileSystemEntries(AssetFilePath(paths[i])).Any())
-                        AssetDatabase.DeleteAsset(paths[i]);
+                if (folder != null) AssetDatabase.DeleteAsset(folder);
                 throw;
             }
         }
 
         private static MeshRenderer CreateObject(VRCAvatarDescriptor avatar, Transform parent,
-            Preset preset, int columns, string folder, List<string> paths)
+            Preset preset, int columns, string folder)
         {
             var material = CaptionAssets.CreateMaterial();
             CaptionAuthoring.ConfigureMaterial(material, preset.ToString(), columns);
             CaptionAuthoring.SetPreview(material, string.Empty, columns);
-            Save(material, folder + "/Caption.mat", paths);
+            Save(material, folder + "/Caption.mat");
             var mesh = CaptionAssets.CreateMesh();
-            Save(mesh, folder + "/Caption.asset", paths);
+            Save(mesh, folder + "/Caption.asset");
             var text = new GameObject("XRT Caption");
             Undo.RegisterCreatedObjectUndo(text, "Add XRT Caption");
             Undo.SetTransformParent(text.transform, parent, "Attach XRT Caption");
@@ -196,30 +189,20 @@ namespace XrtAvatarPlugin.Editor
             XrtCaptionInstallationRecord record)
         {
             ValidateInstalled(avatar, record);
-            var paths = new List<string>();
-            try
+            XrtAvatarAssets.Edit(avatar, "Add XRT Caption", (controls, working) =>
             {
-                XrtAvatarAssets.Edit(avatar, "Add XRT Caption", (controls, working) =>
-                {
-                    string root = Path.GetDirectoryName(AssetDatabase.GetAssetPath(working)).Replace('\\', '/');
-                    string folder = root + "/Text-" + Guid.NewGuid().ToString("N");
-                    AssetDatabase.CreateFolder(root, Path.GetFileName(folder));
-                    paths.Add(folder);
-                    var renderer = CreateObject(avatar, parent, preset, working.columns, folder, paths);
-                    var item = ObjectRecord(renderer, avatar);
-                    Undo.RecordObject(working, "Add XRT Caption");
-                    AddBindings(working, item.path);
-                    working.objects.Add(item);
-                    SaveRecord(working);
-                    Changed(avatar);
-                    Selection.activeGameObject = renderer.gameObject;
-                });
-            }
-            catch
-            {
-                foreach (string path in paths.AsEnumerable().Reverse()) AssetDatabase.DeleteAsset(path);
-                throw;
-            }
+                string root = Path.GetDirectoryName(AssetDatabase.GetAssetPath(working)).Replace('\\', '/');
+                string folder = root + "/Text-" + Guid.NewGuid().ToString("N");
+                AssetDatabase.CreateFolder(root, Path.GetFileName(folder));
+                var renderer = CreateObject(avatar, parent, preset, working.columns, folder);
+                var item = ObjectRecord(renderer, avatar);
+                Undo.RecordObject(working, "Add XRT Caption");
+                AddBindings(working, item.path);
+                working.objects.Add(item);
+                SaveRecord(working);
+                Changed(avatar);
+                Selection.activeGameObject = renderer.gameObject;
+            });
         }
 
         internal static void Remove(VRCAvatarDescriptor avatar, MeshRenderer selected = null)
@@ -358,10 +341,9 @@ namespace XrtAvatarPlugin.Editor
             }
         }
 
-        internal static void RefreshBuildPlacement(VRCAvatarDescriptor target, string folder)
+        internal static void RefreshBuildPlacement(VRCAvatarDescriptor target,
+            XrtCaptionInstallationRecord record, string folder)
         {
-            var record = FindRecord(target);
-            if (record == null) return;
             using (var copies = new AssetCopies())
             {
                 // Build metadata is temporary and must not become another discoverable installation.
@@ -411,7 +393,7 @@ namespace XrtAvatarPlugin.Editor
                 throw new InvalidOperationException("Save the avatar's scene first.");
         }
 
-        private static RuntimeAnimatorController ValidateController(VRCAvatarDescriptor avatar)
+        private static AnimatorController ValidateController(VRCAvatarDescriptor avatar)
         {
             var layer = (avatar.baseAnimationLayers ?? Array.Empty<VRCAvatarDescriptor.CustomAnimLayer>())
                 .FirstOrDefault(value => value.type == VRCAvatarDescriptor.AnimLayerType.FX);
@@ -426,32 +408,18 @@ namespace XrtAvatarPlugin.Editor
                 if (controller == null)
                     throw new InvalidOperationException("Reimport the VRChat Avatars SDK to restore its default FX controller.");
             }
-            var current = controller;
-            var visited = new HashSet<RuntimeAnimatorController>();
-            while (current != null)
-            {
-                if (!visited.Add(current)) throw new InvalidOperationException("The FX controller contains a circular override.");
-                if (!EditorUtility.IsPersistent(current) ||
-                    AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GetAssetPath(current)).Any(EditorUtility.IsDirty))
-                    throw new InvalidOperationException("Save the FX controller before adding caption objects.");
-                if (current is AnimatorOverrideController)
-                    throw new InvalidOperationException("Use an Animator Controller for the avatar FX layer before adding caption objects.");
-                else if (current is AnimatorController) break;
-                else throw new InvalidOperationException("Assign an Animator Controller to the FX layer first.");
-            }
-            return controller;
+            if (!EditorUtility.IsPersistent(controller) ||
+                AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GetAssetPath(controller)).Any(EditorUtility.IsDirty))
+                throw new InvalidOperationException("Save the FX controller before adding caption objects.");
+            if (!(controller is AnimatorController animator))
+                throw new InvalidOperationException("Use an Animator Controller for the avatar FX layer before adding caption objects.");
+            return animator;
         }
 
-        private static AnimatorController CloneController(RuntimeAnimatorController source, string path, List<string> paths)
+        private static AnimatorController CloneController(AnimatorController source, string path)
         {
-            if (source == null)
-            {
-                paths.Add(path);
-                return AnimatorController.CreateAnimatorControllerAtPath(path);
-            }
             if (!AssetDatabase.CopyAsset(AssetDatabase.GetAssetPath(source), path))
                 throw new InvalidOperationException("Could not copy the avatar's FX controller.");
-            paths.Add(path);
             return AssetDatabase.LoadAssetAtPath<AnimatorController>(path);
         }
 
@@ -645,24 +613,11 @@ namespace XrtAvatarPlugin.Editor
                 name = name, valueType = VRCExpressionParameters.ValueType.Int,
                 defaultValue = value, saved = false, networkSynced = synced
             };
-        private static void EnsureRoot(List<string> paths)
+        private static void Save(Object asset, string path)
         {
-            if (AssetDatabase.IsValidFolder(Root)) return;
-            AssetDatabase.CreateFolder("Assets", "XRT-Avatar-Plugin");
-            paths.Add(Root);
-        }
-        private static void Save(Object asset, string path, List<string> paths)
-        {
-            paths.Add(path);
             AssetDatabase.CreateAsset(asset, path);
             EditorUtility.SetDirty(asset);
             AssetDatabase.SaveAssetIfDirty(asset);
-        }
-        private static string AssetFilePath(string path)
-        {
-            if (!path.StartsWith("Assets/", StringComparison.Ordinal))
-                throw new IOException("Expected an asset in this project: " + path);
-            return Path.Combine(Application.dataPath, path.Substring("Assets/".Length));
         }
     }
 }

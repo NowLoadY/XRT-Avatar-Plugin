@@ -83,7 +83,7 @@ namespace XrtAvatarPlugin.Editor
 
         internal static string Install(VRCAvatarDescriptor avatar)
         {
-            string ownerId = ValidateAvatar(avatar);
+            ValidateAvatar(avatar);
             XrtAvatarInstallationRecord existing = FindAssignedRecord(avatar);
             if (existing != null)
             {
@@ -164,7 +164,6 @@ namespace XrtAvatarPlugin.Editor
 
                 var record = NewAsset<XrtAvatarInstallationRecord>(transientObjects);
                 record.name = "XRT Installation";
-                record.avatarGlobalId = ownerId;
                 record.originalCustomExpressions = originalCustomExpressions;
                 record.hadOriginalMenu = originalMenu != null;
                 record.hadOriginalParameters = originalParameters != null;
@@ -256,7 +255,7 @@ namespace XrtAvatarPlugin.Editor
             return "Translation menu removed. Save the scene, then upload this avatar again.";
         }
 
-        private static string ValidateAvatar(VRCAvatarDescriptor avatar)
+        private static void ValidateAvatar(VRCAvatarDescriptor avatar)
         {
             if (avatar == null)
                 throw new InvalidOperationException("Choose a VRChat avatar from the Hierarchy.");
@@ -269,7 +268,6 @@ namespace XrtAvatarPlugin.Editor
             GlobalObjectId id = GlobalObjectId.GetGlobalObjectIdSlow(avatar);
             if (id.identifierType != 2 || id.targetObjectId == 0)
                 throw new InvalidOperationException("Save the scene, then select the avatar again.");
-            return id.ToString();
         }
 
         private static void ValidateSourceAssets(VRCAvatarDescriptor avatar,

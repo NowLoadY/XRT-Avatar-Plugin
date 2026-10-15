@@ -108,7 +108,9 @@ catalogue, generated native contracts and pure codecs through one host dependenc
 For numeric OSC displays, the host supplies a typed parameter lookup and receives
 integer frames and their send interval. The same SDK maps payload width and local capability names
 from each adapter's manifest; host code does not branch on a game to encode text.
-The SDK maps regions into the existing glyph buffer and selects changed chunks.
+The SDK maps regions into the glyph buffer and selects changed chunks. Updates
+replace the desired buffer and revoke pending writes that no longer match it.
+A new binding, an empty display or disabling display content requests a full clear.
 A present header/footer uses the first/last row; messages use the remaining rows,
 with recent messages taking precedence. Layout and payload width come from the
 installed capability. Cached chunks are confirmed only after actual transmission.

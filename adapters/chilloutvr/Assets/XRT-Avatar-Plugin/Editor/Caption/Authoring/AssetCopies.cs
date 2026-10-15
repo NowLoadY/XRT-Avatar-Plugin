@@ -61,9 +61,6 @@ namespace XrtAvatarPlugin.Presentation
             return (T)copy;
         }
 
-        public T Remap<T>(T reference) where T : Object => reference != null &&
-            copies.TryGetValue(reference, out var copy) ? (T)copy : reference;
-
         public void Remap()
         {
             foreach (var copy in copies.Values) RemapObject(copy, null);

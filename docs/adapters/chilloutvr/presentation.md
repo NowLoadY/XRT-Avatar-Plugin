@@ -6,9 +6,8 @@ existing OSC connection. ChilloutVR synchronizes a small numeric bus; a
 
 ## Ownership
 
-`presentation/unity/` owns the shared SDF atlas, glyph lookup, shader and mesh.
-`authoring/unity/CaptionAuthoring.cs` owns preset selection and previews. The
-release builder checks the adapter's copies against these sources.
+The [Unity rendering guide](../../unity-caption-rendering.md) describes the shared
+SDF assets, mesh, authoring helpers and package synchronization.
 
 `adapters/chilloutvr/` owns the CCK installer, Lua receiver and
 [caption manifest](../../../adapters/chilloutvr/protocol/caption.json).
@@ -19,19 +18,11 @@ the menu-controlled translation task.
 
 ## Rendering
 
-Each text child uses one mesh, one material and 128 glyph slots. Several children
-can show the same text on separate props using a single bus and column layout. Horizontal
-and Board use four rows; Portrait uses sixteen. Board starts with a transparent
-background. Attach it beneath a user-authored prop to add live lettering; the
-prop keeps its own mesh and materials. Placement, scale and colors remain editable. The same SDF assets and
-proportional glyph spacing are used by the VRChat adapter; font coverage and
-resource cost are recorded in
-[`XrtCaptionFont.json`](../../../presentation/unity/Runtime/Caption/XrtCaptionFont.json).
-
-An enabled header occupies the first row and a footer the last. The remaining
-rows show the newest messages that fit, in chronological order. Empty banners
-release their rows to messages. Each message expires independently; cancelling
-a translation task removes its messages while preserving other messages and banners.
+Each text child uses the shared 128-glyph mesh and material. Several objects can
+mirror one bus and layout on separate editable props. Horizontal and Board use
+four rows; Portrait uses sixteen. Board starts with a transparent background.
+The [shared presentation contract](../../presentation-architecture.md) defines
+region layout, message selection and expiry.
 
 The Lua script writes only changed material bytes and runs on local and remote
 copies of the avatar. It uses the documented
@@ -54,12 +45,8 @@ caption adapters, then packs the bytes into ChilloutVR words. Pointer 255 clears
 the display. The Lua receiver re-reads a held pointer so late word updates can
 complete that chunk.
 
-Each content update replaces the desired buffer. Only changed chunks are sent;
-the shared scheduler favors messages while reserving writes for pending header
-and footer changes. An unchanged region remains visible.
-Pending writes that no longer match the buffer are revoked. Message expiry and
-task cancellation update the affected rows. A new binding, an empty display or
-disabling display content requests a whole-surface clear.
+The [shared numeric display contract](../../connector-protocol.md#transport-bounds)
+owns changed-chunk selection, region scheduling and cancellation.
 
 The host spaces chunks by 200 ms and renews an unchanged nonempty display before
 the receiver's 20-second idle timeout. After that timeout, the receiver stays
@@ -74,15 +61,15 @@ chain. Captions add one parameter bus to that working controller. Each new text
 child gets its own generated mesh, material and directly bound Lua receiver;
 additional objects reuse the bus. Editor records track the bus and each object's
 ownership. Existing single-object records are read without reinstalling.
-Assigned controllers and Lua bindings identify copied Avatars. Each modification
-uses independent working assets and replaces only the selected Avatar's references.
+Assigned controllers and Lua bindings identify installations; edits follow the
+[shared asset ownership rules](../../architecture.md).
 
 Renaming or reparenting a text child within the avatar preserves its direct Lua
 binding. Removal strips only the selected object's owned components. A customized
 object, replacement mesh or material, foreign components and children are retained.
 Removing the last text object removes the exact caption parameters; removing the
 control removes its exact parameters and Advanced Avatar Settings entry. Other
-controller and override edits remain in place. Generated assets remain for Undo
-and saved scene references. Editor sample text is not stored in uploaded materials.
+controller and override edits remain in place. Editor sample text is not stored
+in uploaded materials.
 
 Runtime acceptance is recorded in [compatibility](compatibility.md).
