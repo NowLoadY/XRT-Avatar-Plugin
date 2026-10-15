@@ -22,6 +22,12 @@ for your authoring environment. SDK code is not included in the package. XRT's
 installation scripts compile in the project's Editor assembly alongside CCK's
 public types; the uploaded object uses CCK's Lua component.
 
+Editor acceptance includes duplicating an installed Avatar, saving a scene copy
+with the original closed, and adding/removing controls and text on either copy.
+Verify independent assets, Undo/Redo and failed-operation rollback. Replace both
+mesh and material before copying, then confirm removing XRT keeps the customized
+object and removes its Lua receiver.
+
 Automatic discovery uses the native OSCQuery prefix. Restore it if a custom
 `--osc-query-prefix` prevents connection. Custom shader and Avatar script content
 settings affect caption visibility.

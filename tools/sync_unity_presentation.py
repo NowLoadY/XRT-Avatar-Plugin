@@ -32,9 +32,10 @@ def outputs():
         expected = {target.with_suffix(".meta"): (
             f"fileFormatVersion: 2\nguid: {guid}\nfolderAsset: yes\nDefaultImporter:\n"
             "  externalObjects: {}\n  userData:\n  assetBundleName:\n  assetBundleVariant:\n").encode()}
-        for suffix in ("", ".meta"):
-            path = ROOT / ("authoring/unity/CaptionAuthoring.cs" + suffix)
-            expected[target / path.name] = path.read_bytes()
+        for name in ("CaptionAuthoring.cs", "AssetCopies.cs"):
+            for suffix in ("", ".meta"):
+                path = ROOT / ("authoring/unity/" + name + suffix)
+                expected[target / path.name] = path.read_bytes()
         yield target, expected
 
 

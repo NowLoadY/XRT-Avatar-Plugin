@@ -8,6 +8,7 @@ using UnityEditor;
 using UnityEditor.Animations;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using XrtAvatarPlugin.Presentation;
 using Object = UnityEngine.Object;
 
 namespace XrtAvatarPlugin.ChilloutVR.Editor
@@ -37,8 +38,8 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
                 };
             try
             {
-                string id = ValidateAvatar(avatar);
-                XrtChilloutInstallationRecord record = FindInstalled(avatar, id);
+                ValidateAvatar(avatar);
+                XrtChilloutInstallationRecord record = FindInstalled(avatar);
                 if (record != null)
                 {
                     ValidateInstallation(avatar, record);
@@ -74,7 +75,7 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
         internal static string Install(CVRAvatar avatar)
         {
             string id = ValidateAvatar(avatar);
-            XrtChilloutInstallationRecord existing = FindInstalled(avatar, id);
+            XrtChilloutInstallationRecord existing = FindInstalled(avatar);
             if (existing != null)
             {
                 ValidateInstallation(avatar, existing);
@@ -167,23 +168,25 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
 
         internal static string Remove(CVRAvatar avatar)
         {
-            string id = ValidateAvatar(avatar);
+            ValidateAvatar(avatar);
             if (XrtChilloutCaptionInstaller.IsInstalled(avatar))
                 throw new InvalidOperationException("Remove the caption objects before removing translation controls.");
-            XrtChilloutInstallationRecord record = FindInstalled(avatar, id);
+            XrtChilloutInstallationRecord record = FindInstalled(avatar);
             if (record == null) return "No XRT installation is registered for this avatar.";
             ValidateInstallation(avatar, record);
-            Undo.RecordObject(avatar, "Remove XRT Translation");
-            RemoveParameters(CurrentController(avatar), Parameters);
-            avatar.avatarSettings?.settings?.RemoveAll(e => e != null && e.machineName == XrtChilloutProtocol.Enabled);
-            if (avatar.avatarSettings?.settings != null && avatar.avatarSettings.settings.Count == 0)
+            EditInstallation(avatar, "Remove XRT Translation", (installed, captions) =>
             {
-                avatar.avatarUsesAdvancedSettings = record.originalUsesAdvancedSettings;
-                if (!record.originalHadSettings && avatar.avatarSettings.baseController == null &&
-                    avatar.avatarSettings.baseOverrideController == null)
-                    avatar.avatarSettings = null;
-            }
-            MarkChanged(avatar);
+                Undo.RecordObject(avatar, "Remove XRT Translation");
+                RemoveParameters(CurrentController(avatar), Parameters);
+                avatar.avatarSettings?.settings?.RemoveAll(e => e != null && e.machineName == XrtChilloutProtocol.Enabled);
+                if (avatar.avatarSettings?.settings != null && avatar.avatarSettings.settings.Count == 0)
+                {
+                    avatar.avatarUsesAdvancedSettings = installed.originalUsesAdvancedSettings;
+                    if (!installed.originalHadSettings && avatar.avatarSettings.baseController == null &&
+                        avatar.avatarSettings.baseOverrideController == null)
+                        avatar.avatarSettings = null;
+                }
+            });
             return "Translation menu removed. Save the scene, then upload this avatar again.";
         }
 
@@ -271,7 +274,7 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
             throw new InvalidOperationException("Could not preserve an embedded animation override.");
         }
 
-        private static XrtChilloutInstallationRecord FindInstalled(CVRAvatar avatar, string id)
+        private static XrtChilloutInstallationRecord FindInstalled(CVRAvatar avatar)
         {
             var controller = CurrentController(avatar);
             if (controller == null || (!controller.parameters.Any(p => Parameters.Contains(p.name)) &&
@@ -279,7 +282,7 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
                 return null;
             var records = AssetDatabase.FindAssets("t:XrtChilloutInstallationRecord")
                 .Select(g => AssetDatabase.LoadAssetAtPath<XrtChilloutInstallationRecord>(AssetDatabase.GUIDToAssetPath(g)))
-                .Where(r => r != null && r.avatarGlobalId == id &&
+                .Where(r => r != null &&
                     (r.installedController == controller || XrtChilloutCaptionInstaller.UsesControl(avatar, r.installedOverride)))
                 .ToArray();
             if (records.Length > 1) throw new InvalidOperationException("More than one XRT setup was found for this avatar.");
@@ -292,9 +295,80 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
                 throw new InvalidOperationException("Could not read this avatar's XRT setup.");
         }
 
-        internal static AnimatorController CurrentController(CVRAvatar avatar) => BaseController(
+        private static RuntimeAnimatorController CurrentSource(CVRAvatar avatar) =>
             avatar.overrides != null ? (RuntimeAnimatorController)avatar.overrides :
-            avatar.GetComponent<Animator>()?.runtimeAnimatorController ?? avatar.avatarSettings?.baseController);
+            avatar.GetComponent<Animator>()?.runtimeAnimatorController ?? avatar.avatarSettings?.baseController;
+
+        internal static AnimatorController CurrentController(CVRAvatar avatar) => BaseController(CurrentSource(avatar));
+
+        // Scene copies may share generated assets even when the source scene is not open.
+        // Each actual edit gets its own assets; inspection never creates them.
+        internal static void EditInstallation(CVRAvatar avatar, string action,
+            Action<XrtChilloutInstallationRecord, XrtChilloutCaptionRecord> edit)
+        {
+            string id = ValidateAvatar(avatar);
+            var controls = FindInstalled(avatar);
+            var captions = XrtChilloutCaptionInstaller.FindRecord(avatar);
+            Undo.IncrementCurrentGroup();
+            int undo = Undo.GetCurrentGroup();
+            Undo.SetCurrentGroupName(action);
+            string folder = null;
+            bool complete = false;
+            var copies = new AssetCopies();
+            try
+            {
+                if (controls != null || captions != null)
+                {
+                    for (RuntimeAnimatorController current = CurrentSource(avatar); current != null;)
+                    {
+                        copies.Add(current);
+                        current = (current as AnimatorOverrideController)?.runtimeAnimatorController;
+                    }
+                    if (controls != null) copies.Add(controls);
+                    XrtChilloutCaptionInstaller.CopyAssets(avatar, captions, copies);
+                    copies.Remap();
+                    EnsureFolder("Assets/XRT-Avatar-Plugin");
+                    EnsureFolder(Root);
+                    folder = Root + "/" + Guid.NewGuid().ToString("N");
+                    EnsureFolder(folder);
+                    copies.Save(folder);
+                    copies.RemapScene(avatar.gameObject, action);
+                    controls = copies.Remap(controls);
+                    captions = copies.Remap(captions);
+                    if (controls != null)
+                    {
+                        controls.avatarGlobalId = id;
+                        controls.installedController = CurrentController(avatar);
+                        controls.installedOverride = avatar.overrides;
+                    }
+                    XrtChilloutCaptionInstaller.RebindRecord(avatar, captions);
+                }
+                edit(controls, captions);
+                foreach (Object record in new Object[] { controls, captions })
+                {
+                    if (record == null) continue;
+                    EditorUtility.SetDirty(record);
+                    AssetDatabase.SaveAssetIfDirty(record);
+                }
+                MarkChanged(avatar);
+                Undo.FlushUndoRecordObjects();
+                Undo.CollapseUndoOperations(undo);
+                copies.Commit();
+                complete = true;
+            }
+            catch
+            {
+                // Restore scene references while the temporary assets still exist.
+                Undo.FlushUndoRecordObjects();
+                Undo.RevertAllDownToGroup(undo);
+                throw;
+            }
+            finally
+            {
+                copies.Dispose();
+                if (!complete && folder != null && AssetDatabase.IsValidFolder(folder)) AssetDatabase.DeleteAsset(folder);
+            }
+        }
 
         internal static void RemoveParameters(AnimatorController controller, string[] names)
         {

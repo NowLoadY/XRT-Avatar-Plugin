@@ -46,6 +46,9 @@ versions and verify the following:
    Undo/Redo, discarded scene changes and reinstallation after editing the originals.
    Cover default avatars, missing Parameters references, and existing MA/VRCFury
    menu components without changing their original assets.
+   Duplicate an installed Avatar and use Save As with the original scene closed;
+   add/remove objects and controls on either copy without changing the other's assets.
+   Undo/Redo these edits and verify failed operations restore the previous references.
 2. Confirm control parameters are unsaved/unsynchronized and the caption bus
    uses its selected 24/40/72-bit profile; upload with the
    official SDK, enable OSC and observe values on the correct Avatar.
@@ -63,6 +66,9 @@ versions and verify the following:
    profiles, default/custom FX, original expressions, Undo and removal. Confirm
    material colors, replacement meshes, added components and children are preserved.
    Open a version-1 installation and verify its existing objects work without reinstallation.
+   Rename, reparent and swap text-object names before uploading the copy; check
+   that build-time bindings follow the correct renderers and leave source assets
+   unchanged. Verify temporary build assets are removed after the build.
 6. Record the compatible host version, check generated protocol consistency and
    package only tracked Unity source/assets plus the license. Publish a VPM
    listing only when its URL and checksum refer to a real release artifact.

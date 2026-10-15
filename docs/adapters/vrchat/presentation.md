@@ -91,6 +91,9 @@ The first text object copies the current expression parameters and FX controller
 then adds one receiver and display layer. Default FX uses the SDK's face controller.
 The installation record tracks the added parameters, layer references, generated
 clips and each text renderer. Later objects add bindings to those clips.
+Each modification uses independent working assets, so duplicated Avatars and
+saved scene copies can be edited separately. At upload, bindings are rebuilt for
+the current hierarchy in temporary build assets.
 
 Removal deletes the selected object's bindings and matching generated components.
 The final object also removes the recorded caption parameters and layers. User

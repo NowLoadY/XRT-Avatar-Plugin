@@ -29,10 +29,15 @@ root. The installer remains here and uses the native Avatar Descriptor and
 Expressions assets. Menu installation leaves playable layers and other tools' components in place.
 Caption installation clones FX and appends its receiver and display layers.
 Additional text objects share those layers, clips and synchronization parameters.
-Records identify owned contributions directly. Placement changes update each
-tracked renderer's material bindings; removal retains unrelated menu, parameter
-and animator edits. Existing records are hydrated without saving during inspection
-and persisted by an authoring operation.
+Records identify owned contributions through the assigned menu, parameters and
+controller. Authoring operations copy the affected graph before modifying it.
+Renderer identity, owned mesh/material and local paths resolve text objects on
+duplicated Avatars and in saved scene copies. Bindings are derived from the current
+hierarchy during an operation or SDK preprocessing; moving objects does not write
+assets or add Undo steps. SDK preprocessing saves a separate controller and clips
+for the build Avatar and removes them during postprocessing. It does not require
+the original scene to be open. Existing records are hydrated without saving during
+inspection and persisted by an authoring operation.
 Control parameters remain unsaved and unsynchronized; the caption bus uses the
 budget declared in its manifest. When NDMF is present, its public parameter
 providers supply the effective names and usage of build-time contributions for

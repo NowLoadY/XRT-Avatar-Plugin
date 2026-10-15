@@ -70,11 +70,12 @@ that adapter. Shared abstractions follow concrete contracts established by
 implemented adapters.
 
 Installation records identify contributed menu controls, parameters, animation
-layers, receivers and text objects. Removal edits those contributions in place,
-preserving user changes in the same assets. Scene references and recorded
-components identify active installations; records and generated assets remain
-available for Undo/Redo and previously saved scenes. Platform-specific
-installation rules belong to the adapter guide.
+layers, receivers and text objects through assigned assets and components.
+Unity adapter edits copy the affected asset graph and switch only the selected
+Avatar's references. Removal changes owned contributions in those working copies,
+preserving user additions. Previous assets remain available for Undo/Redo and
+saved scenes, including scenes that are not open. Inspection does not create
+assets. Platform-specific installation rules belong to the adapter guide.
 
 The Unity window template shares selection, status, save and Undo interaction.
 `adapters/<platform>/unity-editor.json` supplies SDK bindings and labels.
@@ -82,6 +83,10 @@ The Unity window template shares selection, status, save and Undo interaction.
 packaging checks that these copies match. Each installer owns its validation,
 asset creation and restoration. Caption windows reuse `CaptionAuthoring` and
 `CaptionPreview` while retaining their platform-specific selection and install actions.
+`authoring/unity/AssetCopies.cs` copies explicitly selected asset files and their
+sub-assets, remaps references and cleans up unsuccessful copies. Adapters choose
+the assets and own the operation's Undo transaction. Shared textures and unrelated
+external assets retain their existing references.
 
 Text display is one full snapshot with header, visible messages and footer.
 Message expiry is independent of banner updates. Host output plugins select

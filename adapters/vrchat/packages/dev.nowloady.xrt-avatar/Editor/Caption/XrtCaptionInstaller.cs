@@ -196,33 +196,27 @@ namespace XrtAvatarPlugin.Editor
             XrtCaptionInstallationRecord record)
         {
             ValidateInstalled(avatar, record);
-            RefreshPlacement(avatar);
-            Undo.IncrementCurrentGroup();
-            int undo = Undo.GetCurrentGroup();
-            Undo.SetCurrentGroupName("Add XRT Caption");
             var paths = new List<string>();
             try
             {
-                string root = Path.GetDirectoryName(AssetDatabase.GetAssetPath(record)).Replace('\\', '/');
-                string folder = root + "/Text-" + Guid.NewGuid().ToString("N");
-                AssetDatabase.CreateFolder(root, Path.GetFileName(folder));
-                paths.Add(folder);
-                var renderer = CreateObject(avatar, parent, preset, record.columns, folder, paths);
-                var item = ObjectRecord(renderer, avatar);
-                Undo.RecordObject(record, "Add XRT Caption");
-                AddBindings(record, item.path);
-                record.objects.Add(item);
-                EditorUtility.SetDirty(record.installedController);
-                AssetDatabase.SaveAssetIfDirty(record.installedController);
-                EditorUtility.SetDirty(record);
-                AssetDatabase.SaveAssetIfDirty(record);
-                Changed(avatar);
-                Undo.CollapseUndoOperations(undo);
-                Selection.activeGameObject = renderer.gameObject;
+                XrtAvatarAssets.Edit(avatar, "Add XRT Caption", (controls, working) =>
+                {
+                    string root = Path.GetDirectoryName(AssetDatabase.GetAssetPath(working)).Replace('\\', '/');
+                    string folder = root + "/Text-" + Guid.NewGuid().ToString("N");
+                    AssetDatabase.CreateFolder(root, Path.GetFileName(folder));
+                    paths.Add(folder);
+                    var renderer = CreateObject(avatar, parent, preset, working.columns, folder, paths);
+                    var item = ObjectRecord(renderer, avatar);
+                    Undo.RecordObject(working, "Add XRT Caption");
+                    AddBindings(working, item.path);
+                    working.objects.Add(item);
+                    SaveRecord(working);
+                    Changed(avatar);
+                    Selection.activeGameObject = renderer.gameObject;
+                });
             }
             catch
             {
-                Undo.RevertAllDownToGroup(undo);
                 foreach (string path in paths.AsEnumerable().Reverse()) AssetDatabase.DeleteAsset(path);
                 throw;
             }
@@ -233,44 +227,41 @@ namespace XrtAvatarPlugin.Editor
             ValidateAvatar(avatar);
             var record = FindRecord(avatar);
             if (record == null) return;
-            RefreshPlacement(avatar);
-            Undo.IncrementCurrentGroup();
-            int undo = Undo.GetCurrentGroup();
             const string action = "Remove XRT Caption";
-            Undo.SetCurrentGroupName(action);
-            Undo.RecordObject(record, action);
-            var targets = record.objects.Where(item => {
-                var renderer = FindRenderer(avatar, item);
-                return renderer == null || selected == null || renderer == selected;
-            }).ToArray();
-            foreach (var item in targets)
+            XrtAvatarAssets.Edit(avatar, action, (controls, working) =>
             {
-                RemoveBindings(record, item.path);
-                var renderer = FindRenderer(avatar, item);
-                if (renderer != null) CaptionAuthoring.RemoveObject(renderer, item.mesh, item.material);
-                record.objects.Remove(item);
-            }
-            if (record.objects.Count == 0)
-            {
-                XrtAvatarInstaller.RemoveParameters(avatar.expressionParameters, record.expressionParameters, action);
-                var controller = record.installedController;
-                if (controller != null)
+                Undo.RecordObject(working, action);
+                var targets = working.objects.Where(item => {
+                    var renderer = FindRenderer(avatar, item);
+                    return renderer == null || selected == null || renderer == selected;
+                }).ToArray();
+                foreach (var item in targets)
                 {
-                    Undo.RecordObject(controller, action);
-                    controller.layers = controller.layers.Where(layer => !record.ownedLayers.Contains(layer.stateMachine)).ToArray();
-                    controller.parameters = controller.parameters.Where(parameter => !record.animatorParameters.Contains(parameter.name)).ToArray();
+                    RemoveBindings(working, item.path);
+                    var renderer = FindRenderer(avatar, item);
+                    if (renderer != null) CaptionAuthoring.RemoveObject(renderer, item.mesh, item.material);
+                    working.objects.Remove(item);
                 }
-            }
-            // Working copies and user edits remain assigned; assets stay for Undo.
-            if (record.installedController != null)
-            {
-                EditorUtility.SetDirty(record.installedController);
-                AssetDatabase.SaveAssetIfDirty(record.installedController);
-            }
-            EditorUtility.SetDirty(record);
-            AssetDatabase.SaveAssetIfDirty(record);
-            Changed(avatar);
-            Undo.CollapseUndoOperations(undo);
+                if (working.objects.Count == 0)
+                {
+                    XrtAvatarInstaller.RemoveParameters(avatar.expressionParameters, working.expressionParameters, action);
+                    if (controls != null)
+                    {
+                        controls.installedParameters = avatar.expressionParameters;
+                        EditorUtility.SetDirty(controls);
+                        AssetDatabase.SaveAssetIfDirty(controls);
+                    }
+                    var controller = working.installedController;
+                    if (controller != null)
+                    {
+                        Undo.RecordObject(controller, action);
+                        controller.layers = controller.layers.Where(layer => !working.ownedLayers.Contains(layer.stateMachine)).ToArray();
+                        controller.parameters = controller.parameters.Where(parameter => !working.animatorParameters.Contains(parameter.name)).ToArray();
+                    }
+                }
+                SaveRecord(working);
+                Changed(avatar);
+            });
         }
 
         internal static VRCExpressionParameters ParametersBeforeCaption(VRCAvatarDescriptor avatar)
@@ -282,37 +273,44 @@ namespace XrtAvatarPlugin.Editor
 
         internal static bool IsInstalled(VRCAvatarDescriptor avatar) => FindRecord(avatar) != null;
 
-        internal static void RefreshPlacement(VRCAvatarDescriptor avatar)
+        // Apply all path moves together: swapping two object names must not overwrite
+        // either curve before the other one has been read.
+        internal static void UpdatePlacement(VRCAvatarDescriptor avatar, XrtCaptionInstallationRecord record,
+            bool authoring = true)
         {
-            var record = FindRecord(avatar);
-            if (record == null) return;
-            bool changed = false;
-            foreach (var item in record.objects)
+            var renderers = record.objects.Select(item => FindRenderer(avatar, item)).ToArray();
+            var paths = record.objects.Select((item, index) => renderers[index] == null ? item.path :
+                AnimationUtility.CalculateTransformPath(renderers[index].transform, avatar.transform)).ToArray();
+            var moves = record.objects.Select((item, index) => new { item.path, next = paths[index] })
+                .Where(move => move.path != move.next).ToArray();
+            foreach (var clip in record.bindingClips.Where(clip => clip != null))
             {
-                var renderer = FindRenderer(avatar, item);
-                if (renderer == null) continue;
-                string path = AnimationUtility.CalculateTransformPath(renderer.transform, avatar.transform);
-                if (path != item.path)
+                var curves = AnimationUtility.GetCurveBindings(clip).Where(binding => OwnsBinding(binding) &&
+                    moves.Any(move => move.path == binding.path)).Select(binding => new {
+                        binding, curve = AnimationUtility.GetEditorCurve(clip, binding),
+                        path = moves.First(move => move.path == binding.path).next
+                    }).ToArray();
+                foreach (var curve in curves) AnimationUtility.SetEditorCurve(clip, curve.binding, null);
+                foreach (var curve in curves)
                 {
-                    foreach (var clip in record.bindingClips.Where(clip => clip != null))
-                    {
-                        foreach (var binding in AnimationUtility.GetCurveBindings(clip))
-                        {
-                            if (binding.path != item.path || !OwnsBinding(binding)) continue;
-                            var curve = AnimationUtility.GetEditorCurve(clip, binding);
-                            AnimationUtility.SetEditorCurve(clip, binding, null);
-                            var moved = binding;
-                            moved.path = path;
-                            AnimationUtility.SetEditorCurve(clip, moved, curve);
-                        }
-                    }
-                    item.path = path;
-                    changed = true;
+                    var binding = curve.binding;
+                    binding.path = curve.path;
+                    AnimationUtility.SetEditorCurve(clip, binding, curve.curve);
                 }
-                string id = GlobalObjectId.GetGlobalObjectIdSlow(renderer).ToString();
-                if (item.rendererGlobalId != id) { item.rendererGlobalId = id; changed = true; }
+                if (curves.Length > 0) EditorUtility.SetDirty(clip);
             }
-            if (!changed) return;
+            for (int i = 0; i < record.objects.Count; i++)
+            {
+                record.objects[i].path = paths[i];
+                if (authoring && renderers[i] != null)
+                    record.objects[i].rendererGlobalId = GlobalObjectId.GetGlobalObjectIdSlow(renderers[i]).ToString();
+            }
+            if (authoring) SaveRecord(record);
+        }
+
+        private static void SaveRecord(XrtCaptionInstallationRecord record)
+        {
+            foreach (var clip in record.bindingClips.Where(clip => clip != null)) AssetDatabase.SaveAssetIfDirty(clip);
             if (record.installedController != null)
             {
                 EditorUtility.SetDirty(record.installedController);
@@ -360,18 +358,25 @@ namespace XrtAvatarPlugin.Editor
             }
         }
 
-        internal static void RefreshBuildPlacement(VRCAvatarDescriptor target)
+        internal static void RefreshBuildPlacement(VRCAvatarDescriptor target, string folder)
         {
-            if (target == null || target.expressionParameters == null) return;
-            foreach (string guid in AssetDatabase.FindAssets("t:XrtCaptionInstallationRecord", new[] { "Assets" }))
+            var record = FindRecord(target);
+            if (record == null) return;
+            using (var copies = new AssetCopies())
             {
-                var record = AssetDatabase.LoadAssetAtPath<XrtCaptionInstallationRecord>(AssetDatabase.GUIDToAssetPath(guid));
-                if (record == null || record.installedParameters != target.expressionParameters) continue;
-                if (!GlobalObjectId.TryParse(record.avatarGlobalId, out var identifier) ||
-                    !(GlobalObjectId.GlobalObjectIdentifierToObjectSlow(identifier) is VRCAvatarDescriptor source))
-                    throw new InvalidOperationException("Reopen the avatar's saved scene before uploading its caption object.");
-                RefreshPlacement(source);
-                return;
+                // Build metadata is temporary and must not become another discoverable installation.
+                var working = Object.Instantiate(record);
+                try
+                {
+                    working.installedController = copies.Add(record.installedController);
+                    working.bindingClips = record.bindingClips.Select(clip => copies.Add(clip)).ToArray();
+                    copies.Remap();
+                    UpdatePlacement(target, working, false);
+                    copies.Save(folder);
+                    copies.RemapScene(target.gameObject);
+                    copies.Commit();
+                }
+                finally { Object.DestroyImmediate(working); }
             }
         }
 
@@ -450,24 +455,34 @@ namespace XrtAvatarPlugin.Editor
             return AssetDatabase.LoadAssetAtPath<AnimatorController>(path);
         }
 
-        private static XrtCaptionInstallationRecord FindRecord(VRCAvatarDescriptor avatar)
+        internal static XrtCaptionInstallationRecord FindRecord(VRCAvatarDescriptor avatar)
         {
             if (avatar == null) return null;
-            string owner = GlobalObjectId.GetGlobalObjectIdSlow(avatar).ToString();
             XrtCaptionInstallationRecord result = null;
+            int best = 0;
+            bool ambiguous = false;
             foreach (string guid in AssetDatabase.FindAssets("t:XrtCaptionInstallationRecord", new[] { "Assets" }))
             {
                 var record = AssetDatabase.LoadAssetAtPath<XrtCaptionInstallationRecord>(AssetDatabase.GUIDToAssetPath(guid));
-                if (record == null || record.avatarGlobalId != owner) continue;
+                if (record == null) continue;
                 Migrate(record);
-                bool assigned = (avatar.baseAnimationLayers ?? Array.Empty<VRCAvatarDescriptor.CustomAnimLayer>())
+                bool assigned = record.installedController != null &&
+                    (avatar.baseAnimationLayers ?? Array.Empty<VRCAvatarDescriptor.CustomAnimLayer>())
                     .Any(layer => layer.animatorController == record.installedController);
-                bool receiver = assigned && record.installedController != null && record.installedController.layers
+                bool receiver = assigned && record.installedController.layers
                     .Any(layer => record.ownedLayers.Contains(layer.stateMachine));
-                if (!receiver && !record.objects.Any(item => FindRenderer(avatar, item) != null)) continue;
-                if (result != null) throw new InvalidOperationException("More than one caption setup is assigned to this avatar.");
+                // Historical records may retain this renderer's old scene ID. Prefer
+                // the assigned receiver, and only recover by actual owned surfaces.
+                int score = receiver ? 3 : record.objects.Count > 0 && record.installedParameters != null &&
+                    avatar.expressionParameters == record.installedParameters ? 2 :
+                    record.objects.Any(item => FindOwnedRenderer(avatar, item) != null) ? 1 : 0;
+                if (score == 0 || score < best) continue;
+                if (score == best) { ambiguous = true; continue; }
                 result = record;
+                best = score;
+                ambiguous = false;
             }
+            if (ambiguous) throw new InvalidOperationException("More than one caption setup is assigned to this avatar.");
             return result;
         }
 
@@ -607,10 +622,16 @@ namespace XrtAvatarPlugin.Editor
                 var renderer = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(identifier) as MeshRenderer;
                 if (renderer != null && renderer.transform.IsChildOf(avatar.transform)) return renderer;
             }
-            // A newly created scene object may not have a persistent ID yet.
+            var owned = FindOwnedRenderer(avatar, item);
+            if (owned != null) return owned;
+            // The record was selected by its assigned assets. Its local path also
+            // identifies a duplicated renderer whose material or mesh was customized.
             var candidate = string.IsNullOrEmpty(item.path) ? null : avatar.transform.Find(item.path)?.GetComponent<MeshRenderer>();
-            if (candidate != null && candidate.sharedMaterial == item.material &&
-                candidate.GetComponent<MeshFilter>()?.sharedMesh == item.mesh) return candidate;
+            return candidate;
+        }
+
+        private static MeshRenderer FindOwnedRenderer(VRCAvatarDescriptor avatar, XrtCaptionInstallationRecord.TextObject item)
+        {
             if (item.mesh == null || item.material == null) return null;
             var matches = avatar.GetComponentsInChildren<MeshRenderer>(true).Where(renderer =>
                 renderer.GetComponent<MeshFilter>()?.sharedMesh == item.mesh &&

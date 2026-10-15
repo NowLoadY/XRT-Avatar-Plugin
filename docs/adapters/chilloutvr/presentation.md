@@ -74,6 +74,8 @@ chain. Captions add one parameter bus to that working controller. Each new text
 child gets its own generated mesh, material and directly bound Lua receiver;
 additional objects reuse the bus. Editor records track the bus and each object's
 ownership. Existing single-object records are read without reinstalling.
+Assigned controllers and Lua bindings identify copied Avatars. Each modification
+uses independent working assets and replaces only the selected Avatar's references.
 
 Renaming or reparenting a text child within the avatar preserves its direct Lua
 binding. Removal strips only the selected object's owned components. A customized

@@ -6,7 +6,7 @@ receiver construction, installation and object attachment. A game can use this
 renderer without adopting VRChat's transport or Animator setup.
 
 `tools/sync_unity_presentation.py` copies shared rendering assets and
-`authoring/unity/CaptionAuthoring.cs` into the VRChat and ChilloutVR packages.
+the shared helpers in `authoring/unity/` into the VRChat and ChilloutVR packages.
 Edit the shared source, then run that script; package copies retain the same
 asset GUIDs. The authoring helper owns preset tiles, material defaults and
 preview text, object selection and removal of owned display components. It renders
