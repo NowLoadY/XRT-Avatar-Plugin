@@ -1,9 +1,9 @@
 # VRChat host integration
 
-XRTranslate implements this integration as an opt-in built-in plugin. The Avatar
+XRTranslate implements this integration under **Game Plugins**. The Avatar
 package and control core are maintained in this repository; the desktop adapter,
 shared transport and session composition are maintained in XRTranslate. A compatible
-host build includes the **Avatar** plugin and its display page.
+host build includes **Game Plugins** with the VRChat connection and display controls.
 
 ## Composition
 
@@ -17,9 +17,10 @@ host build includes the **Avatar** plugin and its display page.
 | `xrt_connector_core` | Companion SDK: connector contracts, control lifecycle, display snapshots and board encoding |
 | Shared audio/network/output modules | Capture, recognition, translation, session completion and cancellation of owned output |
 
-The plugin has connection settings and an **Avatar** page for Header, Messages
-and Footer. It does not receive the root application object. The host adapter composes the existing
-capabilities; inference and backend protocols contain no Avatar-specific branch.
+The **Game Plugins** page provides connection settings and Header, Messages
+and Footer controls. The plugin uses explicit context and actions; the host adapter
+composes existing capabilities. Inference and backend protocols contain no
+Avatar-specific branch.
 The companion SDK is a pinned source dependency.
 
 The OSC owner serves Avatar control and existing mute-follow. Receive demand is

@@ -32,8 +32,8 @@ alone, use **Tools → XRT-Avatar-Plugin → ChilloutVR → Avatar Controls**.
 ## Start translation
 
 1. Configure your audio input and languages in XRTranslate.
-2. Enable **Avatar** in **Settings → Plugins**, then open **Avatar** from the
-   sidebar. Select **ChilloutVR** and enable **Display content**. Click **Header**,
+2. Open **Game Plugins** in the sidebar, select **ChilloutVR**, and turn on
+   **Enable**. Turn on **Display content**, then click **Header**,
    **Messages** or **Footer** in the preview to choose what appears there.
 3. In ChilloutVR, enable **Settings → Implementation → OSC**. Wait for XRTranslate
    to show **Off**, then turn on **XRT Translation** in **Advanced Avatar Settings**.

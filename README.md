@@ -57,7 +57,7 @@ Choose your game and follow its setup guide:
 | Second Life | Attachment controls and floating captions | [Source archive](https://github.com/NowLoadY/XRT-Avatar-Plugin/archive/refs/tags/v0.1.0-preview.7.zip) | [Attachment / relay](docs/adapters/secondlife/installation.md) |
 | Big Walk | Native chat translations | [Bridge build](https://github.com/NowLoadY/XRT-Avatar-Plugin/actions/workflows/bigwalk.yml) | [Mod setup](docs/adapters/bigwalk/installation.md) |
 
-In XRTranslate, set your audio input, languages and outputs. For avatar controls, enable **Avatar** in **Settings → Plugins**, select your game and follow its setup guide. Open **Avatar** in the sidebar to arrange your header, messages and footer. For Big Walk, enable **Big Walk** and turn on chat output in its page.
+In XRTranslate, set your audio input and languages. Open **Game Plugins** in the sidebar, choose your game, and turn on **Enable**. Arrange header, messages and footer for caption objects, or choose the audio sources and message format for Big Walk chat.
 
 ## Help
 

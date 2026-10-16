@@ -15,7 +15,7 @@ avatar's animator. Attach the new controller, save the scene and add XRT again.
 
 ## Caption is blank
 
-- Enable **Display content** on XRTranslate's **Avatar** page. Select **Messages**
+- Enable **Display content** on XRTranslate's **Game Plugins** page. Select **Messages**
   in the preview to check its content and audio-source settings. For menu-controlled
   translation, turn on **XRT Translation** in the game's Advanced Avatar Settings.
 - Confirm you uploaded and are wearing the avatar with the caption object.
@@ -45,8 +45,8 @@ the editor package alone does not remove objects or controls from the avatar.
   errors. Check the [target CCK version](compatibility.md).
 - **Not enough synced bits:** free 96 bits in the avatar's controller. Local
   parameters beginning with `#` do not consume the synchronized capacity.
-- **Connection unavailable:** enable OSC and select ChilloutVR in XRTranslate's
-  **Avatar** page. Restore the default OSCQuery service prefix if
+- **Connection unavailable:** enable OSC, select ChilloutVR on XRTranslate's
+  **Game Plugins** page, and turn on **Enable**. Restore the default OSCQuery service prefix if
   you changed it in launch settings.
 - **Audio source busy:** stop the other XRTranslate task using that input.
 - **Cannot sign in to the CCK:** use the CCK Master Key from

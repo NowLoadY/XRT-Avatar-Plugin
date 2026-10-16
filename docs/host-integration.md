@@ -44,6 +44,12 @@ identity and follow owner-scoped cancellation.
 
 ## Connector composition
 
+XRTranslate groups game components on its always-visible **Game Plugins** page.
+The page's **Enable** switch is off by default and activates the selected game.
+Changing games retires the previous output. Big Walk consumes
+committed results for one-shot native chat delivery; avatar connectors compose
+structured captions and handle game-controlled translation sessions.
+
 The companion `xrt-connector-core` SDK owns the connector catalogue, generated
 platform contracts, pure text codecs and shared lifecycle. XRTranslate's
 `plugins::avatar` owns settings and validated connector intent. `avatar_host`

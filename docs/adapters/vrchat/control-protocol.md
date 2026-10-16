@@ -23,7 +23,7 @@ from the currently bound local Avatar. OSC endpoints are not authentication.
 
 The menu shows **requested enablement**, not a read-only actual-state widget.
 The host displays Unavailable, Off, Starting, Active, Stopping or Error in its
-Avatar page. Startup acceptance alone is not Active. A future Avatar status
+Game Plugins page. Startup acceptance alone is not Active. A future Avatar status
 indicator consumes host status through an explicitly installed renderer; no such
 indicator is shipped in this baseline.
 

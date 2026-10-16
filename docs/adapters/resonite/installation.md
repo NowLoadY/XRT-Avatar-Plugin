@@ -5,8 +5,7 @@ This setup uses Python and a terminal alongside Resonite and XRTranslate.
 
 ## Before you start
 
-Have XRTranslate ready with **Avatar** available and your
-audio input and translation provider configured.
+Have XRTranslate ready with your audio input and translation provider configured.
 
 You need Python 3.10 or later and a Resonite session that you host, with at least
 Builder permission. In the Dash, open **Session**, enable **ResoniteLink**, and
@@ -83,8 +82,8 @@ ID when running the bridge; it adds missing text-source fields automatically.
 
 ## 3. Connect XRTranslate
 
-In XRTranslate, enable **Avatar**, select **Resonite**, and enable
-**Display content**. Copy the displayed connector address.
+In XRTranslate, open **Game Plugins** in the sidebar, select **Resonite**,
+and turn on **Enable** and **Display content**. Copy the displayed connector address.
 Then replace `XRT_SLOT_ID` and `HOST_PORT` below:
 
 ```text

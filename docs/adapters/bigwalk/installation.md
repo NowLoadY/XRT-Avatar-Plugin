@@ -10,8 +10,8 @@ Send translations to the game's chat while you talk.
    **XRT-Avatar-Plugin-BigWalk** ZIP there, preserving its
    `BepInEx/plugins/XRT.BigWalk/` folder. For a manual BepInEx
    installation, extract it beside the game's executable.
-3. In XRTranslate, enable **Big Walk** in **Settings → Plugins**, then open
-   **Big Walk** in the sidebar and enable chat output.
+3. In XRTranslate, open **Game Plugins** in the sidebar, select **Big Walk**,
+   and turn on **Enable** at the top of the page.
 4. Join a game. When the page shows **Connected**, start microphone translation.
 
 Development builds are available from the
@@ -29,7 +29,8 @@ readable message. The bridge spaces automatic messages by at least two seconds;
 XRTranslate drops stale pending text when you leave or disconnect.
 
 To remove the bridge, close the game and delete
-`BepInEx/plugins/XRT.BigWalk/`. Disable **Big Walk** in XRTranslate.
+`BepInEx/plugins/XRT.BigWalk/`. Turn off **Enable** on XRTranslate's
+**Game Plugins** page.
 
 ## Connection help
 

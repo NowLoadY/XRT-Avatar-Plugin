@@ -6,8 +6,8 @@ place and style yourself.
 ## Install and connect
 
 1. Download and extract [the Overte script bundle](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.7/XRT-Avatar-Plugin-Overte-0.1.0-preview.7.zip).
-2. Start XRTranslate on the same computer. In **Avatar**,
-   select **Overte**, enable the plugin and **Display content**.
+2. Start XRTranslate on the same computer. Open **Game Plugins** in the sidebar,
+   select **Overte**, and turn on **Enable** and **Display content**.
    Keep the connection address and pairing token available.
 3. In Overte, open **Edit → Running Scripts → From Disk** and select
    `adapters/overte/scripts/xrt-avatar.js` inside the extracted folder. Keep the

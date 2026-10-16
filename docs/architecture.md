@@ -50,9 +50,11 @@ defines shared appearance, result lifetime and native rendering ownership.
 | `tools/` | Generated bindings, shared asset synchronization, release packaging and visual preview |
 | `third_party/` | Pinned reference source with upstream provenance and licenses |
 
-The host selects one connector and retains one lifecycle controller across
-connection changes. VRChat and ChilloutVR use profiles of XRTranslate's OSCQuery
-transport. Overte, Resonite and Second Life use the [local connector protocol](connector-protocol.md).
+XRTranslate exposes an always-visible **Game Plugins** group page. Its **Enable**
+switch activates the selected game; avatar and chat adapters keep independent
+runtime owners.
+Avatar connectors retain one lifecycle controller across connection changes.
+VRChat and ChilloutVR use profiles of XRTranslate's OSCQuery transport. Overte, Resonite and Second Life use the [local connector protocol](connector-protocol.md).
 Platform bridges adapt game APIs to this protocol. ResoniteLink and Second Life's
 HTTP relay remain explicit platform-specific branches.
 
@@ -63,7 +65,7 @@ checks and text encoding; the host supplies typed snapshots and performs I/O.
 The small platform control crates preserve their existing Rust interfaces.
 OSC Chatbox sending, formatting and destination settings belong to XRTranslate's
 OSC plugin; game adapters consume existing host outputs where applicable.
-Big Walk's native chat bridge lives in `adapters/bigwalk/`. Its host plugin consumes
+Big Walk's native chat bridge lives in `adapters/bigwalk/`. Its host output consumes
 committed translations and sends append-only chat requests; the bridge owns local
 player readiness and invokes the game's normal chat command. Its small request
 protocol follows chat delivery semantics independently of Avatar caption snapshots.

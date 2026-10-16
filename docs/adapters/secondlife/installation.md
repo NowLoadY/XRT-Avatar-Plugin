@@ -8,8 +8,7 @@ bridge.
 
 Prepare these items first:
 
-- XRTranslate with the **Avatar** plugin enabled, and your audio
-  input and translation provider configured.
+- XRTranslate with your audio input and translation provider configured.
 - An editable attachment or HUD, and permission to run scripts where you use it.
 - Node.js 22.4 or later on the computer running XRTranslate.
 - A working HTTPS relay address and its two separate **client** and **host** tokens.
@@ -50,8 +49,8 @@ returns the object's owner UUID.
 
 ## 2. Connect XRTranslate
 
-Open **Avatar** in XRTranslate and select **Second Life**.
-Copy its connector address and pairing token. In a terminal, replace the example
+Open **Game Plugins** in XRTranslate's sidebar, select **Second Life**, and
+turn on **Enable**. Copy its connector address and pairing token. In a terminal, replace the example
 values below and start the bridge.
 
 **Windows PowerShell**
@@ -87,7 +86,7 @@ reconnecting, open a fresh dialog and choose **Start** again.
 The included displays use native text floating above a prim. Letters drawn on a
 board surface use a custom renderer connected to the dynamic text source.
 
-Enable **Display content** on XRTranslate's **Avatar** page. Select the header,
+Enable **Display content** on XRTranslate's **Game Plugins** page. Select the header,
 messages or footer in its preview to choose the content. Then choose a display:
 
 | Display | Setup |

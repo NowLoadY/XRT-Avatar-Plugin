@@ -101,8 +101,8 @@ for the SDK panel. Wear the uploaded avatar in VRChat.
 ## 6. Start translation
 
 1. Open XRTranslate and configure your audio input, languages and outputs.
-2. Enable **Avatar** in **Settings → Plugins**, then open **Avatar** from the
-   sidebar. Select **VRChat** and enable **Display content**. Click **Header**,
+2. Open **Game Plugins** in the sidebar, select **VRChat**, and turn on
+   **Enable**. Turn on **Display content**, then click **Header**,
    **Messages** or **Footer** in the preview to choose what appears there.
 3. In VRChat's Action Menu, turn on **OSC → Enabled** as described in the
    [official OSC guide](https://docs.vrchat.com/docs/osc-overview#enabling-it).

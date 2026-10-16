@@ -35,7 +35,7 @@ be removed when that receiver assignment is incomplete.
 
 ## Caption is blank
 
-Enable **Display content** on XRTranslate's **Avatar** page. Select **Messages**
+Enable **Display content** on XRTranslate's **Game Plugins** page. Select **Messages**
 in the preview to check its content and audio-source settings, or choose content
 for **Header** or **Footer**. For menu-controlled translation, turn on
 **Expressions → XRT → Translation**. Wear the uploaded PC avatar and allow its
@@ -52,8 +52,8 @@ disabling **Display content** clears the whole surface.
   the Console. Check the [target Unity and SDK versions](compatibility.md#targets).
 - **No menu in the game:** save and upload the modified avatar, then wear that
   uploaded version.
-- **Connection unavailable:** enable OSC, select VRChat on XRTranslate's **Avatar**
-  page and wear the avatar with XRT installed. Read the connection message there.
+- **Connection unavailable:** enable OSC, select VRChat on XRTranslate's **Game Plugins**
+  page, turn on **Enable**, and wear the avatar with XRT installed. Read the connection message there.
 - **Input is busy:** stop the other XRTranslate task using the same audio input.
 - **Cannot upload:** check VRChat's
   [account requirements and Builder messages](https://creators.vrchat.com/avatars/creating-your-first-avatar/#requirements).
