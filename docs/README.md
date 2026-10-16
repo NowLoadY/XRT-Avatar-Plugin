@@ -11,6 +11,7 @@
 | Overte | [Tablet and caption objects](adapters/overte/installation.md) | [Remove and restore](adapters/overte/installation.md#remove-and-restore) | [Adapter guide](adapters/overte/development.md) |
 | Resonite | [ResoniteLink and Avatar objects](adapters/resonite/installation.md) | [Customize a display](adapters/resonite/installation.md#customize-your-display) | [Adapter guide](adapters/resonite/development.md) |
 | Second Life | [Attachment and HUD](adapters/secondlife/installation.md) | [Relay setup](adapters/secondlife/relay-setup.md) | [Adapter guide](adapters/secondlife/development.md) |
+| Big Walk | [Native chat bridge](adapters/bigwalk/installation.md) | [Connection](adapters/bigwalk/installation.md#connection-help) | [Adapter guide](adapters/bigwalk/development.md) |
 
 ## Shared components
 

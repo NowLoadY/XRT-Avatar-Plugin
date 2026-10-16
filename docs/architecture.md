@@ -63,6 +63,10 @@ checks and text encoding; the host supplies typed snapshots and performs I/O.
 The small platform control crates preserve their existing Rust interfaces.
 OSC Chatbox sending, formatting and destination settings belong to XRTranslate's
 OSC plugin; game adapters consume existing host outputs where applicable.
+Big Walk's native chat bridge lives in `adapters/bigwalk/`. Its host plugin consumes
+committed translations and sends append-only chat requests; the bridge owns local
+player readiness and invokes the game's normal chat command. Its small request
+protocol follows chat delivery semantics independently of Avatar caption snapshots.
 
 Each adapter declares its supported platform capabilities, installation method,
 protocol and compatible host versions. Public protocol and package identity

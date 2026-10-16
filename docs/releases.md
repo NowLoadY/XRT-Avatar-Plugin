@@ -84,6 +84,14 @@ Archive validation checks packaging. Unity import, SDK compilation, installation
 removal and in-game behavior are recorded against the environments in which they
 were actually exercised. Platform compatibility documents track acceptance status.
 
+## Big Walk bridge
+
+`python3 tools/build_bigwalk.py` builds the .NET bridge and writes one installable
+ZIP under `dist/bigwalk/`. The **Build Big Walk bridge** workflow provides this
+package as an Actions artifact. It contains the plugin DLL, installation guide
+and license; BepInEx and game assemblies remain in the game's installation.
+See the [adapter guide](adapters/bigwalk/development.md#build) for prerequisites.
+
 References: [VPM packages](https://vcc.docs.vrchat.com/vpm/packages/),
 [VPM repositories](https://vcc.docs.vrchat.com/vpm/repos/),
 [official package release template](https://github.com/vrchat-community/template-package/blob/main/.github/workflows/release.yml).

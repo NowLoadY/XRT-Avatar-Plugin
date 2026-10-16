@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <AssemblyName>XRT.BigWalk</AssemblyName>
+    <Version>0.1.0</Version>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
+    <DebugType>none</DebugType>
+    <Deterministic>true</Deterministic>
+    <PathMap>$(MSBuildProjectDirectory)=/src</PathMap>
+    <RestoreAdditionalProjectSources>https://nuget.bepinex.dev/v3/index.json;https://nuget.samboy.dev/v3/index.json</RestoreAdditionalProjectSources>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(BepInExCore)' == ''">
+    <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.755" IncludeAssets="compile" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(BepInExCore)' != ''">
+    <Reference Include="BepInEx.Core" HintPath="$(BepInExCore)/BepInEx.Core.dll" Private="false" />
+    <Reference Include="BepInEx.Unity.IL2CPP" HintPath="$(BepInExCore)/BepInEx.Unity.IL2CPP.dll" Private="false" />
+    <Reference Include="0Harmony" HintPath="$(BepInExCore)/0Harmony.dll" Private="false" />
+  </ItemGroup>
+</Project>

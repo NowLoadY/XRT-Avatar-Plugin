@@ -6,7 +6,7 @@
   <a href="docs/README.md">Guides</a>
 </p>
 
-Start and stop [XRTranslate](https://github.com/NowLoadY/XRTranslate) from your avatar's menu or in-game controls. Place translations on editable caption boards in VRChat and ChilloutVR, native text objects in Overte and Resonite, or floating captions on Second Life attachments.
+Start and stop [XRTranslate](https://github.com/NowLoadY/XRTranslate) from your avatar's menu or in-game controls. Place translations on editable caption boards in VRChat and ChilloutVR, native text objects in Overte and Resonite, or floating captions on Second Life attachments. Send completed translations to Big Walk's native chat.
 
 <p align="center">
   <img src="docs/adapters/vrchat/images/board-placement-concept.jpg" alt="Kipfel, Mamehinata and Usasaki holding white translation boards, shown in full body" width="900" />
@@ -55,8 +55,9 @@ Choose your game and follow its setup guide:
 | Overte | Tablet controls and wearable caption objects | [Script bundle](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.7/XRT-Avatar-Plugin-Overte-0.1.0-preview.7.zip) | [Running Scripts](docs/adapters/overte/installation.md) |
 | Resonite | Avatar controls and caption objects | [Source archive](https://github.com/NowLoadY/XRT-Avatar-Plugin/archive/refs/tags/v0.1.0-preview.7.zip) | [ResoniteLink](docs/adapters/resonite/installation.md) |
 | Second Life | Attachment controls and floating captions | [Source archive](https://github.com/NowLoadY/XRT-Avatar-Plugin/archive/refs/tags/v0.1.0-preview.7.zip) | [Attachment / relay](docs/adapters/secondlife/installation.md) |
+| Big Walk | Native chat translations | [Bridge build](https://github.com/NowLoadY/XRT-Avatar-Plugin/actions/workflows/bigwalk.yml) | [Mod setup](docs/adapters/bigwalk/installation.md) |
 
-In XRTranslate, set your audio input, languages and outputs. Open **Settings → Plugins → Avatar**, select your game and enable the plugin. Follow your game's guide to connect it and use the translation switch. Open **Avatar** in the sidebar to arrange your header, messages and footer.
+In XRTranslate, set your audio input, languages and outputs. For avatar controls, enable **Avatar** in **Settings → Plugins**, select your game and follow its setup guide. Open **Avatar** in the sidebar to arrange your header, messages and footer. For Big Walk, enable **Big Walk** and turn on chat output in its page.
 
 ## Help
 
@@ -65,6 +66,8 @@ The [game guides](docs/README.md#game-guides) cover setup, customization and rem
 ## Acknowledgments
 
 Thanks to [VRCBitmapLed](https://github.com/lolosiax/VRCBitmapLed) by 洛洛希雅Lolosia for its addressed text buffer and parameter synchronization design. Caption fonts use [Noto](https://github.com/notofonts/noto-cjk).
+
+Thanks to [BigTalk ConversationStarters](https://github.com/Gogogadgetjustice/bigwalkmods/tree/main/The%20Mods/ConversationStarters) for demonstrating Big Walk's native chat integration.
 
 ## License
 

@@ -29,3 +29,6 @@ __pycache__/
 **/Builds/
 *.csproj
 *.sln
+!adapters/bigwalk/*.csproj
+**/bin/
+**/obj/
