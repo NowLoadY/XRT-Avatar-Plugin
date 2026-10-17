@@ -208,11 +208,29 @@ class ExchangeHandler(BaseHTTPRequestHandler):
 
 
 def main() -> None:
+    import argparse
+    from urllib.parse import urlsplit
+    parser = argparse.ArgumentParser(description="Second Life relay")
+    parser.add_argument("--connection-info", metavar="HTTPS_ORIGIN", help="Print private client/host pairing text, then exit")
+    args = parser.parse_args()
     tokens = {role: os.environ.get(f"XRT_RELAY_{role.upper()}_TOKEN", "") for role in ("client", "host")}
-    if any(len(token) < 32 or not token.isascii() for token in tokens.values()):
-        raise SystemExit("Set two distinct ASCII relay tokens of at least 32 characters.")
+    if any(not 32 <= len(token) <= 512 or any(not 33 <= ord(char) <= 126 for char in token)
+           for token in tokens.values()):
+        raise SystemExit("Set two distinct relay tokens of 32–512 printable ASCII characters without spaces.")
     if hmac.compare_digest(tokens["client"], tokens["host"]):
         raise SystemExit("Client and host tokens must differ.")
+    if args.connection_info:
+        url = urlsplit(args.connection_info)
+        if (url.scheme != "https" or not url.hostname or url.username or url.password
+                or url.path not in ("", "/") or url.query or url.fragment):
+            parser.error("Use the relay's HTTPS origin without a path")
+        origin = args.connection_info.rstrip("/")
+        for role, token in tokens.items():
+            value = json.dumps({"role": role, "url": origin, "token": token}, separators=(",", ":"))
+            if role == "client" and (len(value.encode("utf-8")) > 250 or len(token) > 128):
+                parser.error("Use a shorter relay origin/token to fit the attachment's 250-byte textbox")
+            print(role + ": " + value)
+        return
     address = (os.environ.get("XRT_RELAY_BIND", "127.0.0.1"), int(os.environ.get("XRT_RELAY_PORT", "8788")))
     with ExchangeServer(address, tokens) as server:
         print(f"XRT relay listening on {address[0]}:{address[1]}; HTTPS proxy required.", flush=True)

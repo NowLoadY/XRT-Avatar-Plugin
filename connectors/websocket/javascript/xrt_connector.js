@@ -106,3 +106,19 @@ Connector.prototype.close = function (reason) {
 };
 
 module.exports = Connector;
+
+// Clipboard convenience only; the authenticated WebSocket handshake is unchanged.
+Connector.parsePairing = function (text, connector) {
+    if (typeof text !== "string" || text.length > 4096) { throw new Error("Copy connection info from XRTranslate"); }
+    var value;
+    try { value = JSON.parse(text); } catch (error) { throw new Error("Copy connection info from XRTranslate"); }
+    if (!value || value.protocol !== 1 || value.connector !== connector ||
+            typeof value.address !== "string" ||
+            !/^ws:\/\/(127\.0\.0\.1|localhost|\[::1\]):([0-9]{1,5})\/xrt$/.test(value.address) ||
+            typeof value.token !== "string" || !/^[\x21-\x7e]{32,512}$/.test(value.token)) {
+        throw new Error("Choose " + connector + " in XRTranslate and copy its connection info");
+    }
+    var port = Number(/:([0-9]+)\/xrt$/.exec(value.address)[1]);
+    if (port < 1 || port > 65535) { throw new Error("Invalid local connection port"); }
+    return { address: value.address, token: value.token };
+};

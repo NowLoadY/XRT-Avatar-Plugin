@@ -50,14 +50,14 @@ Choose your game and follow its setup guide:
 
 | Game | Features | Install | Setup |
 |---|---|---|---|
-| VRChat | Translation menu and caption boards (PC) | [VCC / ALCOM](docs/adapters/vrchat/installation.md#vcc-or-alcom) · [Unity package](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.7/XRT-Avatar-Plugin-VRChat-0.1.0-preview.7.unitypackage) | [Avatar setup](docs/adapters/vrchat/installation.md#3-add-the-menu) |
+| VRChat | Translation menu and caption boards (PC) | [VCC / ALCOM](docs/adapters/vrchat/installation.md#vcc-or-alcom) · [Unity package](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.7/XRT-Avatar-Plugin-VRChat-0.1.0-preview.7.unitypackage) | [Add captions](docs/adapters/vrchat/installation.md#add-captions) |
 | ChilloutVR | Translation menu and caption boards | [Unity package](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.7/XRT-Avatar-Plugin-ChilloutVR-0.1.0-preview.7.unitypackage) | [CCK project](docs/adapters/chilloutvr/installation.md) |
-| Overte | Tablet controls and wearable caption objects | [Script bundle](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.7/XRT-Avatar-Plugin-Overte-0.1.0-preview.7.zip) | [Running Scripts](docs/adapters/overte/installation.md) |
-| Resonite | Avatar controls and caption objects | [Source archive](https://github.com/NowLoadY/XRT-Avatar-Plugin/archive/refs/tags/v0.1.0-preview.7.zip) | [ResoniteLink](docs/adapters/resonite/installation.md) |
-| Second Life | Attachment controls and floating captions | [Source archive](https://github.com/NowLoadY/XRT-Avatar-Plugin/archive/refs/tags/v0.1.0-preview.7.zip) | [Attachment / relay](docs/adapters/secondlife/installation.md) |
-| Big Walk | Native chat translations | [Bridge build](https://github.com/NowLoadY/XRT-Avatar-Plugin/actions/workflows/bigwalk.yml) | [Mod setup](docs/adapters/bigwalk/installation.md) |
+| Overte | Tablet controls and wearable caption objects | [Load script](docs/adapters/overte/installation.md#install-and-connect) | [Running Scripts](docs/adapters/overte/installation.md) |
+| Resonite | Avatar controls and caption objects | [Standalone connector](docs/adapters/resonite/installation.md) | [ResoniteLink](docs/adapters/resonite/installation.md) |
+| Second Life | Attachment controls and floating captions | [Connector and script](docs/adapters/secondlife/installation.md) | [Attachment / relay](docs/adapters/secondlife/installation.md) |
+| Big Walk | Native chat translations | [Mod package](docs/adapters/bigwalk/installation.md#install-and-start) | [Mod setup](docs/adapters/bigwalk/installation.md) |
 
-In XRTranslate, set your audio input and languages. Open **Game Plugins** in the sidebar, choose your game, and turn on **Enable**. Arrange header, messages and footer for caption objects, or choose the audio sources and message format for Big Walk chat.
+In XRTranslate, set your audio input and languages. Open **Game Plugins** in the sidebar, choose your game, and turn on **Enable**. The defaults show translations. Header/footer content, message formats and additional audio sources are optional.
 
 ## Help
 

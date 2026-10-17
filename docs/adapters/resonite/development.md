@@ -1,7 +1,7 @@
 # Resonite development
 
-The [user setup guide](installation.md) covers preparing an Avatar and running
-the bridge. This document covers integration and verification.
+The [user setup guide](installation.md) covers the standalone text connector.
+[Command-line setup](command-line.md) covers custom control and preset installation. This document covers integration and verification.
 
 ## Files and dependencies
 
@@ -96,3 +96,21 @@ A focused in-game check should confirm:
 - [ButtonValueSet](https://wiki.resonite.com/Component:ButtonValueSet)
 - [TextRenderer](https://wiki.resonite.com/Component:TextRenderer)
 - [AvatarDestroyOnDequip](https://wiki.resonite.com/Component:AvatarDestroyOnDequip)
+
+## Standalone connector
+
+`resonitelink/launcher.py` provides a native Tk window. Open/expand operations
+only read the native object tree. Connect validates the selected TextRenderer,
+reuses one XRT-tagged child or creates one beneath that text, and uses the existing
+adapter for direct text ownership, state and cleanup. Ambiguous XRT children are
+rejected. Scene IDs and pairing info are never saved. Font, layout and placement
+remain in Resonite's native editor. Closing waits for bounded cleanup.
+
+Install `adapters/resonite/build-requirements.txt` in an isolated build environment,
+then run `python adapters/resonite/build.py` on Windows x64 or Linux x64. PyInstaller
+creates one executable in `dist/resonite/` with only this adapter, its shared
+connector/presentation modules and its own Python/Tk runtime. No other game package
+or XRTranslate runtime receives Python. `--check` verifies bundled imports/data.
+
+The launcher does not remove ResoniteLink's host/Builder restrictions. Native
+ProtoFlux prefab distribution and game-client acceptance remain separate work.

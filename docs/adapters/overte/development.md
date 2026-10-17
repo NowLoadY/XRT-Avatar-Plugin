@@ -34,8 +34,11 @@ script = <xrt-avatar.js URL>
 
 Use either an Avatar script or an Interface script for one installation. Avatar
 scripts stop when their Avatar is removed. Interface scripts disconnect when the
-Avatar or domain session changes. Pairing and enabling translation are fresh user
-actions after those changes.
+Avatar or domain session changes. The user clicks Reconnect after those changes;
+the still-running script reuses its last successful pairing in memory, including
+after a temporary connection loss. A failed handshake discards that cached pairing.
+Restarting the script or XRTranslate requires fresh connection info.
+Translation always starts Off and requires a new Start action.
 
 Do not embed pairing tokens in hosted scripts or Avatar files. The running script
 receives them from the local XRTranslate instance.

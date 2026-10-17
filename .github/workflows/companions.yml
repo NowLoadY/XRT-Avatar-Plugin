@@ -1,0 +1,57 @@
+name: Build game connectors
+
+on:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      ref:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  connector:
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-22.04]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Linux UI libraries
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y tk
+      - name: Build Resonite only with Python
+        run: |
+          python -m pip install -r adapters/resonite/build-requirements.txt
+          python adapters/resonite/build.py --output dist/companions
+      - name: Build Second Life only with Node.js
+        working-directory: adapters/secondlife
+        run: |
+          npm ci --ignore-scripts
+          node build.mjs --output ../../dist/companions
+      - name: Check bundled resources
+        shell: bash
+        run: |
+          python -m unittest discover -s tests -v
+          node --test tests/setup.mjs
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            dist/companions/XRT-Resonite-win-x64.exe --check
+          else
+            dist/companions/XRT-Resonite-linux-x64 --check
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: connectors-${{ runner.os }}
+          path: dist/companions/*
+          if-no-files-found: error

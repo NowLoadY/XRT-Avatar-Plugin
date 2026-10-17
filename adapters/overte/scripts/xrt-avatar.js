@@ -15,6 +15,7 @@
     var status = "unavailable";
     var pendingSince = 0;
     var pairing = false;
+    var connectionInfo = null;
     var attemptedPairing = false;
     var buttonState = "";
     var ended = false;
@@ -136,18 +137,27 @@
         if (pairing) { return; }
         pairing = true;
         updateButton();
-        var address = Window.prompt("Paste the connection address from XRTranslate.",
-            Settings.getValue("XRT/connectorAddress", ""));
-        if (address === null) { pairing = false; updateButton(); return; }
-        var token = Window.prompt("Paste the pairing token from XRTranslate.", "");
-        if (token === null || !token.trim()) { pairing = false; updateButton(); return; }
+        // Consume the cached pairing; only a successful handshake may retain it.
+        var info = connectionInfo;
+        connectionInfo = null;
+        if (!info) {
+            var pasted = Window.prompt("In XRTranslate, choose Overte and Copy connection info. Paste it here.", "");
+            if (pasted === null) { pairing = false; updateButton(); return; }
+            try { info = Connector.parsePairing(pasted, "overte"); }
+            catch (error) {
+                Window.alert(error.message);
+                pairing = false; updateButton(); return;
+            }
+            pasted = null;
+        }
         attemptedPairing = true;
         sourceGeneration = String(Uuid.generate());
         source.reset();
         clearCaption(true);
         try {
-            connector = new Connector(address.trim(), token.trim(), "overte", {
+            connector = new Connector(info.address, info.token, "overte", {
                 reset: function () {
+                    connectionInfo = info;
                     requested = false;
                     pendingSince = 0;
                     status = "unavailable";
@@ -186,11 +196,10 @@
                 setInterval: function (callback, delay) { return Script.setInterval(callback, delay); },
                 clearInterval: function (timer) { Script.clearInterval(timer); }
             });
-            Settings.setValue("XRT/connectorAddress", address.trim());
         } catch (error) {
-            Window.alert("Could not connect. Open Avatar controls in XRTranslate and copy its address and pairing token again.");
+            connectionInfo = null;
+            Window.alert("Could not connect. Copy fresh connection info from Game Plugins in XRTranslate.");
         }
-        token = null;
         pairing = false;
         updateButton();
     }
@@ -232,6 +241,7 @@
     updateButton();
     Script.scriptEnding.connect(function () {
         ended = true;
+        connectionInfo = null;
         if (connector) { connector.close(); }
         Script.clearInterval(displayTimer);
         MyAvatar.skeletonModelURLChanged.disconnect(contextChanged);

@@ -5,6 +5,19 @@ JSON WebSocket messages. XRTranslate serves `ws://127.0.0.1:<port>/xrt` while a
 WebSocket connector is enabled. The settings page supplies the current address
 and pairing token. A connection serves one selected game connector and its display; translation requests retain their own operation owner. OSC adapters map the same lifecycle to their parameter manifests.
 
+## Copy connection info
+
+The host copies one JSON object for local setup:
+
+```json
+{"protocol":1,"connector":"overte","address":"ws://127.0.0.1:12345/xrt","token":"<pairing token>"}
+```
+
+This clipboard envelope is not a wire message. Clients validate the selected
+connector, loopback address and token, then use the existing handshake below.
+It is private runtime data; do not save it in avatars, hosted scripts or logs.
+Custom clients can read the address and token from the same clipboard object.
+
 ## Pairing and reset
 
 The client sends this as its first frame:

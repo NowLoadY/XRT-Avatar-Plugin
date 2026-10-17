@@ -5,15 +5,18 @@ place and style yourself.
 
 ## Install and connect
 
-1. Download and extract [the Overte script bundle](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.7/XRT-Avatar-Plugin-Overte-0.1.0-preview.7.zip).
-2. Start XRTranslate on the same computer. Open **Game Plugins** in the sidebar,
-   select **Overte**, and turn on **Enable** and **Display content**.
-   Keep the connection address and pairing token available.
-3. In Overte, open **Edit → Running Scripts → From Disk** and select
-   `adapters/overte/scripts/xrt-avatar.js` inside the extracted folder. Keep the
-   rest of the extracted files in place.
-4. Open the tablet and select the **link icon**. Paste the address and pairing
-   token from XRTranslate. Connecting leaves translation off.
+1. In the [release](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases), copy
+   the **Overte script URL**. In Overte, open **Edit → Running Scripts → From URL**,
+   paste it and load the script. Keep the URL's version unchanged until you update.
+2. In XRTranslate, select **Game Plugins → Overte**, turn on **Enable**, and click
+   **Copy connection info**.
+3. On Overte's tablet, select the **link icon**, paste once and connect.
+   Translation starts **Off**; select play when you are ready.
+
+This uses Overte's [native script loader](https://docs.overte.org/en/latest/script/interface-scripts.html).
+For offline installation, extract the Overte ZIP and use **From Disk** to load
+`adapters/overte/scripts/xrt-avatar.js`. Keep the extracted files together.
+
 
 ## Start and stop
 
@@ -23,8 +26,9 @@ running.
 
 Hover over an icon to see its action. An hourglass means the control is waiting.
 The arrow retries after an error; the link reconnects after a lost connection.
-After changing Avatar or visiting another domain, connect again and press play.
-Copy a fresh pairing token from XRTranslate when needed.
+After changing Avatar or visiting another domain, select reconnect and then play.
+The running script reuses its connection information when you reconnect. If
+XRTranslate restarted or reconnection fails, copy fresh connection info and try again.
 
 ## Add captions
 

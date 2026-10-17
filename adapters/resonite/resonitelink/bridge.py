@@ -12,13 +12,11 @@ import time
 
 from websockets.asyncio.client import connect
 
-from link import Link, controls, field, install, loopback_url, STRING_TYPE, TEXT_TYPE, TEXT_SOURCES
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "connectors/websocket/python"))
-from xrt_connector import Connector  # noqa: E402
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "presentation/python"))
-from bubble import PROFILES, CaptionSource  # noqa: E402
+if not __package__:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+from adapters.resonite.resonitelink.link import Link, controls, field, install, loopback_url, STRING_TYPE, TEXT_TYPE, TEXT_SOURCES
+from connectors.websocket.python.xrt_connector import Connector, parse_pairing
+from presentation.python.bubble import PROFILES, CaptionSource
 
 
 STATUS_LABELS = {
@@ -28,7 +26,7 @@ STATUS_LABELS = {
 
 
 class ResoniteAdapter:
-    def __init__(self, link, components, text_id, region="full"):
+    def __init__(self, link, components, text_id, region="full", on_status=None):
         self.link = link
         self.components = components
         self.text_id = text_id
@@ -44,6 +42,7 @@ class ResoniteAdapter:
         self.last_status = None
         self.status_label = None
         self.connector = None
+        self.on_status = on_status or (lambda label: print("Translation:", label, flush=True))
 
     async def prepare(self):
         for source_id in self.source_ids.values():
@@ -72,16 +71,18 @@ class ResoniteAdapter:
                 value = self.captions.snapshot(now, region)
                 text = value["text"] if value else ""
                 if self.last_sources.get(region) != text:
-                    await self.link.write(source_id, Value=field("string", text))
                     self.last_sources[region] = text
+                    await self.link.write(source_id, Value=field("string", text))
             value = self.captions.snapshot(now, self.region)
             text = value["text"] if value else ""
             if self.text_id and self.applied_fields.get("Text", {}).get("value") != text:
                 await self.write_text(Text=field("string", text))
 
     async def write_text(self, **fields):
-        await self.link.write(self.text_id, **fields)
+        # A cancelled request may already have reached Resonite. Remember its
+        # intended values so finish can compare them before restoring originals.
         self.applied_fields.update(fields)
+        await self.link.write(self.text_id, **fields)
 
     async def reset(self, _message):
         self.requested = False
@@ -96,8 +97,8 @@ class ResoniteAdapter:
         label = "Stopping…" if self.stop_pending else STATUS_LABELS.get(self.last_status, "Disconnected")
         if label != self.status_label:
             await self.link.write(self.components["Status"], Value=field("string", label))
-            print("Translation:", label, flush=True)
             self.status_label = label
+        self.on_status(label)
 
     async def state(self, message):
         status = message["status"]
@@ -140,7 +141,7 @@ class ResoniteAdapter:
                         if not enabled:
                             self.stop_pending = True
                             await self.clear({}, force=False)
-                            await self.show_status()
+                        await self.show_status()
                         await self.connector.set_enabled(enabled)
             await self.publish_text()
             await asyncio.sleep(0.25)
@@ -148,7 +149,9 @@ class ResoniteAdapter:
     async def finish(self):
         self.requested = False
         self.connector.ready = False
-        closing = asyncio.create_task(self.connector.close())
+        # Revoke the host session before touching scene fields that may be unavailable.
+        with contextlib.suppress(Exception):
+            await self.connector.close()
         with contextlib.suppress(Exception):
             await self.link.write(self.components["Enabled"], Value=field("bool", False))
             await self.link.write(self.components["Status"], Value=field("string", "Disconnected"))
@@ -169,11 +172,15 @@ class ResoniteAdapter:
                 }
                 if restore:
                     await self.link.write(self.text_id, **restore)
-        await closing
 
 
 async def run(args):
-    token = getpass.getpass("XRTranslate pairing token: ").strip() if args.command == "run" else None
+    address = token = None
+    if args.command == "run":
+        if args.host:
+            address, token = args.host, getpass.getpass("XRTranslate pairing token: ").strip()
+        else:
+            address, token = parse_pairing(getpass.getpass("Paste XRTranslate connection info (input hidden): "), "resonite")
     async with connect(loopback_url(args.link), max_size=4 * 1024 * 1024,
                        max_queue=8, open_timeout=5, close_timeout=2, proxy=None) as socket:
         link = Link(socket)
@@ -186,7 +193,7 @@ async def run(args):
         else:
             adapter = ResoniteAdapter(link, await controls(link, args.slot, ensure_text=True), args.text, args.source)
             adapter.connector = Connector(
-                args.host, token, "resonite", on_reset=adapter.reset, on_state=adapter.state,
+                address, token, "resonite", on_reset=adapter.reset, on_state=adapter.state,
                 on_caption=adapter.caption, on_clear=adapter.clear, on_display=adapter.display,
             )
             tasks = []
@@ -198,6 +205,8 @@ async def run(args):
                 for task in done:
                     task.result()
             finally:
+                with contextlib.suppress(Exception):
+                    await adapter.connector.close()
                 for task in tasks:
                     task.cancel()
                 await asyncio.gather(*tasks, return_exceptions=True)
@@ -218,7 +227,7 @@ def main():
     setup.add_argument("--template", help="TextRenderer component with the font and material to reuse")
     bridge = commands.add_parser("run", help="Run the control and optional caption bridge")
     bridge.add_argument("--slot", required=True, help="Current XRT slot ID")
-    bridge.add_argument("--host", required=True, help="Local XRTranslate ws:// address")
+    bridge.add_argument("--host", help="Optional local XRTranslate address; otherwise paste connection info")
     bridge.add_argument("--text", help="TextRenderer component ID for synchronized captions")
     for command in (setup, bridge):
         command.add_argument("--source", choices=tuple(TEXT_SOURCES), default="full", help="Text region for the renderer")

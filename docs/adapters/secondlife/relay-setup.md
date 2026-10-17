@@ -30,7 +30,8 @@ python3 adapters/secondlife/relay/server.py
 ```
 
 If `server.py` was copied on its own, run `python3 server.py` instead. Each token
-must be ASCII and at least 32 characters long. The client token goes into the LSL
+must contain 32–512 printable ASCII characters without spaces. Use at most 128
+characters for the client token so its pairing text fits the attachment. The client token goes into the LSL
 attachment; the host token goes into the player's local Node.js bridge. Use a
 separate service process, port and token pair for each player.
 
@@ -46,7 +47,16 @@ Set the proxy request-body limit to at most 16 KiB, and disable request-body and
 authorization logging. Keep the Python listener private behind the proxy. The
 player's XRTranslate port stays local to their computer.
 
-Give the player the HTTPS origin without a path, plus their two tokens. The
+Generate the two private clipboard values for the player with:
+
+```sh
+python3 adapters/secondlife/relay/server.py --connection-info https://relay.example.net
+```
+
+This explicit command prints credentials; run it privately, not in service logs.
+Give the **client** JSON to the attachment and the **host** JSON to the local
+connector. The client value must fit the native 250-byte textbox. The player
+never needs an owner UUID or environment-variable commands. The
 attachment verifies the HTTPS certificate using Second Life's
 [`llHTTPRequest`](https://wiki.secondlife.com/wiki/LlHTTPRequest) API.
 

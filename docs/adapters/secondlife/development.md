@@ -11,10 +11,11 @@ messages.
 |---|---|
 | [`XRT.lsl`](../../../adapters/secondlife/attachment/XRT.lsl) | Owner controls, attachment lifecycle and optional text publication |
 | [`XRT-TextDisplay.lsl`](../../../adapters/secondlife/attachment/XRT-TextDisplay.lsl) | Native hover text on a dedicated linked prim |
-| [`host_bridge.mjs`](../../../adapters/secondlife/relay/host_bridge.mjs) | Local XRTranslate connection, display validation and relay exchange |
+| [`host_bridge.mjs`](../../../adapters/secondlife/relay/host_bridge.mjs) | Interactive launcher; also accepts existing environment settings |
+| [`transport.mjs`](../../../adapters/secondlife/relay/transport.mjs) | Local XRTranslate connection, display validation and relay exchange |
 | [`server.py`](../../../adapters/secondlife/relay/server.py) | Authenticated, bounded in-memory exchange for one pair |
 
-The local bridge needs Node.js 22.4 or later and the relative
+Source execution needs Node.js 22.4 or later and the relative
 `presentation/javascript/bubble.js` dependency. The relay needs Python 3.10 or
 later. LSL scripts use the viewer's Mono compilation target.
 
@@ -74,3 +75,18 @@ do not establish a passed in-world compatibility result.
 - [llDialog](https://wiki.secondlife.com/wiki/LlDialog)
 - [llMessageLinked](https://wiki.secondlife.com/wiki/LlMessageLinked)
 - [llSetText](https://wiki.secondlife.com/wiki/LlSetText)
+
+## Standalone build
+
+Run `npm ci --ignore-scripts` and `npm run build` in `adapters/secondlife/` with
+Node.js 22.16+ on the target OS. The builder bundles the connector into a Node SEA
+executable under `dist/secondlife/`. Python and the relay server are never bundled.
+The release workflow builds Windows x64 and Linux x64 separately.
+
+The attachment pairs through an owner-only `llTextBox` using client JSON from the
+relay operator. Pairing captures `llGetOwner()` and is cleared on owner changes.
+Start/Stop still require the configured owner and a fresh dialog. Show/Hide text
+reconciles the connection while Off because it changes advertised display capabilities.
+
+[Native textbox](https://wiki.secondlife.com/wiki/LlTextBox) ·
+[Node single executables](https://nodejs.org/docs/latest-v22.x/api/single-executable-applications.html)

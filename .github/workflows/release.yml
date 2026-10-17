@@ -16,7 +16,12 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  companions:
+    uses: ./.github/workflows/companions.yml
+    with:
+      ref: ${{ inputs.tag }}
   package:
+    needs: companions
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -31,12 +36,22 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: connectors-*
+          path: dist/companions
+          merge-multiple: true
+      - name: Build Big Walk mod package
+        run: python tools/build_bigwalk.py
       - name: Verify tag and package version
         env:
           RELEASE_TAG: ${{ inputs.tag }}
         run: |
           python - <<'PY'
-          import os, re, subprocess
+          import os, re, subprocess, pathlib
           tag = os.environ['RELEASE_TAG']
           if not re.fullmatch(r'v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?', tag):
               raise SystemExit('Expected an existing v<SemVer> tag')
@@ -45,7 +60,8 @@ jobs:
           if git('rev-parse', 'refs/tags/' + tag + '^{commit}') != git('rev-parse', 'HEAD'):
               raise SystemExit('Checkout does not match the release tag')
           subprocess.run(['python', 'tools/build_release.py', '--version', tag[1:],
-                          '--output', 'dist/release', '--require-clean'], check=True)
+                          '--output', 'dist/release', '--require-clean', '--companions', 'dist/companions',
+                          '--bigwalk', str(next(pathlib.Path('dist/bigwalk').glob('*.zip')))], check=True)
           PY
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -71,14 +87,30 @@ jobs:
           release = next((item for page in releases for item in page if item['tag_name'] == tag), None)
           if release is None:
               manifest = json.loads(pathlib.Path('dist/release/metadata/release-manifest.json').read_text())
-              notes = ('Installable packages for VRChat, ChilloutVR and Overte.\n\n'
-                       'For VRChat, install through '
-                       '[VCC or ALCOM](https://github.com/NowLoadY/XRT-Avatar-Plugin/blob/main/docs/adapters/vrchat/installation.md#vcc-or-alcom) '
-                       'or import the .unitypackage into your Avatar project, then open '
-                       'Tools > XRT-Avatar-Plugin > Avatar Controls. Select your avatar and add its translation menu.\n\n'
-                       'See [installation and setup](https://github.com/NowLoadY/XRT-Avatar-Plugin#install) '
-                       'for your game. VRChat (PC) and ChilloutVR provide avatar menus and caption boards. '
-                       'Overte provides tablet controls and wearable native text objects.')
+              base = 'https://github.com/NowLoadY/XRT-Avatar-Plugin'
+              def download(name, label):
+                  return '[' + label + '](' + base + '/releases/download/' + tag + '/' + name + ')'
+              def guide(platform):
+                  return '[Setup](' + base + '/blob/main/docs/adapters/' + platform + '/installation.md)'
+              version = manifest['version']
+              bigwalk = next(item['name'] for item in manifest['artifacts'] if '-BigWalk-' in item['name'])
+              rows = [
+                  ('VRChat', '[VCC / ALCOM](' + base + '/blob/main/docs/adapters/vrchat/installation.md#vcc-or-alcom) · ' +
+                   download('XRT-Avatar-Plugin-VRChat-' + version + '.unitypackage', 'Unity package'), 'vrchat'),
+                  ('ChilloutVR', download('XRT-Avatar-Plugin-ChilloutVR-' + version + '.unitypackage', 'Unity package'), 'chilloutvr'),
+                  ('Overte', '[Overte script URL](https://raw.githubusercontent.com/NowLoadY/XRT-Avatar-Plugin/' + tag +
+                   '/adapters/overte/scripts/xrt-avatar.js) · ' + download('XRT-Avatar-Plugin-Overte-' + version + '.zip', 'Offline ZIP'), 'overte'),
+                  ('Resonite', download('XRT-Resonite-win-x64.exe', 'Windows') + ' · ' + download('XRT-Resonite-linux-x64', 'Linux'), 'resonite'),
+                  ('Second Life', download('XRT-SecondLife-win-x64.exe', 'Windows') + ' · ' + download('XRT-SecondLife-linux-x64', 'Linux') +
+                   ' + ' + download('XRT.lsl', 'Attachment script'), 'secondlife'),
+                  ('Big Walk', download(bigwalk, 'Mod manager ZIP'), 'bigwalk'),
+              ]
+              notes = 'Choose your game and operating system.\n\n| Game | Download | Instructions |\n|---|---|---|\n'
+              notes += '\n'.join('| ' + game + ' | ' + files + ' | ' + guide(platform) + ' |' for game, files, platform in rows)
+              notes += ('\n\nOverte: copy the script URL into Running Scripts → From URL. '
+                        'Big Walk: install BepInExPack IL2CPP in your Mod manager profile before importing the ZIP.\n\n'
+                        'Resonite requires an eligible session you host. Second Life requires an HTTPS relay. '
+                        'The standalone connectors include their runtimes; only the Resonite download contains Python.')
               checksums = '\n'.join(item['sha256'] + '  ' + item['name'] for item in manifest['artifacts'])
               notes += '\n\n<details>\n<summary>SHA-256 checksums</summary>\n\n```text\n' + checksums + '\n```\n</details>'
               gh('release', 'create', tag, '--verify-tag', '--draft',

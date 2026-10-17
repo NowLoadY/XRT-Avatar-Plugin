@@ -17,6 +17,7 @@ __pycache__/
 /dist/
 /runtime/
 /scratch/
+node_modules/
 
 # Unity projects and generated local assets
 /unity-project/

@@ -58,7 +58,12 @@ python3 tools/build_bigwalk.py
 ```
 
 The script restores BepInEx's compile references, builds the DLL and writes one
-installable ZIP to `dist/bigwalk/`. BepInEx and game assemblies are not bundled.
+installable ZIP to `dist/bigwalk/`. `manifest.json`, `icon.png`, `README.md`,
+`LICENSE` and `XRT.BigWalk.dll` are at its root for Mod manager import.
+The manifest version matches the project version and declares
+`BepInEx-BepInExPack_IL2CPP-6.0.755`. Local ZIP import does not resolve dependencies;
+the player installs that loader in the same profile first. BepInEx and game
+assemblies are not bundled, and Python is only a build tool.
 To use an existing BepInEx installation's core references instead of NuGet:
 
 ```sh

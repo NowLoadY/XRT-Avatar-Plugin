@@ -1,0 +1,7 @@
+{
+  "name": "XRT_BigWalk",
+  "version_number": "0.1.0",
+  "website_url": "https://github.com/NowLoadY/XRT-Avatar-Plugin",
+  "description": "Send XRTranslate microphone translations to Big Walk's native chat.",
+  "dependencies": ["BepInEx-BepInExPack_IL2CPP-6.0.755"]
+}

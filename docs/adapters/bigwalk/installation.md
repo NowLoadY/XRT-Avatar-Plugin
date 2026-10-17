@@ -1,44 +1,53 @@
 # Big Walk
 
-Send translations to the game's chat while you talk.
+Send completed microphone translations to native game chat. Use XRTranslate and
+Big Walk on the same Windows PC. This is a community mod bridge; multiplayer
+acceptance is still pending.
 
-## Install
+## Install and start
 
-1. Install **BepInExPack IL2CPP** for Big Walk through your mod manager and launch
-   the game once. Use the same profile when you play with XRTranslate.
-2. Open the mod manager's **Browse profile folder** action and extract the
-   **XRT-Avatar-Plugin-BigWalk** ZIP there, preserving its
-   `BepInEx/plugins/XRT.BigWalk/` folder. For a manual BepInEx
-   installation, extract it beside the game's executable.
-3. In XRTranslate, open **Game Plugins** in the sidebar, select **Big Walk**,
-   and turn on **Enable** at the top of the page.
-4. Join a game. When the page shows **Connected**, start microphone translation.
+1. Open **r2modman**, select **Big Walk**, and choose a profile. If needed, install
+   `r2modman-Setup-….exe` from its [official downloads](https://github.com/ebkr/r2modmanPlus/releases/latest).
+2. In **Online**, install **[BepInExPack IL2CPP](https://thunderstore.io/c/big-walk/p/BepInEx/BepInExPack_IL2CPP/)**.
+   You only need to do this once per profile.
+3. Download the **XRT-Avatar-Plugin-BigWalk** ZIP from the
+   [release](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases).
+   Use **Settings → Import local mod** to import the XRT ZIP without extracting it.
+4. Click **Start modded** and join a room.
+5. In XRTranslate, select **Game Plugins → Big Walk**, turn on **Enable**, and
+   start microphone translation when the page shows **Connected**.
 
-Development builds are available from the
-[Big Walk bridge workflow](https://github.com/NowLoadY/XRT-Avatar-Plugin/actions/workflows/bigwalk.yml).
-Open a successful run and download its package artifact.
+Thunderstore Mod Manager can use the same profile/import workflow. XRT is not yet
+published to Thunderstore; local ZIP imports need the loader installed separately.
+The package follows the [Thunderstore format](https://wiki.thunderstore.io/mods/creating-a-package)
+and the loader used by [BigTalk ConversationStarters](https://github.com/Gogogadgetjustice/bigwalkmods).
 
-## Chat
+No port or bridge settings are needed. The defaults send your microphone's
+translations in the target language. Choose a bilingual format or system audio
+only if you want to change what is sent.
 
-Each completed translation becomes one chat message. **Target only** keeps chat
-compact; the bilingual formats include both languages. Microphone translations
-are selected by default. Enable system audio only when you intend to relay it.
+## Update or remove
 
-Messages follow the game's normal chat rules. Long text is shortened to one
-readable message. The bridge spaces automatic messages by at least two seconds;
-XRTranslate drops stale pending text when you leave or disconnect.
+Manage XRT in the same mod-manager profile: update/import the newer package,
+disable it, or uninstall it. Turn off Big Walk in XRTranslate to stop sending.
 
-To remove the bridge, close the game and delete
-`BepInEx/plugins/XRT.BigWalk/`. Turn off **Enable** on XRTranslate's
-**Game Plugins** page.
+<details>
+<summary>Manual installation</summary>
+
+With BepInEx 6 IL2CPP already installed, close the game, create
+`BepInEx/plugins/XRT.BigWalk/` beside its executable and place `XRT.BigWalk.dll`
+from the ZIP there. Remove this folder to uninstall a manual installation.
+Do not install the same bridge both manually and through a manager.
+
+</details>
 
 ## Connection help
 
-- Launch the modded game profile and join a game before sending.
-- Check `BepInEx/LogOutput.txt` for **XRTranslate · Big Walk**. A chat-interface
-  error can mean that a game update changed the binding.
-- Keep XRTranslate and the game on the same computer. The bridge uses local TCP
-  port **38647** and accepts one XRTranslate connection.
+- **Open Big Walk with the XRT bridge:** start the modded profile, not the normal launcher.
+- **Join a game:** the bridge is running and waiting for your player.
+- A chat-interface error can mean a game update changed the binding. Check
+  `BepInEx/LogOutput.txt` for **XRTranslate · Big Walk**.
 
-This is a community mod bridge. Native multiplayer chat has not yet been
-verified in a running Big Walk session.
+Long text is shortened to one message. Automatic sends are at least two seconds
+apart; pending text is discarded when you leave or disconnect. The bridge uses
+local TCP port **38647**. [Development builds and protocol](development.md).

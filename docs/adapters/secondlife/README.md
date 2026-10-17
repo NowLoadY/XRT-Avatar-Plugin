@@ -56,7 +56,8 @@ invalidated on reset, reconnection and detach. The official
 
 `SHOW_CAPTIONS` enables hover text on the control prim. `PUBLISH_TEXT_SOURCE`
 independently enables text delivery to scripts in the attachment's linkset. Both
-default to false. Either advertises `display-v1` and legacy captions. With
+default to false. The owner can choose Show text/Hide text in the dialog while
+translation is Off; this renews the connection with the changed capabilities. Either advertises `display-v1` and legacy captions. With
 `SHOW_CAPTIONS` disabled, the controller leaves that prim's hover text untouched.
 
 The bridge preserves source line breaks and applies shared text sanitization.
@@ -113,7 +114,8 @@ before removing the receiver. See [installation](installation.md).
 ## Compatibility
 
 The source uses documented LSL JSON, HTTP, attachment and touch APIs. The relay
-requires Python 3.10 or later; the local bridge requires Node.js 22.4 or later.
+requires Python 3.10 or later. The player connector bundles only Node.js; source
+execution requires Node.js 22.4 or later.
 Source and protocol checks do not establish an in-world simulator or viewer
 compatibility result. See [installation](installation.md) for setup and
 [development](development.md#in-world-checks) for the in-world acceptance procedure.

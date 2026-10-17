@@ -1,6 +1,7 @@
 """Small, serialized client for the official ResoniteLink data-model API."""
 
 import asyncio
+import contextlib
 import itertools
 from urllib.parse import urlsplit
 
@@ -28,8 +29,20 @@ class Link:
 
         async with self.lock:
             request_id = "xrt-" + str(next(self.sequence))
-            await self.websocket.send(json.dumps({"$type": kind, "messageId": request_id, **fields}))
-            response = json.loads(await asyncio.wait_for(self.websocket.recv(), timeout=5))
+
+            async def exchange():
+                await self.websocket.send(json.dumps({"$type": kind, "messageId": request_id, **fields}))
+                return json.loads(await asyncio.wait_for(self.websocket.recv(), timeout=5))
+
+            pending = asyncio.create_task(exchange())
+            try:
+                response = await asyncio.shield(pending)
+            except asyncio.CancelledError:
+                # Drain this response before cleanup can send a restoration write.
+                # Otherwise that write could consume the cancelled read's response.
+                with contextlib.suppress(Exception):
+                    await pending
+                raise
             if response.get("sourceMessageId") != request_id:
                 raise RuntimeError("ResoniteLink response identity changed")
             if response.get("success") is not True:

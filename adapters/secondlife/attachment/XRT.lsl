@@ -1,7 +1,7 @@
-// Configure this private copy before wearing the attachment.
+// Wear a copy and touch it to pair. Keep credentials out of script source.
 string RELAY_URL = "";       // HTTPS origin, without trailing slash.
 string RELAY_CLIENT_TOKEN = "";
-key PAIRED_OWNER = NULL_KEY;  // The avatar UUID permitted to use this copy.
+key PAIRED_OWNER = NULL_KEY;
 integer SHOW_CAPTIONS = FALSE;
 integer PUBLISH_TEXT_SOURCE = FALSE; // Makes display text available to scripts in this linkset.
 integer XRT_TEXT_SOURCE = 1481790465;
@@ -48,19 +48,26 @@ integer dialogChannel;
 integer dialogListener;
 float dialogUntil;
 string dialogAction;
+string displayAction;
 
 closeControls()
 {
     if (dialogListener) llListenRemove(dialogListener);
     dialogListener = 0;
     dialogAction = "";
+    displayAction = "";
     dialogUntil = 0.0;
 }
 
 showControls()
 {
+    if (llGetOwner() != PAIRED_OWNER || llStringLength(RELAY_CLIENT_TOKEN) < 32)
+    {
+        pairDialog();
+        return;
+    }
     closeControls();
-    string label = "Disconnected";
+    string label = "Waiting for connector";
     if (ready)
     {
         if (status == "off") label = "Off";
@@ -71,6 +78,13 @@ showControls()
     }
     if (stopPending) label = "Stopping…";
     list buttons = ["Close"];
+    if (!requested && !stopPending)
+    {
+        buttons += ["Unpair"];
+        displayAction = "Show text";
+        if (SHOW_CAPTIONS) displayAction = "Hide text";
+        buttons += [displayAction];
+    }
     if (ready && status != "unavailable" && status != "stopping" && !stopPending)
     {
         dialogAction = "Start";
@@ -81,6 +95,38 @@ showControls()
     dialogListener = llListen(dialogChannel, "", llGetOwner(), "");
     dialogUntil = llGetTime() + 30.0;
     llDialog(llGetOwner(), "Translation: " + label, buttons, dialogChannel);
+}
+
+pairDialog()
+{
+    // Discard an in-flight response before pausing exchanges for the textbox.
+    newConnection(2.0);
+    closeControls();
+    dialogChannel = -1 - (integer)llFrand(1000000000.0);
+    dialogListener = llListen(dialogChannel, "", llGetOwner(), "");
+    dialogUntil = llGetTime() + 120.0;
+    dialogAction = "Pair";
+    llTextBox(llGetOwner(), "Paste the CLIENT connection info from your relay operator. Do not paste the host or XRTranslate connection info.", dialogChannel);
+    llSetTimerEvent(1.0);
+}
+
+integer acceptPairing(string message)
+{
+    if (llJsonGetValue(message, ["role"]) != "client" ||
+        llJsonValueType(message, ["url"]) != JSON_STRING ||
+        llJsonValueType(message, ["token"]) != JSON_STRING) return FALSE;
+    string url = llJsonGetValue(message, ["url"]);
+    string token = llJsonGetValue(message, ["token"]);
+    if (llSubStringIndex(url, "https://") != 0 || llStringLength(url) < 9 ||
+        llStringLength(token) < 32 || llStringLength(token) > 128 ||
+        llSubStringIndex(url, "?") != -1 || llSubStringIndex(url, "#") != -1 ||
+        llSubStringIndex(url, "@") != -1) return FALSE;
+    if (llGetSubString(url, -1, -1) == "/") url = llDeleteSubString(url, -1, -1);
+    if (llSubStringIndex(llGetSubString(url, 8, -1), "/") != -1) return FALSE;
+    RELAY_URL = url;
+    RELAY_CLIENT_TOKEN = token;
+    PAIRED_OWNER = llGetOwner();
+    return TRUE;
 }
 
 string jsonString(string value)
@@ -264,7 +310,8 @@ receiveDisplay(string frame)
 
 clearControl()
 {
-    closeControls();
+    // Retire stale Start/Stop intent; keep setup available while the relay waits.
+    if (dialogAction == "Start" || dialogAction == "Stop") closeControls();
     session = "";
     commandSequence = 0;
     resetSequence = 0;
@@ -459,13 +506,14 @@ receiveFrame(string frame)
 
 startAttachment()
 {
+    closeControls();
     newConnection(2.0);
     if (SHOW_CAPTIONS) llSetText("", ZERO_VECTOR, 0.0);
     if (llGetOwner() != PAIRED_OWNER || llStringLength(RELAY_CLIENT_TOKEN) < 32 ||
         llSubStringIndex(RELAY_URL, "https://") != 0)
     {
         llSetTimerEvent(0.0);
-        llOwnerSay("Configure the relay URL, client token and owner UUID in this script.");
+        llOwnerSay("Touch this attachment to pair XRTranslate.");
         return;
     }
     showCaption();
@@ -492,6 +540,12 @@ default
     }
     changed(integer change)
     {
+        if (change & CHANGED_OWNER)
+        {
+            RELAY_URL = "";
+            RELAY_CLIENT_TOKEN = "";
+            PAIRED_OWNER = NULL_KEY;
+        }
         if (change & (CHANGED_OWNER | CHANGED_REGION | CHANGED_TELEPORT | CHANGED_REGION_START))
             startAttachment();
     }
@@ -500,7 +554,7 @@ default
         integer index;
         for (index = 0; index < count; ++index)
         {
-            if (llDetectedKey(index) == llGetOwner() && llGetOwner() == PAIRED_OWNER)
+            if (llDetectedKey(index) == llGetOwner())
             {
                 if (llGetAttached()) showControls();
                 return;
@@ -510,9 +564,40 @@ default
     listen(integer channel, string name, key speaker, string message)
     {
         if (channel != dialogChannel || !dialogListener || speaker != llGetOwner() ||
-            speaker != PAIRED_OWNER || llGetTime() >= dialogUntil) return;
+            llGetTime() >= dialogUntil || !llGetAttached()) return;
         string action = dialogAction;
+        string display = displayAction;
         closeControls();
+        if (action == "Pair")
+        {
+            if (acceptPairing(message))
+            {
+                startAttachment();
+                showControls();
+            }
+            else
+            {
+                llOwnerSay("Pairing was not changed. Paste the client connection info from your relay operator.");
+                pairDialog();
+            }
+            return;
+        }
+        if (message == "Unpair" && !requested && !stopPending)
+        {
+            RELAY_URL = "";
+            RELAY_CLIENT_TOKEN = "";
+            PAIRED_OWNER = NULL_KEY;
+            startAttachment();
+            return;
+        }
+        if (message == display && display != "" && !requested && !stopPending)
+        {
+            SHOW_CAPTIONS = !SHOW_CAPTIONS;
+            if (!SHOW_CAPTIONS) llSetText("", ZERO_VECTOR, 0.0);
+            startAttachment();
+            return;
+        }
+        if (speaker != PAIRED_OWNER) return;
         if (!ready || !llGetAttached() || message != action || action == "") return;
         if (action == "Start" && !requested && !stopPending && status != "stopping") setEnabled(TRUE);
         else if (action == "Stop" && requested) setEnabled(FALSE);
@@ -520,6 +605,7 @@ default
     timer()
     {
         if (dialogListener && llGetTime() >= dialogUntil) closeControls();
+        if (dialogListener && dialogAction == "Pair" && llGetAttached()) return;
         if (!llGetAttached() || llGetOwner() != PAIRED_OWNER)
         {
             llSetTimerEvent(0.0);

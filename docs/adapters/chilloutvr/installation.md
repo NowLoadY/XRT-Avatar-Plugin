@@ -33,8 +33,7 @@ alone, use **Tools → XRT-Avatar-Plugin → ChilloutVR → Avatar Controls**.
 
 1. Configure your audio input and languages in XRTranslate.
 2. Open **Game Plugins** in the sidebar, select **ChilloutVR**, and turn on
-   **Enable**. Turn on **Display content**, then click **Header**,
-   **Messages** or **Footer** in the preview to choose what appears there.
+   **Enable**. The default display shows your translations.
 3. In ChilloutVR, enable **Settings → Implementation → OSC**. Wait for XRTranslate
    to show **Off**, then turn on **XRT Translation** in **Advanced Avatar Settings**.
 
@@ -49,6 +48,12 @@ The avatar uses ChilloutVR's official Lua component and a custom material. Your
 avatar's scripts and shaders must be allowed by the viewer's content settings.
 See [ChilloutVR OSC](https://docs.chilloutvr.net/chilloutvr/game/osc/) and
 [Avatar components](https://docs.chilloutvr.net/cck/avatar/avatar-component-whitelist/).
+
+## Adjust the display
+
+In XRTranslate, select **Header**, **Messages** or **Footer** in the preview to
+change content, audio sources or formatting. In Unity, use the caption material
+for colors and the Scene view for placement. These changes are optional.
 
 ## Remove or update
 

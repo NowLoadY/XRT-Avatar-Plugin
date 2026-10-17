@@ -169,6 +169,8 @@ def main() -> None:
     parser.add_argument("--listing-input", type=Path, default=ROOT / "vpm/index.json")
     parser.add_argument("--listing-output", type=Path, help="Also write the merged listing here after publishing the release")
     parser.add_argument("--require-clean", action="store_true", help="Reject any uncommitted source before release packaging")
+    parser.add_argument("--companions", type=Path, help="Directory containing the four separately built Resonite/Second Life executables")
+    parser.add_argument("--bigwalk", type=Path, help="Big Walk ZIP produced by build_bigwalk.py")
     args = parser.parse_args()
     if not SEMVER.fullmatch(args.version):
         parser.error("--version must be a SemVer without a v prefix or build metadata")
@@ -238,6 +240,28 @@ def main() -> None:
         overte[name] = read_source(name, tracked)
     overte["START-HERE.md"] = read_source("docs/adapters/overte/installation.md", tracked)
     write_zip(artifact(f"XRT-Avatar-Plugin-Overte-{args.version}.zip"), overte)
+
+    # Every non-Unity runtime is an explicit, game-specific release asset.
+    # Never collect a runtime directory or copy Python into another platform package.
+    if args.companions:
+        for platform in ("Resonite", "SecondLife"):
+            for suffix in ("win-x64.exe", "linux-x64"):
+                name = f"XRT-{platform}-{suffix}"
+                source = args.companions / name
+                if not source.is_file() or source.is_symlink():
+                    parser.error(f"Missing standalone connector: {name}")
+                destination = artifact(name)
+                destination.write_bytes(source.read_bytes())
+                if suffix == "linux-x64":
+                    destination.chmod(0o755)
+        for name in ("XRT.lsl", "XRT-TextDisplay.lsl"):
+            artifact(name).write_bytes(read_source(f"adapters/secondlife/attachment/{name}", tracked))
+    if args.bigwalk:
+        with zipfile.ZipFile(args.bigwalk) as package:
+            required = {"manifest.json", "icon.png", "README.md", "LICENSE", "XRT.BigWalk.dll"}
+            if set(package.namelist()) != required:
+                parser.error("Unexpected Big Walk package contents")
+        artifact(args.bigwalk.name).write_bytes(args.bigwalk.read_bytes())
 
     listing = json_bytes(make_listing(manifest, vpm_archive, args.listing_input))
     (metadata / "index.json").write_bytes(listing)

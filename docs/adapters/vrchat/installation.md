@@ -1,138 +1,89 @@
 # Install for VRChat
 
-Add **XRT → Translation** to your avatar's Expressions menu to start and stop
-translation in XRTranslate. Add a caption object to show text on
-a board or another surface on your PC avatar.
+Add a caption board and **XRT → Translation** to your avatar. Use VRChat and
+XRTranslate on the same PC, with an avatar project you can edit and upload.
 
-## Before you start
-
-Use VRChat and XRTranslate on the same PC, and have an avatar Unity project you
-can edit and upload. Make a backup of the project.
-
-## 1. Prepare your avatar project
-
-Open your existing project in **VRChat Creator Companion (VCC)** or
-[ALCOM](https://vrc-get.anatawa12.com/en/alcom/). If you are
-starting fresh, follow [VCC setup](https://vcc.docs.vrchat.com/guides/getting-started/),
-create an **Avatar** project and import your avatar using its creator's instructions.
-VCC helps install the Unity version required by VRChat.
-
-Your account needs **New User** rank or higher to upload. Steam or Meta accounts
-must first be linked to a VRChat account. See
-[VRChat's upload requirements](https://creators.vrchat.com/avatars/creating-your-first-avatar/#requirements).
-
-## 2. Install XRT
+## Install XRT
 
 ### VCC or ALCOM
 
-Add this repository to your package manager:
+In XRTranslate, select **Game Plugins → VRChat → Add to VCC / ALCOM**. Confirm
+adding the repository in your package manager. Enable **Show Pre-Release
+Packages**, open **Manage Project**, and add **XRT-Avatar-Plugin (VRChat)**.
+In ALCOM, click **Apply**. Open the project in Unity.
+
+<details>
+<summary>Add the repository manually, or import a Unity package</summary>
+
+In VCC, use **Settings → Packages → Add Repository**. In ALCOM, use
+**Packages → Add Repository**. Paste:
 
 ```text
 https://raw.githubusercontent.com/NowLoadY/XRT-Avatar-Plugin/main/vpm/index.json
 ```
 
-- **VCC:** Open **Settings → Packages → Add Repository**, paste the URL and
-  confirm **XRT-Avatar-Plugin**.
-- **ALCOM:** Open **Packages → Add Repository**, paste the URL and
-  confirm **XRT-Avatar-Plugin**.
+Alternatively, download the VRChat `.unitypackage` from the
+[release](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases) and import it with
+**Assets → Import Package → Custom Package**. Use one installation method per project.
 
-Enable **Show Pre-Release Packages** in the package manager's settings to see
-this preview. Open your project's **Manage Project** and click **+** beside
-**XRT-Avatar-Plugin (VRChat)**. In ALCOM, click **Apply** to finish. Open the
-project in Unity.
+</details>
 
-The package manager also installs later updates. See
-[VCC's repository guide](https://vcc.docs.vrchat.com/guides/community-repositories/)
-for its package settings.
+Starting a new avatar project? Follow [VCC setup](https://vcc.docs.vrchat.com/guides/getting-started/)
+and your avatar creator's import instructions. Uploading requires **New User**
+rank or higher and a VRChat account; see the
+[official requirements](https://creators.vrchat.com/avatars/creating-your-first-avatar/#requirements).
 
-### Or import the download
+## Add captions
 
-Download [XRT-Avatar-Plugin for VRChat](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.7/XRT-Avatar-Plugin-VRChat-0.1.0-preview.7.unitypackage).
-In your avatar project, choose **Assets → Import Package → Custom Package**,
-select the downloaded `.unitypackage` and import all its contents. Use one
-installation method for the project.
+1. Open your avatar's saved scene, with Play mode off. Open
+   **Tools → XRT-Avatar-Plugin → Caption Objects** and select your avatar.
+2. Choose **Attach to** and a style: **Horizontal**, **Portrait**, or transparent
+   **Board** text for your own sign. Click **+**. This also adds the translation menu.
+3. Move, rotate and scale the object in the Scene view, then save.
+4. Use **VRChat SDK → Show Control Panel → Builder** to upload for PC, then wear
+   the uploaded avatar. Follow the [official upload steps](https://creators.vrchat.com/avatars/creating-your-first-avatar/)
+   if this is your first upload.
 
-## 3. Add the menu
+<a id="3-add-the-menu"></a>
+Only need the translation switch? Open **Tools → XRT-Avatar-Plugin → Avatar
+Controls**, select the avatar and click **+** beside **Translation menu**, then
+save and upload. Existing controls are kept; a full root menu is placed in an
+**Avatar** submenu beside **XRT**.
 
-1. Open and save the scene containing your avatar. Leave Unity's Play mode off.
-2. Open **Tools → XRT-Avatar-Plugin → Avatar Controls**.
-3. Select your avatar in the Hierarchy. The **Avatar** field follows your selection;
-   you can also drag an avatar into it.
-4. Click **+** beside **Translation menu**. When the status shows **Added**, click
-   the save icon.
+## Start translation
 
-You can also open the window from the Avatar Descriptor component's context menu.
-Existing menu controls are kept. If the menu was full, they appear in an
-**Avatar** submenu beside **XRT**. Hover over any icon to see its action.
-For a default avatar, **+** creates its XRT menu and parameters automatically;
-**−** restores VRChat's default menu. If the avatar has custom controls but is
-missing their Parameters asset, see [Expressions setup](troubleshooting.md#expressions-setup).
+1. In XRTranslate, configure your microphone and languages, then select
+   **Game Plugins → VRChat** and turn on **Enable**.
+2. In VRChat, turn on **OSC → Enabled** in the Action Menu.
+3. When XRTranslate shows **Off**, turn on **Expressions → XRT → Translation**.
+   **Active** means translation is running; completed translations appear on the board.
 
-## 4. Add a caption object
+Turn the same switch off to stop. After an avatar change or reconnection, wait
+for **Off** and start again. Other players see the text when your PC avatar and
+its shaders are shown. [Official OSC instructions](https://docs.vrchat.com/docs/osc-overview#enabling-it).
 
-1. Open **Tools → XRT-Avatar-Plugin → Caption Objects**.
-2. Select the avatar. Set **Attach to** to a hand, chest, prop or another object
-   inside it.
-3. Choose **Horizontal**, **Portrait** or **Board**, then click **+**. Board creates
-   transparent lettering for your own sign or artwork.
-4. Position, rotate and scale the created object in the Scene view. Edit its
-   material to change text and background colors. The preview text lets you
-   inspect the font and layout.
-5. Save the scene.
+## Adjust the display
 
-To add another text object, choose its **Attach to** parent under **New object**
-and press **+** again. Use **Text object** to select an existing object, then the
-magnifier to find it in the Scene view. Objects share the same text and layout;
-each keeps its own placement, scale and material. Parent transparent Board text
-to your own sign, clothing accessory or animated prop.
+The default display shows translations. In XRTranslate, select **Header**,
+**Messages** or **Footer** in the preview to change content or formatting.
+**Display content** hides or shows the whole display; the trash icon clears messages.
+Stopping translation clears that task's messages and keeps independent header/footer content.
 
-The installer chooses a transfer size that fits the avatar's remaining parameter
-space. All sizes display up to 128 characters; smaller transfers fill the board
-more slowly.
+In Unity, edit the caption material for colors. Use **+** to add another object;
+**Text object** selects an existing one and the magnifier locates it. Objects share
+text and layout while keeping their placement and material. The installer chooses
+a transfer size that fits the avatar's parameter space; smaller transfers fill the
+same 128-character display more slowly. See [caption details](presentation.md).
 
-## 5. Upload the avatar
+## Update or remove
 
-Open **VRChat SDK → Show Control Panel**, sign in and select **Builder**. Select
-your avatar, complete its details and resolve the listed errors. Choose the PC
-platform and **Build & Publish**. See the
-[official upload steps](https://creators.vrchat.com/avatars/creating-your-first-avatar/#step-6---going-to-the-build-tab--checking-if-the-avatar-is-ok)
-for the SDK panel. Wear the uploaded avatar in VRChat.
+Update through VCC/ALCOM, or import the newer Unity package if you installed manually.
+Keep the generated XRT folders. Existing objects and placement are retained.
 
-## 6. Start translation
+In **Caption Objects**, select an object and click **−**. After removing all text
+objects, **Avatar Controls → Translation menu → −** removes the control. Save and
+upload again. Remove these contributions from each avatar before uninstalling the
+package. Unity's **Edit → Undo / Redo** reverses add/remove operations.
 
-1. Open XRTranslate and configure your audio input, languages and outputs.
-2. Open **Game Plugins** in the sidebar, select **VRChat**, and turn on
-   **Enable**. Turn on **Display content**, then click **Header**,
-   **Messages** or **Footer** in the preview to choose what appears there.
-3. In VRChat's Action Menu, turn on **OSC → Enabled** as described in the
-   [official OSC guide](https://docs.vrchat.com/docs/osc-overview#enabling-it).
-4. Wait for XRTranslate to show **Off**, then open
-   **Expressions → XRT → Translation**. Turn it on to start and off to stop.
-
-XRTranslate shows **Starting** while preparing translation, then **Active**.
-Completed translations appear progressively on the caption object. Other players
-can see them when your PC avatar and its shaders are shown.
-Turning translation off removes that task's messages; the header and footer
-keep displaying their selected content. The trash icon clears messages, and
-**Display content** turns the entire display on or off.
-After changing avatars or reconnecting, wait for **Off** and turn translation on
-again. Overlay, speech and OSC Chatbox have their own output settings.
-
-## Remove or update
-
-Select a **Text object** and press **−** in **Caption Objects** to remove its XRT
-text. Your added components, children and replacement meshes or materials are
-kept. To remove the translation menu, remove all text objects first, then select
-the avatar in **Avatar Controls** and click **−** beside
-**Translation menu**, save and upload again. Keep XRT installed until you have
-removed its menu from every avatar that uses it.
-
-Use Unity's **Edit → Undo / Redo** to reverse an add or removal. After removing
-XRT, you can continue editing the assigned menu and add XRT again.
-
-For updates, use VCC or ALCOM if it manages your installation; otherwise import
-the newer Unity package. Existing text objects and their placement are kept. Keep the
-project's generated XRT folders. The refresh icon checks the selected avatar;
-see [setup help](troubleshooting.md) for missing assets or duplicate setups.
-
+Your added children, components and replacement meshes/materials are kept.
 [Setup help](troubleshooting.md) · [Compatibility](compatibility.md)

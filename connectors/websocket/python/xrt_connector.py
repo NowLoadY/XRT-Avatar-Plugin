@@ -2,11 +2,34 @@
 
 import asyncio
 import json
+import re
 import time
 import uuid
 from urllib.parse import urlsplit
 
 from websockets.asyncio.client import connect
+
+
+def parse_pairing(text, connector):
+    """Read the host's clipboard payload without changing the wire protocol."""
+    try:
+        if not isinstance(text, str) or len(text) > 4096:
+            raise ValueError()
+        value = json.loads(text)
+        if (not isinstance(value, dict) or type(value.get("protocol")) is not int
+                or value["protocol"] != 1 or value.get("connector") != connector
+                or not isinstance(value.get("token"), str)
+                or not re.fullmatch(r"[\x21-\x7e]{32,512}", value["token"])):
+            raise ValueError()
+        address = value.get("address")
+        if not isinstance(address, str) or not re.fullmatch(
+                r"ws://(?:127\.0\.0\.1|localhost|\[::1\]):[0-9]{1,5}/xrt", address):
+            raise ValueError()
+        if not 1 <= urlsplit(address).port <= 65535:
+            raise ValueError()
+        return address, value["token"]
+    except (ValueError, TypeError, KeyError):
+        raise ValueError("Choose " + connector + " in XRTranslate and copy its connection info") from None
 
 
 class Connector:
