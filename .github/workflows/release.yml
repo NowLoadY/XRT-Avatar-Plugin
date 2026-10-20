@@ -111,8 +111,6 @@ jobs:
                         'Big Walk: install BepInExPack IL2CPP in your Mod manager profile before importing the ZIP.\n\n'
                         'Resonite requires an eligible session you host. Second Life requires an HTTPS relay. '
                         'The standalone connectors include their runtimes; only the Resonite download contains Python.')
-              checksums = '\n'.join(item['sha256'] + '  ' + item['name'] for item in manifest['artifacts'])
-              notes += '\n\n<details>\n<summary>SHA-256 checksums</summary>\n\n```text\n' + checksums + '\n```\n</details>'
               gh('release', 'create', tag, '--verify-tag', '--draft',
                  *(['--prerelease'] if '-' in tag else []),
                  '--title', 'XRT-Avatar-Plugin ' + tag, '--notes', notes)

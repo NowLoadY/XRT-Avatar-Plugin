@@ -23,7 +23,7 @@ prerequisites.
 Only install packages are attached to GitHub releases. The builder writes them
 to `dist/release/packages/`; VPM indexes, source manifests and checksum files go
 to `dist/release/metadata/` and remain available in the Actions artifact. Publish
-the VPM index at `vpm/index.json` and include checksums in the release notes.
+the VPM index at `vpm/index.json`.
 
 `release/compatibility.json` owns the target host version, development revision
 and setup guide. Host releases follow XRTranslate's own release cycle.
@@ -57,15 +57,13 @@ lifecycle and remain independently pinned by the host.
    version. Preserve published package bytes and stable package identities.
    When renaming an existing download, update its listing URL while retaining
    its checksum. Future package manifests use the product download filename.
-4. Inspect the draft's files and checksums. Describe the package contents and link
+4. Inspect the draft's downloads. Describe the package contents and link
    to the installation guides. Record archive checks and actual Unity/game testing
    in the platform compatibility documents. Publish when the downloads are ready.
 5. Merge the generated `metadata/index.json` into `vpm/index.json` on `main`, retaining
    earlier versions. Publish the listing after its download URLs are available.
    The tool's `--listing-input` and `--listing-output` options support this update.
    It rejects an existing version whose metadata or ZIP hash changed.
-   Store release provenance under `release/records/<tag>.json` when retaining it
-   in the repository; metadata files do not belong in the player download list.
 
 VCC uses this stable listing URL:
 
