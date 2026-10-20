@@ -46,10 +46,13 @@ namespace XrtAvatarPlugin.Editor
                 if (record != null)
                 {
                     ValidateRecord(record);
+                    bool updateCaptions = XrtCaptionInstaller.NeedsUpdate(avatar);
                     return new InstallationStatus
                     {
-                        Title = "Added",
-                        Detail = ControlsPresent(avatar, record)
+                        Title = updateCaptions ? "Update available" : "Added",
+                        CanInstall = updateCaptions,
+                        Detail = updateCaptions ? "Click + to add the Caption panel switch. Existing objects are kept."
+                            : ControlsPresent(avatar, record)
                             ? "XRT > Translation is ready on this avatar. " +
                                 (avatar.gameObject.scene.isDirty ? "Save the scene before uploading." :
                                     "Upload the avatar with the VRChat SDK when ready.")
@@ -88,6 +91,11 @@ namespace XrtAvatarPlugin.Editor
             if (existing != null)
             {
                 ValidateRecord(existing);
+                if (XrtCaptionInstaller.NeedsUpdate(avatar))
+                {
+                    XrtCaptionInstaller.Upgrade(avatar);
+                    return "Added XRT > Caption panel. Save the scene, then upload the avatar.";
+                }
                 return "Translation menu is already added.";
             }
 

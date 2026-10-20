@@ -15,6 +15,7 @@ namespace XrtAvatarPlugin.Editor
         internal const string Prefix = XrtCaptionProtocol.Prefix;
         internal const string Pointer = XrtCaptionProtocol.Pointer;
         internal const string BytePrefix = XrtCaptionProtocol.BytePrefix;
+        internal const string Visible = Prefix + "Visible";
         private const string CachePrefix = Prefix + "Cache";
         private const string Weight = Prefix + "Weight";
 
@@ -108,10 +109,45 @@ namespace XrtAvatarPlugin.Editor
             direct.children = children;
             show.motion = direct;
             display.defaultState = show;
-            ownedLayers = new[] { receive, display };
+            var visibility = AddVisibility(controller, new[] { rendererPath }, out AnimationClip[] visibilityClips);
+            clips.AddRange(visibilityClips);
+            ownedLayers = new[] { receive, display, visibility };
             bindingClips = clips.ToArray();
             EditorUtility.SetDirty(controller);
             AssetDatabase.SaveAssetIfDirty(controller);
+        }
+
+        internal static AnimatorStateMachine AddVisibility(AnimatorController controller, IEnumerable<string> paths,
+            out AnimationClip[] clips)
+        {
+            AddParameter(controller, Visible, AnimatorControllerParameterType.Bool);
+            var machine = Layer(controller, "XRT Caption · Visibility");
+            var shown = machine.AddState("Shown");
+            var hidden = machine.AddState("Hidden");
+            clips = new AnimationClip[2];
+            for (int i = 0; i < clips.Length; i++)
+            {
+                var clip = new AnimationClip { name = i == 0 ? "Show captions" : "Hide captions", frameRate = 60 };
+                foreach (string path in paths)
+                    AnimationUtility.SetEditorCurve(clip,
+                        EditorCurveBinding.FloatCurve(path, typeof(MeshRenderer), "m_Enabled"),
+                        AnimationCurve.Constant(0, 1f / 60, i == 0 ? 1 : 0));
+                AssetDatabase.AddObjectToAsset(clip, controller);
+                var state = i == 0 ? shown : hidden;
+                state.writeDefaultValues = false;
+                state.motion = clip;
+                clips[i] = clip;
+            }
+            machine.defaultState = hidden;
+            var hide = shown.AddTransition(hidden);
+            hide.AddCondition(AnimatorConditionMode.IfNot, 0, Visible);
+            hide.duration = 0;
+            hide.hasExitTime = false;
+            var show = hidden.AddTransition(shown);
+            show.AddCondition(AnimatorConditionMode.If, 0, Visible);
+            show.duration = 0;
+            show.hasExitTime = false;
+            return machine;
         }
 
         private static void ReceiveTransition(AnimatorStateMachine machine, AnimatorState state, int pointer)
@@ -161,7 +197,7 @@ namespace XrtAvatarPlugin.Editor
                     throw new InvalidOperationException("This FX controller already contains caption parameters.");
             controller.AddParameter(new AnimatorControllerParameter
             {
-                name = name, type = type, defaultInt = initial, defaultFloat = initial
+                name = name, type = type, defaultInt = initial, defaultFloat = initial, defaultBool = initial != 0
             });
         }
     }

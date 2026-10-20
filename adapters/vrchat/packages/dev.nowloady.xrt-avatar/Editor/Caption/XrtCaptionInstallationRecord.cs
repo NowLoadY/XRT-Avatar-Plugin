@@ -8,7 +8,7 @@ namespace XrtAvatarPlugin.Editor
 {
     public sealed class XrtCaptionInstallationRecord : ScriptableObject
     {
-        [SerializeField, HideInInspector] internal int recordVersion = 2;
+        [SerializeField, HideInInspector] internal int recordVersion = 3;
         [SerializeField, HideInInspector] internal string objectName;
         [SerializeField, HideInInspector] internal string rendererGlobalId;
         [SerializeField, HideInInspector] internal VRCExpressionParameters originalParameters;

@@ -16,19 +16,22 @@ namespace XrtAvatarPlugin.Editor
         internal int Count;
 
         internal static XrtParameterBudget Inspect(VRCAvatarDescriptor avatar,
-            VRCExpressionParameters.Parameter[] fallback)
+            VRCExpressionParameters.Parameter[] fallback, IEnumerable<string> ownedCaptionParameters = null)
         {
             var parameters = new Dictionary<string, int>(StringComparer.Ordinal);
+            var owned = new HashSet<string>(ownedCaptionParameters ?? Array.Empty<string>(), StringComparer.Ordinal);
             foreach (var parameter in fallback)
             {
                 if (parameter == null || string.IsNullOrEmpty(parameter.name)) continue;
-                RequireAvailableName(parameter.name);
+                if (!owned.Contains(parameter.name)) RequireAvailableName(parameter.name);
                 Merge(parameters, parameter.name, parameter.networkSynced
                     ? parameter.valueType == VRCExpressionParameters.ValueType.Bool ? 1 : 8 : 0);
             }
             var nativeNames = new HashSet<string>(parameters.Keys, StringComparer.Ordinal);
-            var assembly = AppDomain.CurrentDomain.GetAssemblies()
-                .FirstOrDefault(value => value.GetName().Name == "nadena.dev.ndmf");
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            var assembly = assemblies.FirstOrDefault(value => value.GetType("nadena.dev.ndmf.ParameterInfo", false) != null);
+            if (assembly == null && assemblies.Any(value => value.GetName().Name == "nadena.dev.ndmf"))
+                throw new InvalidOperationException("Could not read the avatar's parameter budget. Update NDMF, then try again.");
             if (assembly != null)
             {
                 var supplied = ReadNdmf(assembly, avatar.gameObject);
@@ -39,7 +42,7 @@ namespace XrtAvatarPlugin.Editor
                 foreach (var parameter in supplied)
                 {
                     if (string.IsNullOrEmpty(parameter.Name)) continue;
-                    RequireAvailableName(parameter.Name);
+                    if (!owned.Contains(parameter.Name)) RequireAvailableName(parameter.Name);
                     if (IsControlName(parameter.Name) && !nativeNames.Contains(parameter.Name))
                         throw new InvalidOperationException("Another avatar component already uses XRT controls. Rename or remove its XRT parameters first.");
                     if (!parameter.AnimatorOnly)

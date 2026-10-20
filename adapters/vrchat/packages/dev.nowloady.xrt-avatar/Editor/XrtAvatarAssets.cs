@@ -84,7 +84,7 @@ namespace XrtAvatarPlugin.Editor
             return root + "/" + name;
         }
 
-        private static void AddMenu(AssetCopies copies, VRCExpressionsMenu menu, HashSet<VRCExpressionsMenu> visited)
+        internal static void AddMenu(AssetCopies copies, VRCExpressionsMenu menu, HashSet<VRCExpressionsMenu> visited)
         {
             if (menu == null || !visited.Add(menu)) return;
             copies.Add(menu);

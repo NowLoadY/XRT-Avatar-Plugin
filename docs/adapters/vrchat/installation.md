@@ -37,6 +37,9 @@ For a manual install, import the VRChat `.unitypackage` from the
 4. Save, then upload for PC through **VRChat SDK → Show Control Panel → Builder**.
    Wear the uploaded avatar. [First upload](https://creators.vrchat.com/avatars/creating-your-first-avatar/).
 
+The **XRT → Caption panel** switch shows or hides all in-game caption panels.
+It starts off and remembers your choice. **Translation** separately starts or stops translation.
+
 <a id="3-add-the-menu"></a>
 For controls alone, open **Tools → XRT-Avatar-Plugin → Avatar Controls** and
 click **+** beside **Translation menu**, then save and upload. Existing controls
@@ -58,7 +61,7 @@ communication and rendering; upload is still needed to test remote players.
    choose **VRChat**, and turn on **Enable**.
 2. In VRChat's Action Menu, turn on **OSC → Enabled**.
 3. When XRTranslate shows **Ready**, turn on **Expressions → XRT → Translation**.
-   **Translating** means it is running; translations appear on the board.
+   **Translating** means it is running. Turn on **XRT → Caption panel** to show the results.
 
 Use the same switch to stop. After changing avatars or reconnecting, wait for
 **Ready** and start again. Other players see captions when your PC avatar and
@@ -79,6 +82,8 @@ fill the same 128-character display more slowly. [Caption details](presentation.
 
 Update through your original install method. Keep the generated XRT folders;
 existing objects and placement are retained.
+Existing caption setups gain the panel switch on the next upload. To update it
+before testing in Unity, click **+** beside **Avatar Controls → Translation menu**.
 
 In **Caption Objects**, select an object and click **−**. After removing all
 caption objects, use **Avatar Controls → Translation menu → −** to remove the

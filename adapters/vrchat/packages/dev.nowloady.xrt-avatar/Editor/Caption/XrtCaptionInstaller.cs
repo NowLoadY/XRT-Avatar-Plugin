@@ -55,7 +55,7 @@ namespace XrtAvatarPlugin.Editor
                 return new Status
                 {
                     Title = "Not added", CanAdd = true, ByteCount = bytes,
-                    Detail = "128 characters · " + ((bytes + 1) * 8) + " synced bits"
+                    Detail = "128 characters · " + ((bytes + 1) * 8 + 1) + " synced bits"
                 };
             }
             catch (Exception failure)
@@ -73,6 +73,8 @@ namespace XrtAvatarPlugin.Editor
                 throw new InvalidOperationException("Choose an attachment inside this avatar.");
             if (existing != null)
             {
+                Upgrade(avatar);
+                existing = FindRecord(avatar);
                 AddObject(avatar, parent, preset, existing);
                 return;
             }
@@ -90,52 +92,57 @@ namespace XrtAvatarPlugin.Editor
             try
             {
                 XrtAvatarInstaller.Install(avatar);
-                var sourceParameters = avatar.expressionParameters;
-                int bytes = AvailableBytes(avatar);
-                int columns = preset == Preset.Portrait ? XrtCaptionProtocol.PortraitColumns : XrtCaptionProtocol.HorizontalColumns;
-                folder = XrtAvatarAssets.CreateFolder("Caption-");
+                XrtAvatarAssets.Edit(avatar, "Add XRT Caption", (controls, unused) =>
+                {
+                    var sourceParameters = avatar.expressionParameters;
+                    int bytes = AvailableBytes(avatar);
+                    int columns = preset == Preset.Portrait ? XrtCaptionProtocol.PortraitColumns : XrtCaptionProtocol.HorizontalColumns;
+                    folder = XrtAvatarAssets.CreateFolder("Caption-");
 
-                var renderer = CreateObject(avatar, parent, preset, columns, folder);
-                board = renderer.gameObject;
-                string rendererPath = AnimationUtility.CalculateTransformPath(board.transform, avatar.transform);
-                var controller = CloneController(sourceController, folder + "/FX.controller");
-                XrtCaptionAnimator.Build(controller, rendererPath, bytes, columns,
-                    out AnimatorStateMachine[] ownedLayers, out AnimationClip[] bindingClips);
-                var parameters = Object.Instantiate(sourceParameters);
-                parameters.name = "XRT Caption Parameters";
-                var entries = new List<VRCExpressionParameters.Parameter>(parameters.parameters ??
-                    Array.Empty<VRCExpressionParameters.Parameter>());
-                entries.Add(Parameter(XrtCaptionProtocol.VersionParameter, XrtCaptionProtocol.Version, false));
-                entries.Add(Parameter(XrtCaptionProtocol.ColumnsParameter, columns, false));
-                entries.Add(Parameter(XrtCaptionProtocol.BytesParameter, bytes, false));
-                entries.Add(Parameter(XrtCaptionProtocol.Pointer, XrtCaptionProtocol.ClearPointer, true));
-                for (int i = 0; i < bytes; i++) entries.Add(Parameter(XrtCaptionProtocol.BytePrefix + i, 0, true));
-                parameters.parameters = entries.ToArray();
-                Save(parameters, folder + "/Parameters.asset");
+                    var renderer = CreateObject(avatar, parent, preset, columns, folder);
+                    board = renderer.gameObject;
+                    string rendererPath = AnimationUtility.CalculateTransformPath(board.transform, avatar.transform);
+                    var controller = CloneController(sourceController, folder + "/FX.controller");
+                    XrtCaptionAnimator.Build(controller, rendererPath, bytes, columns,
+                        out AnimatorStateMachine[] ownedLayers, out AnimationClip[] bindingClips);
+                    var parameters = Object.Instantiate(sourceParameters);
+                    parameters.name = "XRT Caption Parameters";
+                    var entries = new List<VRCExpressionParameters.Parameter>(parameters.parameters ??
+                        Array.Empty<VRCExpressionParameters.Parameter>());
+                    entries.Add(Parameter(XrtCaptionProtocol.VersionParameter, XrtCaptionProtocol.Version, false));
+                    entries.Add(Parameter(XrtCaptionProtocol.ColumnsParameter, columns, false));
+                    entries.Add(Parameter(XrtCaptionProtocol.BytesParameter, bytes, false));
+                    entries.Add(Parameter(XrtCaptionProtocol.Pointer, XrtCaptionProtocol.ClearPointer, true));
+                    for (int i = 0; i < bytes; i++) entries.Add(Parameter(XrtCaptionProtocol.BytePrefix + i, 0, true));
+                    entries.Add(VisibilityParameter());
+                    parameters.parameters = entries.ToArray();
+                    Save(parameters, folder + "/Parameters.asset");
 
-                var record = ScriptableObject.CreateInstance<XrtCaptionInstallationRecord>();
-                record.name = "XRT Caption Installation";
-                record.objects.Add(ObjectRecord(renderer, avatar));
-                record.originalParameters = sourceParameters;
-                var specialLayers = avatar.customizeAnimationLayers
-                    ? CloneLayers(avatar.specialAnimationLayers) : DefaultLayers(avatar.specialAnimationLayers);
-                record.installedController = controller;
-                record.installedParameters = parameters;
-                record.ownedLayers = ownedLayers;
-                record.bindingClips = bindingClips;
-                record.expressionParameters = ExpressionNames(bytes);
-                record.animatorParameters = AnimatorNames(bytes);
-                record.columns = columns;
-                record.byteCount = bytes;
-                var baseLayers = WithFx(avatar.baseAnimationLayers, controller, avatar.customizeAnimationLayers);
-                Save(record, folder + "/Installation.asset");
-                Undo.RecordObject(avatar, "Add XRT Caption");
-                avatar.expressionParameters = parameters;
-                avatar.customExpressions = true;
-                avatar.baseAnimationLayers = baseLayers;
-                avatar.specialAnimationLayers = specialLayers;
-                avatar.customizeAnimationLayers = true;
-                Changed(avatar);
+                    var record = ScriptableObject.CreateInstance<XrtCaptionInstallationRecord>();
+                    record.name = "XRT Caption Installation";
+                    record.objects.Add(ObjectRecord(renderer, avatar));
+                    record.originalParameters = sourceParameters;
+                    var specialLayers = avatar.customizeAnimationLayers
+                        ? CloneLayers(avatar.specialAnimationLayers) : DefaultLayers(avatar.specialAnimationLayers);
+                    record.installedController = controller;
+                    record.installedParameters = parameters;
+                    record.ownedLayers = ownedLayers;
+                    record.bindingClips = bindingClips;
+                    record.expressionParameters = ExpressionNames(bytes);
+                    record.animatorParameters = AnimatorNames(bytes);
+                    record.columns = columns;
+                    record.byteCount = bytes;
+                    var baseLayers = WithFx(avatar.baseAnimationLayers, controller, avatar.customizeAnimationLayers);
+                    Save(record, folder + "/Installation.asset");
+                    Undo.RecordObject(avatar, "Add XRT Caption");
+                    avatar.expressionParameters = parameters;
+                    avatar.customExpressions = true;
+                    avatar.baseAnimationLayers = baseLayers;
+                    avatar.specialAnimationLayers = specialLayers;
+                    avatar.customizeAnimationLayers = true;
+                    AddVisibilityMenu(avatar, controls?.xrtMenu);
+                    Changed(avatar);
+                });
                 Undo.CollapseUndoOperations(undo);
                 Selection.activeGameObject = board;
             }
@@ -227,6 +234,13 @@ namespace XrtAvatarPlugin.Editor
                 }
                 if (working.objects.Count == 0)
                 {
+                    if (controls?.xrtMenu != null)
+                    {
+                        Undo.RecordObject(controls.xrtMenu, action);
+                        controls.xrtMenu.controls?.RemoveAll(control => control?.parameter?.name == XrtCaptionAnimator.Visible);
+                        EditorUtility.SetDirty(controls.xrtMenu);
+                        AssetDatabase.SaveAssetIfDirty(controls.xrtMenu);
+                    }
                     XrtAvatarInstaller.RemoveParameters(avatar.expressionParameters, working.expressionParameters, action);
                     if (controls != null)
                     {
@@ -255,6 +269,84 @@ namespace XrtAvatarPlugin.Editor
         }
 
         internal static bool IsInstalled(VRCAvatarDescriptor avatar) => FindRecord(avatar) != null;
+
+        internal static bool NeedsUpdate(VRCAvatarDescriptor avatar)
+        {
+            var record = FindRecord(avatar);
+            return record != null && record.objects.Count > 0 && record.recordVersion < 3;
+        }
+
+        internal static void Upgrade(VRCAvatarDescriptor avatar)
+        {
+            if (!NeedsUpdate(avatar)) return;
+            ValidateAvatar(avatar);
+            ValidateInstalled(avatar, FindRecord(avatar));
+            XrtAvatarAssets.Edit(avatar, "Update XRT Captions", (controls, working) =>
+            {
+                EnsureVisibility(avatar, working, controls?.xrtMenu);
+                Changed(avatar);
+            });
+        }
+
+        private static void EnsureVisibility(VRCAvatarDescriptor avatar, XrtCaptionInstallationRecord record,
+            VRCExpressionsMenu menu, bool authoring = true)
+        {
+            if (record.recordVersion >= 3) return;
+            var parameters = avatar.expressionParameters;
+            var entries = parameters.parameters ?? Array.Empty<VRCExpressionParameters.Parameter>();
+            var budget = XrtParameterBudget.Inspect(avatar, entries,
+                record.expressionParameters.Concat(record.animatorParameters));
+            if (budget.Bits >= 256 || budget.Count >= 8192)
+                throw new InvalidOperationException("Free one synced bit in Expressions Parameters to add the Caption panel switch.");
+            if (entries.Any(parameter => parameter?.name == XrtCaptionAnimator.Visible))
+                throw new InvalidOperationException("A parameter named " + XrtCaptionAnimator.Visible + " already exists.");
+            if (authoring) Undo.RecordObject(parameters, "Update XRT Captions");
+            parameters.parameters = entries.Concat(new[] { VisibilityParameter() }).ToArray();
+            var visibility = XrtCaptionAnimator.AddVisibility(record.installedController,
+                record.objects.Select(item => item.path), out AnimationClip[] clips);
+            record.ownedLayers = record.ownedLayers.Concat(new[] { visibility }).ToArray();
+            record.bindingClips = record.bindingClips.Concat(clips).ToArray();
+            record.expressionParameters = record.expressionParameters.Concat(new[] { XrtCaptionAnimator.Visible }).ToArray();
+            record.animatorParameters = record.animatorParameters.Concat(new[] { XrtCaptionAnimator.Visible }).ToArray();
+            record.recordVersion = 3;
+            AddVisibilityMenu(avatar, menu, authoring);
+            EditorUtility.SetDirty(parameters);
+            AssetDatabase.SaveAssetIfDirty(parameters);
+            foreach (var clip in clips) AssetDatabase.SaveAssetIfDirty(clip);
+            EditorUtility.SetDirty(record.installedController);
+            AssetDatabase.SaveAssetIfDirty(record.installedController);
+            if (authoring) SaveRecord(record);
+        }
+
+        private static VRCExpressionParameters.Parameter VisibilityParameter() =>
+            new VRCExpressionParameters.Parameter {
+                name = XrtCaptionAnimator.Visible, valueType = VRCExpressionParameters.ValueType.Bool,
+                defaultValue = 0, saved = true, networkSynced = true
+            };
+
+        private static void AddVisibilityMenu(VRCAvatarDescriptor avatar, VRCExpressionsMenu menu, bool authoring = true)
+        {
+            if (menu == null) throw new InvalidOperationException("Restore this avatar's XRT translation menu first.");
+            bool present = menu.controls?.Any(control => control?.parameter?.name == XrtCaptionAnimator.Visible) == true;
+            if (!present && menu.controls != null && menu.controls.Count >= 8)
+                throw new InvalidOperationException("Free one slot in the XRT submenu to add the Caption panel switch.");
+            if (authoring) Undo.RecordObject(menu, "Add XRT Captions switch");
+            if (menu.controls == null) menu.controls = new List<VRCExpressionsMenu.Control>();
+            if (!present) menu.controls.Add(new VRCExpressionsMenu.Control {
+                name = "Caption panel", type = VRCExpressionsMenu.Control.ControlType.Toggle,
+                parameter = new VRCExpressionsMenu.Control.Parameter { name = XrtCaptionAnimator.Visible }, value = 1
+            });
+            menu.Parameters = avatar.expressionParameters;
+            EditorUtility.SetDirty(menu);
+            AssetDatabase.SaveAssetIfDirty(menu);
+            if (avatar.expressionsMenu != null)
+            {
+                if (authoring) Undo.RecordObject(avatar.expressionsMenu, "Add XRT Captions switch");
+                avatar.expressionsMenu.Parameters = avatar.expressionParameters;
+                EditorUtility.SetDirty(avatar.expressionsMenu);
+                AssetDatabase.SaveAssetIfDirty(avatar.expressionsMenu);
+            }
+        }
 
         // Apply all path moves together: swapping two object names must not overwrite
         // either curve before the other one has been read.
@@ -306,6 +398,7 @@ namespace XrtAvatarPlugin.Editor
         private static bool OwnsBinding(EditorCurveBinding binding)
         {
             if (binding.type != typeof(MeshRenderer)) return false;
+            if (binding.propertyName == "m_Enabled") return true;
             if (binding.propertyName == "material._Columns") return true;
             const string prefix = "material._Byte";
             return binding.propertyName.StartsWith(prefix, StringComparison.Ordinal) &&
@@ -352,10 +445,18 @@ namespace XrtAvatarPlugin.Editor
                 {
                     working.installedController = copies.Add(record.installedController);
                     working.bindingClips = record.bindingClips.Select(clip => copies.Add(clip)).ToArray();
+                    working.installedParameters = copies.Add(target.expressionParameters);
+                    var controls = XrtAvatarInstaller.FindAssignedRecord(target);
+                    var menus = new HashSet<VRCExpressionsMenu>();
+                    XrtAvatarAssets.AddMenu(copies, target.expressionsMenu, menus);
+                    XrtAvatarAssets.AddMenu(copies, controls?.xrtMenu, menus);
                     copies.Remap();
+                    // The temporary record is deliberately outside the persistent copy graph.
+                    working.ownedLayers = record.ownedLayers.Select(layer => copies.Get(layer)).ToArray();
                     UpdatePlacement(target, working, false);
                     copies.Save(folder);
                     copies.RemapScene(target.gameObject);
+                    EnsureVisibility(target, working, controls == null ? null : copies.Get(controls.xrtMenu), false);
                     copies.Commit();
                 }
                 finally { Object.DestroyImmediate(working); }
@@ -373,10 +474,10 @@ namespace XrtAvatarPlugin.Editor
                 throw new InvalidOperationException("Save the Expressions Parameters asset first.");
             var budget = XrtParameterBudget.Inspect(avatar, entries);
             foreach (int bytes in XrtCaptionProtocol.BusByteCounts)
-                if (budget.Bits + (bytes + 1) * 8 <= 256 && budget.Count + bytes + 4 <= 8192) return bytes;
-            if (budget.Count + XrtCaptionProtocol.BusByteCounts.Min() + 4 > 8192)
+                if (budget.Bits + (bytes + 1) * 8 + 1 <= 256 && budget.Count + bytes + 5 <= 8192) return bytes;
+            if (budget.Count + XrtCaptionProtocol.BusByteCounts.Min() + 5 > 8192)
                 throw new InvalidOperationException("This avatar has no room for caption parameters. Remove unused Expressions Parameters first.");
-            throw new InvalidOperationException("Caption objects need at least 24 free synced bits in Expressions Parameters.");
+            throw new InvalidOperationException("Caption objects need at least 25 free synced bits in Expressions Parameters.");
         }
 
         private static void ValidateAvatar(VRCAvatarDescriptor avatar)
@@ -456,16 +557,17 @@ namespace XrtAvatarPlugin.Editor
 
         private static bool ReceiverAssigned(VRCAvatarDescriptor avatar, XrtCaptionInstallationRecord record)
         {
-            if (record.recordVersion != 2 || record.installedController == null ||
+            if ((record.recordVersion != 2 && record.recordVersion != 3) || record.installedController == null ||
                 !avatar.customizeAnimationLayers || !avatar.customExpressions) return false;
             bool controller = (avatar.baseAnimationLayers ?? Array.Empty<VRCAvatarDescriptor.CustomAnimLayer>())
                 .Any(layer => layer.type == VRCAvatarDescriptor.AnimLayerType.FX && !layer.isDefault &&
                     layer.animatorController == record.installedController);
             var parameters = avatar.expressionParameters?.parameters ?? Array.Empty<VRCExpressionParameters.Parameter>();
-            return controller && record.ownedLayers.Length == 2 &&
+            return controller && record.ownedLayers.Length == (record.recordVersion == 3 ? 3 : 2) &&
                 record.ownedLayers.All(owned => record.installedController.layers.Any(layer => layer.stateMachine == owned)) &&
                 record.expressionParameters.All(name => parameters.Any(parameter => parameter != null &&
-                    parameter.name == name && parameter.valueType == VRCExpressionParameters.ValueType.Int)) &&
+                    parameter.name == name && parameter.valueType == (name == XrtCaptionAnimator.Visible
+                        ? VRCExpressionParameters.ValueType.Bool : VRCExpressionParameters.ValueType.Int))) &&
                 record.animatorParameters.All(name => record.installedController.parameters.Any(parameter => parameter.name == name));
         }
 
@@ -475,12 +577,13 @@ namespace XrtAvatarPlugin.Editor
                 throw new InvalidOperationException("Restore the caption FX controller and parameters before adding more text objects.");
         }
 
-        private static string[] ExpressionNames(int bytes) => new[] {
+        private static string[] ExpressionNames(int bytes, bool visibility = true) => new[] {
             XrtCaptionProtocol.VersionParameter, XrtCaptionProtocol.ColumnsParameter,
             XrtCaptionProtocol.BytesParameter, XrtCaptionProtocol.Pointer
-        }.Concat(Enumerable.Range(0, bytes).Select(index => XrtCaptionProtocol.BytePrefix + index)).ToArray();
+        }.Concat(Enumerable.Range(0, bytes).Select(index => XrtCaptionProtocol.BytePrefix + index))
+            .Concat(visibility ? new[] { XrtCaptionAnimator.Visible } : Array.Empty<string>()).ToArray();
 
-        private static string[] AnimatorNames(int bytes) => ExpressionNames(bytes)
+        private static string[] AnimatorNames(int bytes, bool visibility = true) => ExpressionNames(bytes, visibility)
             .Concat(new[] { XrtCaptionProtocol.Prefix + "Weight" })
             .Concat(Enumerable.Range(0, CaptionAssets.ByteCount).Select(index => XrtCaptionProtocol.Prefix + "Cache" + index)).ToArray();
 
@@ -500,8 +603,8 @@ namespace XrtAvatarPlugin.Editor
             record.bindingClips = record.ownedLayers.SelectMany(Clips).Distinct().Where(clip => clip != null &&
                 AssetDatabase.GetAssetPath(clip) == AssetDatabase.GetAssetPath(record.installedController) &&
                 AnimationUtility.GetCurveBindings(clip).Any(binding => binding.path == record.objectName && OwnsBinding(binding))).ToArray();
-            record.expressionParameters = ExpressionNames(record.byteCount);
-            record.animatorParameters = AnimatorNames(record.byteCount);
+            record.expressionParameters = ExpressionNames(record.byteCount, false);
+            record.animatorParameters = AnimatorNames(record.byteCount, false);
             record.recordVersion = 2;
             // Hydrate legacy ownership without saving merely because a window inspected it.
         }
