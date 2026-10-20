@@ -6,7 +6,12 @@ Shader "XRT/Avatar Caption"
         [NoScaleOffset] _Atlas ("Glyph atlas", 2D) = "black" {}
         [NoScaleOffset] _GlyphMap ("Unicode map", 2D) = "black" {}
         _Color ("Text", Color) = (0.208, 0.259, 0.302, 1)
-        _BackgroundColor ("Background", Color) = (0.965, 0.973, 0.98, 0.97)
+        _OutlineColor ("Text outline", Color) = (0.04, 0.05, 0.07, 0.85)
+        _OutlineWidth ("Outline width", Range(0, 0.25)) = 0
+        _BackgroundColor ("Background", Color) = (0, 0, 0, 0)
+        _BorderColor ("Border", Color) = (0.25, 0.34, 0.39, 1)
+        _BorderWidth ("Border width / height", Range(0, 0.08)) = 0
+        _FontSize ("Text size", Float) = 0.0186
         _Columns ("Columns", Range(8, 32)) = 32
         _CellAspect ("Cell height / width", Float) = 1.25
         _Padding ("Padding", Range(0, 0.2)) = 0.035
@@ -285,8 +290,8 @@ Shader "XRT/Avatar Caption"
             #pragma target 3.5
             #include "UnityCG.cginc"
             sampler2D _Atlas, _GlyphMap;
-            float4 _Color, _BackgroundColor;
-            float _Columns, _CellAspect, _Padding, _CornerRadius, _HideWhenEmpty;
+            float4 _Color, _OutlineColor, _BackgroundColor, _BorderColor;
+            float _Columns, _CellAspect, _Padding, _CornerRadius, _HideWhenEmpty, _BorderWidth, _FontSize, _OutlineWidth;
             #include "XrtCaptionBytes.hlsl"
             struct appdata
             {
@@ -301,6 +306,8 @@ Shader "XRT/Avatar Caption"
                 float2 uv : TEXCOORD0;
                 float3 glyph : TEXCOORD1;
                 float visible : TEXCOORD2;
+                float2 size : TEXCOORD3;
+                float2 boardUV : TEXCOORD4;
                 UNITY_VERTEX_OUTPUT_STEREO
             };
             float3 Lookup(float2 bytes)
@@ -311,6 +318,23 @@ Shader "XRT/Avatar Caption"
                 float2 address = floor(entry.rg * 255 + 0.5);
                 return float3(address.x * 256 + address.y, entry.b, 0);
             }
+            float CodeAt(int index)
+            {
+                float2 bytes = XrtReadCell(index);
+                return floor(bytes.x + 0.5) * 256 + floor(bytes.y + 0.5);
+            }
+            bool IsWord(float code)
+            {
+                return (code >= 48 && code <= 57) || (code >= 65 && code <= 90) ||
+                    (code >= 97 && code <= 122) || (code >= 192 && code <= 687);
+            }
+            float RoundedBox(float2 uv, float aspect)
+            {
+                float2 size = float2(aspect, 1);
+                float radius = min(_CornerRadius, min(aspect, 1) * 0.5);
+                float2 edge = abs(uv - 0.5) * size - (size * 0.5 - radius);
+                return length(max(edge, 0)) + min(max(edge.x, edge.y), 0) - radius;
+            }
             v2f vert(appdata input)
             {
                 v2f output;
@@ -320,6 +344,10 @@ Shader "XRT/Avatar Caption"
                 output.uv = input.uv;
                 output.visible = 1;
                 output.glyph = float3(0, 0, input.cell.x);
+                // Z is the scale reference: X/Y resize the surface, uniform XYZ scaling zooms it.
+                float reference = max(length(unity_ObjectToWorld._m02_m12_m22), 0.00001);
+                output.size = max(float2(length(unity_ObjectToWorld._m00_m10_m20),
+                    length(unity_ObjectToWorld._m01_m11_m21)) / reference, 0.00001);
                 float4 position = input.vertex;
                 [branch] if (input.cell.x < 0)
                 {
@@ -327,23 +355,52 @@ Shader "XRT/Avatar Caption"
                     float total = XrtByteTotal();
                     output.visible = lerp(1, step(0.5, total), saturate(_HideWhenEmpty));
                 }
+                else if (CodeAt((int)input.cell.x) == 0)
+                {
+                    position.xy = 0;
+                    output.visible = 0;
+                }
                 else
                 {
-                    int index = (int)input.cell.x;
-                    int columns = clamp((int)floor(_Columns + 0.5), 8, 32);
-                    int rows = (128 + columns - 1) / columns;
-                    int row = index / columns;
-                    int first = row * columns;
-                    float advance = 0;
-                    // At most 31 preceding glyphs; layout runs per vertex, not per pixel.
-                    [loop] for (int previous = first; previous < index; previous++)
-                        advance += Lookup(XrtReadCell(previous)).y;
+                    uint index = (uint)input.cell.x;
+                    uint columns = (uint)clamp(floor(_Columns + 0.5), 8, 32);
+                    float inset = (_Padding + _BorderWidth) * output.size.y;
+                    float width = max(output.size.x - 2 * inset, 0.00001);
+                    float fontSize = max(_FontSize, 0.00001);
+                    float lineHeight = fontSize * max(_CellAspect, 1);
+                    float2 pen = 0;
+                    // Source rows retain explicit breaks and header/footer separation.
+                    // Additional wrapping depends only on this object's current width.
+                    [loop] for (uint current = 0; current <= index; current++)
+                    {
+                        if (current > 0 && current % columns == 0) { pen.x = 0; pen.y += lineHeight; }
+                        float code = CodeAt(current);
+                        if (code == 0) continue;
+                        float advance = Lookup(XrtReadCell(current)).y * fontSize;
+                        if (IsWord(code) && (current % columns == 0 || !IsWord(CodeAt(current - 1))))
+                        {
+                            float wordWidth = advance;
+                            [loop] for (uint next = current + 1; next < min(128u, (current / columns + 1) * columns); next++)
+                            {
+                                if (!IsWord(CodeAt(next))) break;
+                                wordWidth += Lookup(XrtReadCell(next)).y * fontSize;
+                            }
+                            if (wordWidth <= width && pen.x > 0 && pen.x + wordWidth > width)
+                            { pen.x = 0; pen.y += lineHeight; }
+                        }
+                        if (pen.x > 0 && pen.x + advance > width)
+                        { pen.x = 0; pen.y += lineHeight; }
+                        if (current == index) break;
+                        if (code != 32 || pen.x > 0) pen.x += advance;
+                    }
                     float3 glyph = Lookup(XrtReadCell(index));
-                    float2 point = float2((advance + glyph.y * 0.5 + input.uv.x - 0.5) / columns,
-                                          1 - (row + 0.5) / rows + (input.uv.y - 0.5) / rows / max(_CellAspect, 0.1));
-                    position.xy = _Padding + point * (1 - 2 * _Padding) - 0.5;
+                    float2 glyphPosition = float2(inset + pen.x + (glyph.y * 0.5 + input.uv.x - 0.5) * fontSize,
+                        output.size.y - inset - pen.y - lineHeight * 0.5 + (input.uv.y - 0.5) * fontSize);
+                    position.xy = glyphPosition / output.size - 0.5;
+                    output.visible = step(0.5, CodeAt(index)) * step(pen.y + lineHeight, output.size.y - 2 * inset + 0.00001);
                     output.glyph.xy = float2(fmod(glyph.x, 128), floor(glyph.x / 128));
                 }
+                output.boardUV = position.xy + 0.5;
                 output.vertex = UnityObjectToClipPos(position);
                 return output;
             }
@@ -352,21 +409,28 @@ Shader "XRT/Avatar Caption"
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
                 [branch] if (input.glyph.z < 0)
                 {
-                    float radius = max(_CornerRadius, 0.0001);
-                    int columns = clamp((int)floor(_Columns + 0.5), 8, 32);
-                    int rows = (128 + columns - 1) / columns;
-                    float2 size = float2((float)columns / rows / max(_CellAspect, 0.1), 1);
-                    float2 edge = abs(input.uv - 0.5) * size - (size * 0.5 - radius);
-                    float distance = length(max(edge, 0)) + min(max(edge.x, edge.y), 0) - radius;
-                    float coverage = saturate(0.5 - distance / max(fwidth(distance), 0.0001)) * input.visible;
-                    return float4(_BackgroundColor.rgb * _BackgroundColor.a, _BackgroundColor.a) * coverage;
+                    float distance = RoundedBox(input.boardUV, input.size.x / input.size.y);
+                    float softness = max(fwidth(distance), 0.0001);
+                    float coverage = saturate(0.5 - distance / softness) * input.visible;
+                    float border = _BorderWidth > 0 ? saturate(0.5 + (distance + _BorderWidth) / softness) : 0;
+                    float4 background = float4(_BackgroundColor.rgb * _BackgroundColor.a, _BackgroundColor.a);
+                    float4 frame = float4(_BorderColor.rgb * _BorderColor.a, _BorderColor.a);
+                    return lerp(background, frame, border) * coverage;
                 }
+                float inset = _Padding + _BorderWidth;
+                float2 margin = float2(inset * input.size.y / input.size.x, inset);
+                clip(min(input.boardUV - margin, 1 - margin - input.boardUV));
+                clip(-RoundedBox(input.boardUV, input.size.x / input.size.y));
                 float2 atlasUV = (input.glyph.xy + float2(input.uv.x, 1 - input.uv.y)) / 128;
                 atlasUV.y = 1 - atlasUV.y;
                 float distance = tex2D(_Atlas, atlasUV).r;
                 float softness = max(fwidth(distance), 1.0 / 255);
                 float coverage = smoothstep(0.5 - softness * 0.5, 0.5 + softness * 0.5, distance);
-                return float4(_Color.rgb * _Color.a, _Color.a) * coverage;
+                float outline = smoothstep(0.5 - _OutlineWidth - softness * 0.5,
+                    0.5 - _OutlineWidth + softness * 0.5, distance) * step(0.0001, _OutlineWidth);
+                float4 text = float4(_Color.rgb * _Color.a, _Color.a) * coverage;
+                float4 edge = float4(_OutlineColor.rgb * _OutlineColor.a, _OutlineColor.a) * outline;
+                return (text + edge * (1 - text.a)) * input.visible;
             }
             ENDCG
         }

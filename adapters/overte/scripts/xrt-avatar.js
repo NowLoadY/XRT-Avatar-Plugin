@@ -7,7 +7,7 @@
     var source = new Bubble.CaptionSource();
     var display = new CaptionDisplay({ Entities: Entities, MyAvatar: MyAvatar, Vec3: Vec3, Quat: Quat,
         Settings: Settings, Picks: Picks, Uuid: Uuid,
-        fontUrl: "https://raw.githubusercontent.com/NowLoadY/XRT-Avatar-Plugin/v0.1.0-preview.7/adapters/overte/fonts/XrtNotoCaption.arfont" }, Bubble);
+        fontUrl: "https://raw.githubusercontent.com/NowLoadY/XRT-Avatar-Plugin/v0.1.0/adapters/overte/fonts/XrtNotoCaption.arfont" }, Bubble);
     var tablet = Tablet.getTablet("com.highfidelity.interface.tablet.system");
     var button = tablet.addButton({ text: "", sortOrder: 100 });
     var connector = null;

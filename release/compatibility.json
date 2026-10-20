@@ -2,7 +2,7 @@
   "host": {
     "name": "XRTranslate",
     "minimum_version": "0.3.4",
-    "development_revision": "cffc6caf6643bd8bc17925d691645b98568b403e",
+    "development_revision": "d85035c6536d952f1f0b798271bacf1801a8a33b",
     "documentation_url": "https://github.com/NowLoadY/XRTranslate/blob/main/docs/avatar-connectors.md"
   },
   "connector_protocol": 1

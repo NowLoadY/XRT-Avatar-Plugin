@@ -22,8 +22,9 @@ incoming status values as commands; it validates the version and enabled value
 from the currently bound local Avatar. OSC endpoints are not authentication.
 
 The menu shows **requested enablement**, not a read-only actual-state widget.
-The host displays Unavailable, Off, Starting, Active, Stopping or Error in its
-Game Plugins page. Startup acceptance alone is not Active. A future Avatar status
+The lifecycle reports Unavailable, Off, Starting, Active, Stopping or Error.
+XRTranslate shows connection and translation state on its Game Plugins page.
+Startup acceptance alone is not Active. A future Avatar status
 indicator consumes host status through an explicitly installed renderer; no such
 indicator is shipped in this baseline.
 

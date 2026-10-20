@@ -20,7 +20,8 @@ the menu-controlled translation task.
 
 Each text child uses the shared 128-glyph mesh and material. Several objects can
 mirror one bus and layout on separate editable props. Horizontal and Board use
-four rows; Portrait uses sixteen. Board starts with a transparent background.
+four source rows; Portrait uses sixteen. Horizontal and Portrait are transparent;
+Board has a background and border. X/Y resizing wraps text and clips overflow.
 The [shared presentation contract](../../presentation-architecture.md) defines
 region layout, message selection and expiry.
 

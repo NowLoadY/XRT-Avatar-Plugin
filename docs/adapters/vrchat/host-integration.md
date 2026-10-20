@@ -30,6 +30,13 @@ on 9001. Existing Chatbox output retains its configured destination and formatti
 Discovery, queries and sockets run off the UI thread. Invalid, ambiguous or stale
 endpoint identity cannot authorize startup.
 
+The editor's **Local Test** exposes Gesture Manager through the same OSCQuery
+contract on dynamic loopback HTTP/UDP ports. It advertises a `VRChat-XRT-Unity-*`
+service and a fresh identity per test; no host-side test transport is needed.
+Parameter access stays on Unity's main thread. Writes are applied before fresh
+query replies, so reset confirmation uses current simulated values. Play-mode
+exit, assembly reload and window close dispose the endpoint and temporary materials.
+
 ## Control lifecycle
 
 One controller remains alive until its operations are terminal. The host event

@@ -1,73 +1,48 @@
 <h1 align="center">XRT-Avatar-Plugin</h1>
 
 <p align="center">
-  <a href="https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/tag/v0.1.0-preview.7">Download</a> ·
+  <a href="https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/tag/v0.1.0">Download</a> ·
   <a href="#install">Install</a> ·
-  <a href="docs/README.md">Guides</a>
+  <a href="docs/README.md">Documentation</a>
 </p>
 
-Start and stop [XRTranslate](https://github.com/NowLoadY/XRTranslate) from your avatar's menu or in-game controls. Place translations on editable caption boards in VRChat and ChilloutVR, native text objects in Overte and Resonite, or floating captions on Second Life attachments. Send completed translations to Big Walk's native chat.
+Control [XRTranslate](https://github.com/NowLoadY/XRTranslate) in your game and
+show translations on your avatar. Big Walk sends translations to native chat.
 
 <p align="center">
-  <img src="docs/adapters/vrchat/images/board-placement-concept.jpg" alt="Kipfel, Mamehinata and Usasaki holding white translation boards, shown in full body" width="900" />
+  <img src="docs/adapters/vrchat/images/board-placement-concept.jpg" alt="Kipfel, Mamehinata and Usasaki holding translation boards" width="900" />
   <br />
   <sub>Board concept · <a href="https://mukumi.booth.pm/items/5813187">Kipfel</a> · <a href="https://mukumi.booth.pm/items/4340548">Mamehinata</a> · <a href="https://mukumi.booth.pm/items/3550881">Usasaki</a> by もち山金魚</sub>
 </p>
 
-## Preview
-
-*AI-generated illustrations.*
-
-**Unity · VRChat avatar setup**
-
-Open **Tools → XRT-Avatar-Plugin → Avatar Controls** in your avatar project. Select your avatar and click **+** beside **Translation menu**, then save the scene and upload through the VRChat SDK.
-
-<p align="center">
-  <img src="assets/previews/vrchat-unity-illustration.jpg" alt="AI-generated illustration of the Unity avatar installer before installation, with the plus button enabled" width="900" />
-</p>
-
-**VRChat · Translation switch**
-
-Open VRChat's Action Menu (**R** on desktop), then **Expressions → XRT → Translation**. Select **Translation** to turn it on or off.
-
-<p align="center">
-  <img src="assets/previews/vrchat-menu-illustration.jpg" alt="AI-generated illustration of the Translation toggle in VRChat's XRT radial submenu" width="900" />
-</p>
-
-**Overte · Caption objects**
-
-Create a horizontal or portrait text object, or place the text on your own board or artwork. Use Overte's Create tools to position it and adjust its appearance.
-
-<p align="center">
-  <img src="assets/previews/overte-captions-illustration.jpg" alt="AI-generated illustration of three separate Overte caption layouts: horizontal, portrait and text on a custom board" width="900" />
-</p>
-
 ## Install
 
-**Requires XRTranslate > 0.3.3.**
+**Requires XRTranslate > 0.3.3.** Choose your game:
 
-Choose your game and follow its setup guide:
+| Game | What you get | Setup |
+|---|---|---|
+| VRChat | Avatar menu and caption boards (PC) | [VCC / ALCOM](docs/adapters/vrchat/installation.md) |
+| ChilloutVR | Avatar controls and caption boards | [Unity package](docs/adapters/chilloutvr/installation.md) |
+| Overte | Tablet controls and caption objects | [Load script](docs/adapters/overte/installation.md) |
+| Resonite | Native controls and text objects | [Connect with ResoniteLink](docs/adapters/resonite/installation.md) |
+| Second Life | Attachment controls and floating captions | [Attachment and relay](docs/adapters/secondlife/installation.md) |
+| Big Walk | Native chat translations | [Install mod](docs/adapters/bigwalk/installation.md) |
 
-| Game | Features | Install | Setup |
-|---|---|---|---|
-| VRChat | Translation menu and caption boards (PC) | [VCC / ALCOM](docs/adapters/vrchat/installation.md#vcc-or-alcom) · [Unity package](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.7/XRT-Avatar-Plugin-VRChat-0.1.0-preview.7.unitypackage) | [Add captions](docs/adapters/vrchat/installation.md#add-captions) |
-| ChilloutVR | Translation menu and caption boards | [Unity package](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.7/XRT-Avatar-Plugin-ChilloutVR-0.1.0-preview.7.unitypackage) | [CCK project](docs/adapters/chilloutvr/installation.md) |
-| Overte | Tablet controls and wearable caption objects | [Load script](docs/adapters/overte/installation.md#install-and-connect) | [Running Scripts](docs/adapters/overte/installation.md) |
-| Resonite | Avatar controls and caption objects | [Standalone connector](docs/adapters/resonite/installation.md) | [ResoniteLink](docs/adapters/resonite/installation.md) |
-| Second Life | Attachment controls and floating captions | [Connector and script](docs/adapters/secondlife/installation.md) | [Attachment / relay](docs/adapters/secondlife/installation.md) |
-| Big Walk | Native chat translations | [Mod package](docs/adapters/bigwalk/installation.md#install-and-start) | [Mod setup](docs/adapters/bigwalk/installation.md) |
-
-In XRTranslate, set your audio input and languages. Open **Game Plugins** in the sidebar, choose your game, and turn on **Enable**. The defaults show translations. Header/footer content, message formats and additional audio sources are optional.
+In XRTranslate, set your languages and audio input. Open **Game Plugins**, choose
+your game, and turn on **Enable**. Follow its **Setup guide** to connect and start.
+Translations appear by default; header, footer and formatting are optional.
 
 ## Help
 
-The [game guides](docs/README.md#game-guides) cover setup, customization and removal. To report a problem, [open an issue](https://github.com/NowLoadY/XRT-Avatar-Plugin/issues) with your game, plugin version and the step that failed.
+Each setup guide covers use, updates and removal. For a problem, [open an issue](https://github.com/NowLoadY/XRT-Avatar-Plugin/issues)
+with your game, plugin version and the step that failed.
 
 ## Acknowledgments
 
-Thanks to [VRCBitmapLed](https://github.com/lolosiax/VRCBitmapLed) by 洛洛希雅Lolosia for its addressed text buffer and parameter synchronization design. Caption fonts use [Noto](https://github.com/notofonts/noto-cjk).
-
-Thanks to [BigTalk ConversationStarters](https://github.com/Gogogadgetjustice/bigwalkmods/tree/main/The%20Mods/ConversationStarters) for demonstrating Big Walk's native chat integration.
+[VRCBitmapLed](https://github.com/lolosiax/VRCBitmapLed) by 洛洛希雅Lolosia inspired
+the text buffer and parameter synchronization. Caption fonts use [Noto](https://github.com/notofonts/noto-cjk).
+[BigTalk ConversationStarters](https://github.com/Gogogadgetjustice/bigwalkmods/tree/main/The%20Mods/ConversationStarters)
+demonstrated Big Walk's native chat integration.
 
 ## License
 

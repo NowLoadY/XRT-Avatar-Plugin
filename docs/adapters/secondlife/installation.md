@@ -43,7 +43,7 @@ font and a 254-byte text budget; it does not draw letters onto a board surface.
 
 In XRTranslate, select **Header**, **Messages** or **Footer** to change content.
 Stopping translation removes its messages while independent banners remain.
-**Display content** turns the entire display off. To hide this prim's text, stop
+**Show captions** turns the entire display off. To hide this prim's text, stop
 translation and choose **Hide text** in its dialog.
 
 For another prim in the same attachment, enable `PUBLISH_TEXT_SOURCE` in the

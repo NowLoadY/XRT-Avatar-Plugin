@@ -33,21 +33,33 @@ The fixed byte-property declarations and bounded selector in
 rendering and layout remain in `XrtAvatarCaption.shader`.
 
 The shader reads `_Byte0` through `_Byte255`. Each high/low pair encodes one BMP
-Unicode character. Zero clears a slot. `_Columns` selects 8–32 slots per row;
-`_CellAspect` preserves square glyph proportions when rows have extra spacing.
+Unicode character. Zero clears a slot. `_Columns` selects the source's 8–32 slots
+per row.
 Default horizontal dimensions are 0.64 × 0.10 m with 32 columns; portrait is
 0.24 × 0.60 m with 8 columns. Both use `_CellAspect = 1.25`.
 
-The Unicode lookup texture supplies the atlas index and proportional advance.
-Layout sums at most 31 preceding glyph advances per vertex; fragments sample
-one SDF cell. Latin text therefore keeps natural spacing alongside CJK text.
-The transport fills rows and pads unused slots; the renderer does not parse
-line breaks or rich text. Normalize input to NFC before laying out characters.
+The shader uses the transform's X/Y dimensions to wrap proportional text and
+clip overflow inside the surface, showing only complete lines. Z provides the
+scale reference: resizing X/Y changes available space; uniform XYZ scaling
+enlarges everything together.
+`_FontSize` controls glyph size and `_CellAspect` controls line spacing.
+Latin words stay together when they fit; longer words and CJK wrap by character.
+Source row breaks remain intact, including header/footer boundaries. Increasing
+surface width cannot recover text already omitted by the 128-slot source layout.
+Layout scans at most 128 slots per vertex; fragments sample one SDF cell.
+The renderer does not parse rich text. Normalize input to NFC before layout.
 
-Text color, background color, padding and corner radius are material properties.
-A background alpha of zero makes a lettering surface for user-created artwork.
-An all-zero buffer hides the background by default. No runtime script, TMP
-component, per-glyph GameObject or per-glyph material is required.
+Horizontal and Portrait default to transparent lettering. Board defaults to a
+light opaque background with a rounded slate border. Transparent presets use white
+text with a dark SDF outline. Appearance exposes text size, text/outline/background/
+border colors (including alpha) and widths. Layout groups line spacing, padding,
+corner radius and hiding empty captions. Padding, border width and corner radius
+use fractions of the surface height. An all-zero buffer hides the whole
+surface by default. No runtime script, TMP component, per-glyph GameObject or
+per-glyph material is required.
+
+Text and outline share one atlas sample and draw pass. Editor previews reuse their
+render texture until the text, material, surface dimensions or preview size changes.
 
 ## Font resources
 

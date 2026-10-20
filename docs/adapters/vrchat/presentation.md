@@ -23,8 +23,10 @@ continues to own translation intent and runtime status.
 ## Display
 
 Each text object uses the shared 128-glyph mesh and material. Horizontal and Board
-use four rows; Portrait uses sixteen. The Board preset supplies transparent
-lettering for custom signs and artwork. Objects mirror one receiver and layout
+receive four source rows; Portrait receives sixteen. Horizontal and Portrait are
+transparent by default; Board has a background and border. Resize X/Y to wrap
+text and clip overflow, or scale XYZ uniformly to enlarge the whole display.
+Appearance controls edit each object's material. Objects mirror one receiver and layout
 without adding synchronized parameters; each retains its own editable mesh,
 material and transform. They can follow a prop, bone or animated parent.
 

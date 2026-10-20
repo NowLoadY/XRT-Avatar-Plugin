@@ -46,13 +46,13 @@ lifecycle and remain independently pinned by the host.
    Unity/Overte archives locally, use a clean checkout:
 
    ```sh
-   python3 tools/build_release.py --version 0.1.0-preview.7 \
+   python3 tools/build_release.py --version 0.1.0 \
      --output dist/release --require-clean
    ```
 
 3. Push the tag and run **Build release packages** with that tag. The workflow
    verifies the checkout, builds the archives and attaches them to a draft
-   prerelease. The **Build game connectors** workflow can also be run independently
+   release (marked prerelease only for a prerelease tag). The **Build game connectors** workflow can also be run independently
    to check executables before tagging. A rerun accepts identical assets; different bytes require a new
    version. Preserve published package bytes and stable package identities.
    When renaming an existing download, update its listing URL while retaining
@@ -73,9 +73,8 @@ VCC uses this stable listing URL:
 https://raw.githubusercontent.com/NowLoadY/XRT-Avatar-Plugin/main/vpm/index.json
 ```
 
-VCC hides prerelease packages by default; the installation guide explains how to
-show them. Package ZIP hashes belong in listing manifests, not inside the ZIP's
-own package manifest.
+Package ZIP hashes belong in listing manifests, not inside the ZIP's own
+package manifest.
 
 ## Packaging rules
 

@@ -15,7 +15,7 @@ avatar's animator. Attach the new controller, save the scene and add XRT again.
 
 ## Caption is blank
 
-- Enable **Display content** on XRTranslate's **Game Plugins** page. Select **Messages**
+- Enable **Show captions** on XRTranslate's **Game Plugins** page. Select **Messages**
   in the preview to check its content and audio-source settings. For menu-controlled
   translation, turn on **XRT Translation** in the game's Advanced Avatar Settings.
 - Confirm you uploaded and are wearing the avatar with the caption object.

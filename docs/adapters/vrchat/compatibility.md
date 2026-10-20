@@ -6,9 +6,31 @@ are recorded in [`release/compatibility.json`](../../../release/compatibility.js
 ## Verification status
 
 Package checks cover archive contents, GUIDs, protocol bindings and download
-hashes. Unity import and compilation, Avatar upload and game-client interaction
-remain unverified. Linux/Proton, standalone headsets and mobile clients have no
-recorded runtime acceptance.
+hashes. On 2026-10-20, Unity **2022.3.22f1**, Avatar SDK **3.10.5** and Windows
+**DX11** reproduced pink captions in **preview.7**. With the shared shader fix,
+caption insertion, preview text and scene rendering worked on an existing avatar.
+The same project verified the updated shared renderer: transparent presets,
+Board background/border colors, SDF outlines, width-based wrapping, complete-line
+clipping, empty-buffer hiding and uniform scaling. Preview.7 received local renderer/editor
+patches; the current installer's other acceptance scenarios below, avatar upload
+and game-client interaction remain unverified.
+Linux/Proton, standalone headsets and mobile clients have no recorded runtime acceptance.
+
+Local Test was checked in the same Unity/SDK project with Gesture Manager
+**3.9.9** and XRTranslate's Windows debug builds dated **2026-10-20 18:47 / 21:09**
+(backend **20:22**).
+After fixing Windows commit exhaustion with a system-managed paging file and
+reboot, both CUDA model servers started. A recorded ASR sample completed in
+0.33 s. The real expression menu reached Ready → Translating → Ready. A typed
+English sentence was translated to Chinese and reached the real Animator caption
+cache through XRTranslate's OSC sender. A custom header was also checked visually
+on the scene Board. Stop test closed the endpoint and exited Play mode; the saved
+scene stayed unchanged. The 21:09 build also returned to Not connected without an
+application error dialog after stopping the Unity test. Live microphone-to-caption
+quality was not measured.
+The preview.7 project also needed its legacy saved-scene build check skipped
+during Play-mode preprocessing. This does not establish current-installer,
+upload or multiplayer acceptance.
 
 | Component | Current status |
 |---|---|
@@ -30,7 +52,7 @@ The default-parameter API and its editor assembly reference have been checked
 against the official SDK 3.10.0 and 3.10.5 source packages. Caption Parameter
 Driver fields, default FX identity and build callbacks were checked against the
 3.10.x SDK source and assemblies. The bundled font atlas and proportional glyph
-layout have an atlas-derived CPU proof; this does not establish Unity rendering.
+layout have an atlas-derived CPU proof; Unity rendering was checked as recorded above.
 Follow the [official Unity version](https://creators.vrchat.com/sdk/upgrade/current-unity-version/)
 and [SDK releases](https://creators.vrchat.com/releases/) when updating the target.
 

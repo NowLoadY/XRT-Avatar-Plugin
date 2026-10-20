@@ -28,7 +28,7 @@ STATUSES = dict(zip(("unavailable", "off", "starting", "active", "stopping", "er
 def adapter_outputs(adapter, binding):
     root = REPOSITORY_ROOT / "adapters" / adapter
     manifest_path = root / "protocol/avatar-parameters.json"
-    manifest = json.loads(manifest_path.read_text())
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     if manifest["protocol"] != "xrt-avatar-control" or type(manifest["version"]) is not int:
         raise ValueError(f"Invalid protocol identity or version: {adapter}")
     if manifest["version"] != 1:
@@ -72,7 +72,7 @@ def adapter_outputs(adapter, binding):
 def caption_outputs(adapter, binding):
     root = REPOSITORY_ROOT / "adapters" / adapter
     source = root / "protocol/caption.json"
-    manifest = json.loads(source.read_text())
+    manifest = json.loads(source.read_text(encoding="utf-8"))
     if (manifest["protocol"] != "xrt-avatar-caption" or manifest["version"] != 1
             or manifest["slots"] != 128 or manifest["encoding"] != "unicode-bmp-big-endian"
             or manifest["pointerUnit"] != "chunk" or manifest["clearPointer"] != 255):
@@ -137,7 +137,7 @@ def outputs():
 
 def catalog_outputs():
     """The host consumes these descriptors instead of repeating platform rules."""
-    catalog = json.loads((REPOSITORY_ROOT / "connectors/catalog.json").read_text())
+    catalog = json.loads((REPOSITORY_ROOT / "connectors/catalog.json").read_text(encoding="utf-8"))
     entries = catalog["connectors"]
     ids = [entry["id"] for entry in entries]
     if (len(set(ids)) != len(ids) or catalog["default"] not in ids
@@ -168,8 +168,8 @@ def catalog_outputs():
     address = lambda name: json.dumps("/avatar/parameters/" + name)
     for entry in osc_entries:
         root = REPOSITORY_ROOT / "adapters" / entry["id"] / "protocol"
-        control = json.loads((root / "avatar-parameters.json").read_text())
-        caption = json.loads((root / "caption.json").read_text())
+        control = json.loads((root / "avatar-parameters.json").read_text(encoding="utf-8"))
+        caption = json.loads((root / "caption.json").read_text(encoding="utf-8"))
         parameters = {p["key"]: p["name"] for p in control["parameters"]}
         bus = caption["bus"]
         width = bus["integerBytes"]
@@ -212,11 +212,11 @@ def main():
     stale = []
     for path, content in outputs().items():
         if args.check:
-            if not path.exists() or path.read_text() != content:
+            if not path.exists() or path.read_text(encoding="utf-8") != content:
                 stale.append(str(path.relative_to(REPOSITORY_ROOT)))
         else:
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(content)
+            path.write_text(content, encoding="utf-8")
     if stale:
         raise SystemExit("Regenerate protocol bindings: " + ", ".join(stale))
 

@@ -2,7 +2,6 @@
 using System;
 using ABI.CCK.Components;
 using UnityEditor;
-using UnityEditor.SceneManagement;
 using UnityEngine;
 using XrtAvatarPlugin.Presentation;
 
@@ -15,6 +14,7 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
         [SerializeField] private Transform attachment;
         [SerializeField] private int preset;
         [SerializeField] private int selectedObject;
+        [SerializeField] private Vector2 scroll;
         [SerializeField] private string previewText = "The entrance is on the right.\nWe'll wait near the stairs.";
         private XrtChilloutCaptionInstaller.Status status;
         private CaptionPreview preview;
@@ -23,9 +23,11 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
         [MenuItem("Tools/XRT-Avatar-Plugin/ChilloutVR/Caption Objects")]
         internal static void Open()
         {
+            bool existing = HasOpenInstances<XrtChilloutCaptionWindow>();
             var window = GetWindow<XrtChilloutCaptionWindow>();
             window.titleContent = new GUIContent("XRT · Captions");
             window.minSize = new Vector2(360, 430);
+            if (!existing) window.position = new Rect(window.position.x, window.position.y, 480, 680);
             window.Show();
         }
 
@@ -52,10 +54,12 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
         private void OnHierarchyChange() => Refresh();
         private void OnProjectChange() => Refresh();
         private void OnFocus() => Refresh();
+        private void OnInspectorUpdate() => Repaint();
         private void OnPlayMode(PlayModeStateChange _) => Refresh();
         private void Refresh()
         {
             error = null;
+            preview?.Invalidate();
             status = XrtChilloutCaptionInstaller.Inspect(avatar);
             var selected = Selection.activeGameObject == null ? null : Selection.activeGameObject.GetComponent<MeshRenderer>();
             int index = Array.IndexOf(status.Renderers, selected);
@@ -86,29 +90,38 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
             {
                 GUILayout.Label("ChilloutVR", EditorStyles.miniLabel);
                 GUILayout.FlexibleSpace();
-                if (Icon("Refresh", "Refresh", EditorStyles.toolbarButton)) Refresh();
-                using (new EditorGUI.DisabledScope(avatar == null || !avatar.gameObject.scene.isDirty))
-                    if (Icon("SaveActive", "Save scene", EditorStyles.toolbarButton))
-                        Run(() => EditorSceneManager.SaveScene(avatar.gameObject.scene));
                 if (Icon("_Help", "Open guide", EditorStyles.toolbarButton))
                     Application.OpenURL("https://github.com/NowLoadY/XRT-Avatar-Plugin/blob/main/docs/adapters/chilloutvr/installation.md");
             }
-            GUILayout.Space(8);
-            EditorGUI.BeginChangeCheck();
-            var selected = (CVRAvatar)EditorGUILayout.ObjectField("Avatar", avatar, typeof(CVRAvatar), true);
-            if (EditorGUI.EndChangeCheck()) SelectAvatar(selected);
-            GUILayout.Label("New object", EditorStyles.miniLabel);
-            attachment = (Transform)EditorGUILayout.ObjectField("Attach to", attachment, typeof(Transform), true);
-            GUILayout.Space(8);
-            preset = CaptionAuthoring.DrawPresets(preset, status.Columns);
-            var renderer = CaptionAuthoring.DrawObjectPicker(status.Renderers, ref selectedObject);
-            GUILayout.Space(8);
-            if (preview == null) preview = new CaptionPreview();
-            preview.Draw(GUILayoutUtility.GetRect(80, 145, GUILayout.ExpandWidth(true)),
-                Presets[preset], previewText, renderer == null ? null : renderer.sharedMaterial, status.Columns);
-            GUILayout.Label("Preview text", EditorStyles.miniLabel);
-            previewText = EditorGUILayout.TextArea(previewText, GUILayout.Height(48));
-            GUILayout.Space(8);
+            using (var body = new EditorGUILayout.ScrollViewScope(scroll))
+            {
+                scroll = body.scrollPosition;
+                GUILayout.Space(8);
+                EditorGUI.BeginChangeCheck();
+                var selected = (CVRAvatar)EditorGUILayout.ObjectField("Avatar", avatar, typeof(CVRAvatar), true);
+                if (EditorGUI.EndChangeCheck()) SelectAvatar(selected);
+                GUILayout.Label("New object", EditorStyles.miniLabel);
+                attachment = (Transform)EditorGUILayout.ObjectField("Attach to", attachment, typeof(Transform), true);
+                GUILayout.Space(8);
+                preset = CaptionAuthoring.DrawPresets(preset, status.Columns);
+                var renderer = CaptionAuthoring.DrawObjectPicker(status.Renderers, ref selectedObject);
+                DrawActions(renderer);
+                GUILayout.Space(8);
+                if (preview == null) preview = new CaptionPreview();
+                preview.Draw(GUILayoutUtility.GetRect(80, 145, GUILayout.ExpandWidth(true)),
+                    Presets[preset], previewText, renderer == null ? null : renderer.sharedMaterial, status.Columns,
+                    renderer == null ? null : renderer.transform);
+                GUILayout.Label("Preview text", EditorStyles.miniLabel);
+                previewText = EditorGUILayout.TextArea(previewText, GUILayout.Height(48));
+                GUILayout.Space(8);
+                CaptionAuthoring.DrawAppearance(renderer == null ? null : renderer.sharedMaterial);
+                GUILayout.Space(8);
+                if (!string.IsNullOrEmpty(error)) EditorGUILayout.HelpBox(error, MessageType.Error);
+            }
+        }
+
+        private void DrawActions(MeshRenderer renderer)
+        {
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
                 using (new EditorGUILayout.HorizontalScope())
@@ -123,14 +136,13 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
                             Run(() => XrtChilloutCaptionInstaller.Remove(avatar, renderer));
                     using (new EditorGUI.DisabledScope(renderer == null))
                         if (Icon("ViewToolZoom", "Select caption object"))
-                        {
-                            Selection.activeGameObject = renderer.gameObject;
-                            SceneView.lastActiveSceneView?.FrameSelected();
-                        }
+                    {
+                        Selection.activeGameObject = renderer.gameObject;
+                        SceneView.lastActiveSceneView?.FrameSelected();
+                    }
                 }
                 GUILayout.Label(status.Detail, EditorStyles.wordWrappedMiniLabel);
             }
-            if (!string.IsNullOrEmpty(error)) EditorGUILayout.HelpBox(error, MessageType.Error);
         }
 
         private static bool Icon(string name, string tooltip, GUIStyle style = null)

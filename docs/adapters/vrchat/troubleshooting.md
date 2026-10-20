@@ -35,7 +35,7 @@ be removed when that receiver assignment is incomplete.
 
 ## Caption is blank
 
-Enable **Display content** on XRTranslate's **Game Plugins** page. Select **Messages**
+Enable **Show captions** on XRTranslate's **Game Plugins** page. Select **Messages**
 in the preview to check its content and audio-source settings, or choose content
 for **Header** or **Footer**. For menu-controlled translation, turn on
 **Expressions → XRT → Translation**. Wear the uploaded PC avatar and allow its
@@ -44,7 +44,7 @@ so you can check its placement and scale.
 
 Messages expire individually. Stopping translation removes that task's messages;
 the header and footer remain visible. The trash icon clears messages, while
-disabling **Display content** clears the whole surface.
+disabling **Show captions** clears the whole surface.
 
 ## Connection or upload problems
 

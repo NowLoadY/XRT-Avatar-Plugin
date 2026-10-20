@@ -1,26 +1,27 @@
 # Documentation
 
-[Downloads](../README.md#install)
+[Downloads and setup](../README.md#install)
 
 ## Game guides
 
-| Game | Install and use | Help | Development |
-|---|---|---|---|
-| VRChat | [Unity / VCC](adapters/vrchat/installation.md) | [Expressions and recovery](adapters/vrchat/troubleshooting.md) | [Adapter guide](adapters/vrchat/README.md) |
-| ChilloutVR | [CCK project](adapters/chilloutvr/installation.md) | [Animator and recovery](adapters/chilloutvr/troubleshooting.md) | [Presentation](adapters/chilloutvr/presentation.md) · [Compatibility](adapters/chilloutvr/compatibility.md) |
-| Overte | [Tablet and caption objects](adapters/overte/installation.md) | [Remove and restore](adapters/overte/installation.md#remove-and-restore) | [Adapter guide](adapters/overte/development.md) |
-| Resonite | [Connector and text objects](adapters/resonite/installation.md) | [Adjust or disconnect](adapters/resonite/installation.md#adjust-or-disconnect) | [Adapter guide](adapters/resonite/development.md) |
-| Second Life | [Attachment and HUD](adapters/secondlife/installation.md) | [Relay setup](adapters/secondlife/relay-setup.md) | [Adapter guide](adapters/secondlife/development.md) |
-| Big Walk | [Native chat bridge](adapters/bigwalk/installation.md) | [Connection](adapters/bigwalk/installation.md#connection-help) | [Adapter guide](adapters/bigwalk/development.md) |
+| Game | Install and use | Development |
+|---|---|---|
+| VRChat | [Avatar setup](adapters/vrchat/installation.md) | [Adapter](adapters/vrchat/README.md) |
+| ChilloutVR | [CCK project](adapters/chilloutvr/installation.md) | [Presentation](adapters/chilloutvr/presentation.md) · [Compatibility](adapters/chilloutvr/compatibility.md) |
+| Overte | [Tablet and captions](adapters/overte/installation.md) | [Adapter](adapters/overte/development.md) |
+| Resonite | [Connector and text](adapters/resonite/installation.md) | [Adapter](adapters/resonite/development.md) |
+| Second Life | [Attachment and relay](adapters/secondlife/installation.md) | [Adapter](adapters/secondlife/development.md) |
+| Big Walk | [Chat mod](adapters/bigwalk/installation.md) | [Adapter](adapters/bigwalk/development.md) |
+
+Setup guides include troubleshooting, updates and removal.
 
 ## Shared components
 
-- [Architecture](architecture.md): repository layout and component ownership.
-- [Host integration](host-integration.md) and [connector protocol](connector-protocol.md): sessions, controls and caption messages.
-- [Presentation](presentation-architecture.md) and [interaction](interaction.md): text sources, native objects and controls.
-- [Unity caption rendering](unity-caption-rendering.md): shared font, shader and editable surfaces.
+- [Architecture](architecture.md): layout and ownership.
+- [Host integration](host-integration.md) · [Connector protocol](connector-protocol.md)
+- [Presentation](presentation-architecture.md) · [Interaction](interaction.md)
+- [Unity caption rendering](unity-caption-rendering.md)
 
 ## Tools
 
-- [Layout preview](tools/layout-preview.md)
-- [Release packaging](releases.md)
+[Layout preview](tools/layout-preview.md) · [Release packaging](releases.md)

@@ -12,14 +12,16 @@ creator's import instructions. Finish its normal animation setup first; see
 
 ## Add captions
 
-1. Download [XRT-Avatar-Plugin for ChilloutVR](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0-preview.7/XRT-Avatar-Plugin-ChilloutVR-0.1.0-preview.7.unitypackage).
+1. Download [XRT-Avatar-Plugin for ChilloutVR](https://github.com/NowLoadY/XRT-Avatar-Plugin/releases/download/v0.1.0/XRT-Avatar-Plugin-ChilloutVR-0.1.0.unitypackage).
 2. In Unity, choose **Assets → Import Package → Custom Package** and import it.
 3. Open **Tools → XRT-Avatar-Plugin → ChilloutVR → Caption Objects**. Select your
    avatar in the Hierarchy or drag it into **Avatar**.
 4. Choose **Horizontal**, **Portrait** or **Board**. Use **Attach to** to choose a
    hand, chest or another object within the avatar, then press **＋**.
 5. Select the text with the magnifier icon. Move, rotate and resize it in the
-   Scene view. Board starts with transparent lettering for your own sign or art.
+   Scene view. Horizontal and Portrait are transparent; Board has a background and
+   border. Resize X/Y to wrap text; use **Appearance** for size, colors, outline and
+   border. **Layout** adjusts line spacing, padding and rounded corners.
    Use **＋** again to place the same text on another prop; select an object in
    the list to inspect or remove it.
 6. Save the scene and upload the avatar through the CCK **Builder** panel. Wear
@@ -35,13 +37,13 @@ alone, use **Tools → XRT-Avatar-Plugin → ChilloutVR → Avatar Controls**.
 2. Open **Game Plugins** in the sidebar, select **ChilloutVR**, and turn on
    **Enable**. The default display shows your translations.
 3. In ChilloutVR, enable **Settings → Implementation → OSC**. Wait for XRTranslate
-   to show **Off**, then turn on **XRT Translation** in **Advanced Avatar Settings**.
+   to show **Ready**, then turn on **XRT Translation** in **Advanced Avatar Settings**.
 
 Completed translations appear on your caption object. Turning **XRT Translation**
 off stops that task and removes its messages; the header and footer keep displaying
-their selected content. The trash icon clears messages, and **Display content**
+their selected content. The trash icon clears messages, and **Show captions**
 turns the entire display on or off. After changing avatars or reconnecting, wait
-for **Off** and turn translation on again. Chatbox output is configured separately
+for **Ready** and turn translation on again. Chatbox output is configured separately
 in XRTranslate's OSC plugin.
 
 The avatar uses ChilloutVR's official Lua component and a custom material. Your

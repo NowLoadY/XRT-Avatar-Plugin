@@ -11,18 +11,74 @@ namespace XrtAvatarPlugin.Presentation
     public static class CaptionAuthoring
     {
         private static readonly string[] PresetLabels = { "Horizontal", "Portrait", "Board" };
+        private static bool showLayout;
 
         public static int ConfigureMaterial(Material material, string preset, int columns = 0)
         {
             if (columns == 0) columns = string.Equals(preset, "portrait", StringComparison.OrdinalIgnoreCase) ? 8 : 32;
             material.SetFloat("_Columns", columns);
-            material.SetColor("_BackgroundColor", string.Equals(preset, "board", StringComparison.OrdinalIgnoreCase)
-                ? Color.clear : new Color(.98f, .98f, .98f, .92f));
+            bool board = string.Equals(preset, "board", StringComparison.OrdinalIgnoreCase);
+            material.SetColor("_Color", board ? new Color(.208f, .259f, .302f, 1) : Color.white);
+            material.SetColor("_OutlineColor", new Color(.04f, .05f, .07f, .85f));
+            material.SetFloat("_OutlineWidth", board ? 0 : .10f);
+            material.SetColor("_BackgroundColor", board ? new Color(.96f, .97f, .95f, 1) : Color.clear);
+            material.SetColor("_BorderColor", new Color(.25f, .34f, .39f, 1));
+            material.SetFloat("_BorderWidth", board ? .012f : 0);
+            material.SetFloat("_CornerRadius", .08f);
+            Vector3 size = Dimensions(columns);
+            float inset = (material.GetFloat("_Padding") + material.GetFloat("_BorderWidth")) * size.y;
+            material.SetFloat("_FontSize", Mathf.Min((size.x - 2 * inset) / columns,
+                (size.y - 2 * inset) / (Mathf.CeilToInt(128f / columns) * 1.25f)));
             return columns;
         }
 
         public static Vector3 Dimensions(int columns) => columns == 8
             ? new Vector3(.24f, .60f, 1) : new Vector3(.64f, .10f, 1);
+
+        public static void DrawAppearance(Material material)
+        {
+            if (material == null) return;
+            GUILayout.Label("Appearance", EditorStyles.boldLabel);
+            EditorGUI.BeginChangeCheck();
+            float size = EditorGUILayout.Slider("Text size", material.GetFloat("_FontSize"), .005f, .08f);
+            Color text = EditorGUILayout.ColorField("Text", material.GetColor("_Color"));
+            Color outline = EditorGUILayout.ColorField("Outline", material.GetColor("_OutlineColor"));
+            float outlineWidth = EditorGUILayout.Slider("Outline width (%)", material.GetFloat("_OutlineWidth") * 100, 0, 25);
+            Color background = EditorGUILayout.ColorField("Background", material.GetColor("_BackgroundColor"));
+            Color border = EditorGUILayout.ColorField("Border", material.GetColor("_BorderColor"));
+            float width = EditorGUILayout.Slider("Border width (%)", material.GetFloat("_BorderWidth") * 100, 0, 8);
+            float padding = material.GetFloat("_Padding"), radius = material.GetFloat("_CornerRadius");
+            float spacing = material.GetFloat("_CellAspect");
+            bool hideEmpty = material.GetFloat("_HideWhenEmpty") > .5f;
+            bool changed = GUI.changed;
+            showLayout = EditorGUILayout.Foldout(showLayout, "Layout", true);
+            GUI.changed = changed;
+            if (showLayout)
+            {
+                EditorGUI.indentLevel++;
+                spacing = EditorGUILayout.Slider("Line spacing", spacing, 1, 2);
+                padding = EditorGUILayout.Slider("Padding (%)", padding * 100, 0, 20) / 100;
+                radius = EditorGUILayout.Slider("Corner radius (%)", radius * 100, 0, 20) / 100;
+                hideEmpty = EditorGUILayout.Toggle("Hide when empty", hideEmpty);
+                EditorGUI.indentLevel--;
+            }
+            if (!EditorGUI.EndChangeCheck()) return;
+            Undo.RecordObject(material, "Caption appearance");
+            material.SetFloat("_FontSize", size);
+            material.SetColor("_Color", text);
+            material.SetColor("_OutlineColor", outline);
+            material.SetFloat("_OutlineWidth", outlineWidth / 100);
+            material.SetColor("_BackgroundColor", background);
+            material.SetColor("_BorderColor", border);
+            material.SetFloat("_BorderWidth", width / 100);
+            material.SetFloat("_CellAspect", spacing);
+            material.SetFloat("_Padding", padding);
+            material.SetFloat("_CornerRadius", radius);
+            material.SetFloat("_HideWhenEmpty", hideEmpty ? 1 : 0);
+            EditorUtility.SetDirty(material);
+            AssetDatabase.SaveAssetIfDirty(material);
+            SceneView.RepaintAll();
+        }
 
         public static void SetPreview(Material material, string text, int columns)
         {
@@ -175,12 +231,42 @@ namespace XrtAvatarPlugin.Presentation
         private Material material;
         private Material sourceMaterial;
         private Mesh mesh;
+        private Texture cachedTexture;
+        private string cachedPreset, cachedText;
+        private Vector2 cachedRect;
+        private Vector3 cachedSize;
+        private int cachedVersion, cachedColumns;
+        private float cachedDpi;
 
-        public void Draw(Rect rect, string preset, string text, Material installedMaterial = null, int columns = 0)
+        public void Invalidate() => cachedTexture = null;
+
+        public void Draw(Rect rect, string preset, string text, Material installedMaterial = null, int columns = 0,
+            Transform target = null)
         {
             if (Event.current.type != EventType.Repaint) return;
             try
             {
+                int resolvedColumns = columns;
+                if (installedMaterial != null)
+                    resolvedColumns = Mathf.Clamp(Mathf.RoundToInt(installedMaterial.GetFloat("_Columns")), 8, 32);
+                else if (resolvedColumns == 0)
+                    resolvedColumns = string.Equals(preset, "portrait", StringComparison.OrdinalIgnoreCase) ? 8 : 32;
+                Vector3 size = CaptionAuthoring.Dimensions(resolvedColumns);
+                if (target != null)
+                {
+                    Matrix4x4 matrix = target.localToWorldMatrix;
+                    float reference = Mathf.Max(matrix.MultiplyVector(Vector3.forward).magnitude, .00001f);
+                    size = new Vector3(matrix.MultiplyVector(Vector3.right).magnitude / reference,
+                        matrix.MultiplyVector(Vector3.up).magnitude / reference, 1);
+                }
+                int version = installedMaterial == null ? 0 : EditorUtility.GetDirtyCount(installedMaterial);
+                if (cachedTexture != null && sourceMaterial == installedMaterial && cachedVersion == version &&
+                    cachedPreset == preset && cachedText == text && cachedRect == rect.size && cachedSize == size &&
+                    cachedColumns == resolvedColumns && cachedDpi == EditorGUIUtility.pixelsPerPoint)
+                {
+                    GUI.DrawTexture(rect, cachedTexture, ScaleMode.StretchToFill, false);
+                    return;
+                }
                 if (preview == null) preview = new PreviewRenderUtility();
                 if (mesh == null) mesh = CaptionAssets.CreateMesh();
                 if (material == null || sourceMaterial != installedMaterial)
@@ -199,7 +285,6 @@ namespace XrtAvatarPlugin.Presentation
                 preview.BeginPreview(rect, GUIStyle.none);
                 var camera = preview.camera;
                 camera.orthographic = true;
-                Vector3 size = CaptionAuthoring.Dimensions(columns);
                 camera.aspect = rect.width / rect.height;
                 camera.orthographicSize = Mathf.Max(size.y * .5f, size.x * .5f / camera.aspect) * 1.15f;
                 camera.transform.position = new Vector3(0, 0, -2);
@@ -208,13 +293,22 @@ namespace XrtAvatarPlugin.Presentation
                 camera.backgroundColor = new Color(.91f, .94f, .94f);
                 preview.DrawMesh(mesh, Matrix4x4.TRS(Vector3.zero, Quaternion.identity, size), material, 0);
                 camera.Render();
-                GUI.DrawTexture(rect, preview.EndPreview(), ScaleMode.StretchToFill, false);
+                cachedTexture = preview.EndPreview();
+                cachedPreset = preset;
+                cachedText = text;
+                cachedRect = rect.size;
+                cachedSize = size;
+                cachedVersion = version;
+                cachedColumns = resolvedColumns;
+                cachedDpi = EditorGUIUtility.pixelsPerPoint;
+                GUI.DrawTexture(rect, cachedTexture, ScaleMode.StretchToFill, false);
             }
             catch (Exception failure)
             {
                 // A failed preview must not leave a render target active for the editor.
                 preview?.Cleanup();
                 preview = null;
+                cachedTexture = null;
                 GUI.Label(rect, failure.Message, EditorStyles.wordWrappedMiniLabel);
             }
         }
@@ -223,6 +317,7 @@ namespace XrtAvatarPlugin.Presentation
         {
             preview?.Cleanup();
             preview = null;
+            cachedTexture = null;
             if (material != null) UnityEngine.Object.DestroyImmediate(material);
             if (mesh != null) UnityEngine.Object.DestroyImmediate(mesh);
             material = null;
