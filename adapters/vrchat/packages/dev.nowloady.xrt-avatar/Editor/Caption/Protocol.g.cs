@@ -14,6 +14,8 @@ namespace XrtAvatarPlugin.Editor
         internal const int ClearPointer = 255;
         internal const int HorizontalColumns = 32;
         internal const int PortraitColumns = 8;
+        internal const int BeginPointer = 253;
+        internal const int CommitPointer = 254;
         internal static readonly int[] BusByteCounts = { 8, 4, 2 };
     }
 }

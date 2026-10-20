@@ -273,7 +273,7 @@ namespace XrtAvatarPlugin.Editor
         internal static bool NeedsUpdate(VRCAvatarDescriptor avatar)
         {
             var record = FindRecord(avatar);
-            return record != null && record.objects.Count > 0 && record.recordVersion < 3;
+            return record != null && record.objects.Count > 0 && record.recordVersion < 4;
         }
 
         internal static void Upgrade(VRCAvatarDescriptor avatar)
@@ -284,8 +284,20 @@ namespace XrtAvatarPlugin.Editor
             XrtAvatarAssets.Edit(avatar, "Update XRT Captions", (controls, working) =>
             {
                 EnsureVisibility(avatar, working, controls?.xrtMenu);
+                EnsureBuffering(working);
                 Changed(avatar);
             });
+        }
+
+        private static void EnsureBuffering(XrtCaptionInstallationRecord record, bool authoring = true)
+        {
+            if (record.recordVersion >= 4) return;
+            XrtCaptionAnimator.AddBuffering(record.installedController, record.ownedLayers[0], record.byteCount);
+            record.animatorParameters = record.animatorParameters.Concat(XrtCaptionAnimator.BufferParameters).ToArray();
+            record.recordVersion = 4;
+            EditorUtility.SetDirty(record.installedController);
+            AssetDatabase.SaveAssetIfDirty(record.installedController);
+            if (authoring) SaveRecord(record);
         }
 
         private static void EnsureVisibility(VRCAvatarDescriptor avatar, XrtCaptionInstallationRecord record,
@@ -457,6 +469,7 @@ namespace XrtAvatarPlugin.Editor
                     copies.Save(folder);
                     copies.RemapScene(target.gameObject);
                     EnsureVisibility(target, working, controls == null ? null : copies.Get(controls.xrtMenu), false);
+                    EnsureBuffering(working, false);
                     copies.Commit();
                 }
                 finally { Object.DestroyImmediate(working); }
@@ -557,13 +570,13 @@ namespace XrtAvatarPlugin.Editor
 
         private static bool ReceiverAssigned(VRCAvatarDescriptor avatar, XrtCaptionInstallationRecord record)
         {
-            if ((record.recordVersion != 2 && record.recordVersion != 3) || record.installedController == null ||
+            if ((record.recordVersion < 2 || record.recordVersion > 4) || record.installedController == null ||
                 !avatar.customizeAnimationLayers || !avatar.customExpressions) return false;
             bool controller = (avatar.baseAnimationLayers ?? Array.Empty<VRCAvatarDescriptor.CustomAnimLayer>())
                 .Any(layer => layer.type == VRCAvatarDescriptor.AnimLayerType.FX && !layer.isDefault &&
                     layer.animatorController == record.installedController);
             var parameters = avatar.expressionParameters?.parameters ?? Array.Empty<VRCExpressionParameters.Parameter>();
-            return controller && record.ownedLayers.Length == (record.recordVersion == 3 ? 3 : 2) &&
+            return controller && record.ownedLayers.Length == (record.recordVersion >= 3 ? 3 : 2) &&
                 record.ownedLayers.All(owned => record.installedController.layers.Any(layer => layer.stateMachine == owned)) &&
                 record.expressionParameters.All(name => parameters.Any(parameter => parameter != null &&
                     parameter.name == name && parameter.valueType == (name == XrtCaptionAnimator.Visible
@@ -583,9 +596,10 @@ namespace XrtAvatarPlugin.Editor
         }.Concat(Enumerable.Range(0, bytes).Select(index => XrtCaptionProtocol.BytePrefix + index))
             .Concat(visibility ? new[] { XrtCaptionAnimator.Visible } : Array.Empty<string>()).ToArray();
 
-        private static string[] AnimatorNames(int bytes, bool visibility = true) => ExpressionNames(bytes, visibility)
+        private static string[] AnimatorNames(int bytes, bool visibility = true, bool buffering = true) => ExpressionNames(bytes, visibility)
             .Concat(new[] { XrtCaptionProtocol.Prefix + "Weight" })
-            .Concat(Enumerable.Range(0, CaptionAssets.ByteCount).Select(index => XrtCaptionProtocol.Prefix + "Cache" + index)).ToArray();
+            .Concat(Enumerable.Range(0, CaptionAssets.ByteCount).Select(index => XrtCaptionProtocol.Prefix + "Cache" + index))
+            .Concat(buffering ? XrtCaptionAnimator.BufferParameters : Array.Empty<string>()).ToArray();
 
         private static void Migrate(XrtCaptionInstallationRecord record)
         {
@@ -604,7 +618,7 @@ namespace XrtAvatarPlugin.Editor
                 AssetDatabase.GetAssetPath(clip) == AssetDatabase.GetAssetPath(record.installedController) &&
                 AnimationUtility.GetCurveBindings(clip).Any(binding => binding.path == record.objectName && OwnsBinding(binding))).ToArray();
             record.expressionParameters = ExpressionNames(record.byteCount, false);
-            record.animatorParameters = AnimatorNames(record.byteCount, false);
+            record.animatorParameters = AnimatorNames(record.byteCount, false, false);
             record.recordVersion = 2;
             // Hydrate legacy ownership without saving merely because a window inspected it.
         }

@@ -7,6 +7,7 @@
   "emptyCodepoint": 0,
   "pointerUnit": "chunk",
   "clearPointer": 255,
+  "buffering": { "beginPointer": 253, "commitPointer": 254 },
   "capabilities": {
     "version": "XRT/Caption/Version",
     "columns": "XRT/Caption/Columns",

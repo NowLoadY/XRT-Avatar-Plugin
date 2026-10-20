@@ -31,9 +31,10 @@ For a manual install, import the VRChat `.unitypackage` from the
 1. Open **Tools → XRT-Avatar-Plugin → Caption Objects** and select your avatar.
 2. Choose **Attach to** and **Horizontal**, **Portrait** or **Board**, then click **+**.
    Horizontal and Portrait are transparent; Board has a background and border.
-3. Move and rotate in the Scene view. Resize X/Y to wrap text; overflow is clipped.
+3. Move and rotate in the Scene view. Resize X/Y to change the text area.
+   Board automatically fits and balances the text; **Max text size** limits its size.
    Use **Appearance** for text size, colors, outline and border width; **Layout**
-   adjusts line spacing, padding and rounded corners.
+   adjusts natural layout, line spacing, padding and rounded corners.
 4. Save, then upload for PC through **VRChat SDK → Show Control Panel → Builder**.
    Wear the uploaded avatar. [First upload](https://creators.vrchat.com/avatars/creating-your-first-avatar/).
 

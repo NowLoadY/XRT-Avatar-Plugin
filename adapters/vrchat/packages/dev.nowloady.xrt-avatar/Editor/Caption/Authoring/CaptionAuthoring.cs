@@ -19,6 +19,7 @@ namespace XrtAvatarPlugin.Presentation
             if (columns == 0) columns = string.Equals(preset, "portrait", StringComparison.OrdinalIgnoreCase) ? 8 : 32;
             material.SetFloat("_Columns", columns);
             bool board = string.Equals(preset, "board", StringComparison.OrdinalIgnoreCase);
+            material.SetFloat("_NaturalLayout", board ? 1 : 0);
             material.SetColor("_Color", board ? new Color(.208f, .259f, .302f, 1) : Color.white);
             material.SetColor("_OutlineColor", new Color(.04f, .05f, .07f, .85f));
             material.SetFloat("_OutlineWidth", board ? 0 : .10f);
@@ -31,6 +32,7 @@ namespace XrtAvatarPlugin.Presentation
             float inset = (material.GetFloat("_Padding") + material.GetFloat("_BorderWidth")) * size.y;
             material.SetFloat("_FontSize", Mathf.Min((size.x - 2 * inset) / layoutColumns,
                 (size.y - 2 * inset) / (Mathf.CeilToInt(128f / layoutColumns) * 1.25f)));
+            if (board) material.SetFloat("_FontSize", .08f);
             return columns;
         }
 
@@ -42,7 +44,8 @@ namespace XrtAvatarPlugin.Presentation
             if (material == null) return;
             GUILayout.Label("Appearance", EditorStyles.boldLabel);
             EditorGUI.BeginChangeCheck();
-            float size = EditorGUILayout.Slider("Text size", material.GetFloat("_FontSize"), .005f, .08f);
+            bool natural = material.GetFloat("_NaturalLayout") > .5f;
+            float size = EditorGUILayout.Slider(natural ? "Max text size" : "Text size", material.GetFloat("_FontSize"), .005f, .12f);
             Color text = EditorGUILayout.ColorField("Text", material.GetColor("_Color"));
             Color outline = EditorGUILayout.ColorField("Outline", material.GetColor("_OutlineColor"));
             float outlineWidth = EditorGUILayout.Slider("Outline width (%)", material.GetFloat("_OutlineWidth") * 100, 0, 25);
@@ -58,6 +61,7 @@ namespace XrtAvatarPlugin.Presentation
             if (showLayout)
             {
                 EditorGUI.indentLevel++;
+                natural = EditorGUILayout.Toggle("Natural layout", natural);
                 spacing = EditorGUILayout.Slider("Line spacing", spacing, 1, 2);
                 padding = EditorGUILayout.Slider("Padding (%)", padding * 100, 0, 20) / 100;
                 radius = EditorGUILayout.Slider("Corner radius (%)", radius * 100, 0, 20) / 100;
@@ -67,6 +71,7 @@ namespace XrtAvatarPlugin.Presentation
             if (!EditorGUI.EndChangeCheck()) return;
             Undo.RecordObject(material, "Caption appearance");
             material.SetFloat("_FontSize", size);
+            material.SetFloat("_NaturalLayout", natural ? 1 : 0);
             material.SetColor("_Color", text);
             material.SetColor("_OutlineColor", outline);
             material.SetFloat("_OutlineWidth", outlineWidth / 100);

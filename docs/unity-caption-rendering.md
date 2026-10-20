@@ -14,9 +14,9 @@ the caption mesh through `PreviewRenderUtility`.
 
 VRChat fills the material through its Animator buffer. ChilloutVR uses an Avatar
 Lua receiver and two packed integer words. Both consume the connector SDK's
-128-slot BMP layout and reuse the host's pacing and cancellation. A present
-header/footer occupies the first/last row. The SDK fits recent messages into the
-remaining rows and updates only changed chunks, preserving other regions. Each
+128-slot BMP layout and reuse the host's pacing and cancellation. Static headers,
+recent messages and footers share rows according to content; absent sections reserve
+no space. The SDK updates only changed chunks. Each
 avatar uses one source layout and bus; multiple text objects mirror that source
 with independent materials and transforms. Generated text can be parented to the
 user's prop or animation hierarchy. The shared removal helper keeps objects with
@@ -45,13 +45,21 @@ scale reference: resizing X/Y changes available space; uniform XYZ scaling
 enlarges everything together.
 `_FontSize` controls glyph size and `_CellAspect` controls line spacing.
 Latin words stay together when they fit; longer words and CJK wrap by character.
-Source row breaks remain intact, including header/footer boundaries. Increasing
+Nonempty source row breaks remain intact, including header/footer boundaries. Increasing
 surface width cannot recover text already omitted by the 128-slot source layout.
-Layout scans at most 128 slots per vertex; fragments sample one SDF cell.
+Layout operates on the bounded 128 slots; fragments sample one SDF cell.
 The renderer does not parse rich text. Normalize input to NFC before layout.
 
 Horizontal and Portrait default to transparent lettering. Board defaults to a
-light opaque background with a rounded slate border. Transparent presets use white
+light opaque background with a rounded slate border and `_NaturalLayout` enabled.
+Natural layout fits the received text to the padded surface, balances line lengths
+and centers the group with small, fixed row offsets. Stable text-derived variation
+adjusts glyph size by up to 6%, advance by 3.5%, each glyph's own angle by about
+4 degrees and row angle by about 1.5 degrees;
+fitting reserves room for these variations. `_FontSize` becomes an upper
+limit. A bounded reflow preserves Latin words and keeps closing punctuation with
+the preceding text. There is no time-based movement or extra draw pass.
+Transparent presets use white
 text with a dark SDF outline. Appearance exposes text size, text/outline/background/
 border colors (including alpha) and widths. Layout groups line spacing, padding,
 corner radius and hiding empty captions. Padding, border width and corner radius

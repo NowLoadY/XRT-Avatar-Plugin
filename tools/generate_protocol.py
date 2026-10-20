@@ -121,6 +121,9 @@ def caption_outputs(adapter, binding):
         result += f'        internal const int {name} = {value};\n'
     if adapter == "chilloutvr":
         result += f'        internal const int BusWordCount = {manifest["bus"]["wordCount"]};\n'
+    if "buffering" in manifest:
+        for key in ("beginPointer", "commitPointer"):
+            result += f'        internal const int {key[0].upper() + key[1:]} = {manifest["buffering"][key]};\n'
     result += "        internal static readonly int[] BusByteCounts = { " + ", ".join(map(str, bus_counts)) + " };\n    }\n}\n"
     target = Path(binding["csharp"]).parent / "Caption/Protocol.g.cs"
     return {root / target: result}
@@ -198,6 +201,8 @@ def catalog_outputs():
         result += f'        column_counts: &{json.dumps(caption["columnCounts"])},\n'
         result += f'        bytes_per_chunk: &{json.dumps(counts)},\n'
         idle = caption["delivery"].get("receiverIdleTimeoutMs")
+        buffering = caption.get("buffering")
+        result += f'        buffering: {"Some([" + str(buffering["beginPointer"]) + ", " + str(buffering["commitPointer"]) + "])" if buffering else "None"},\n'
         result += f'        receiver_idle_ms: {"Some(" + str(idle) + ")" if idle else "None"},\n    }},\n}};\n\n'
     if catalog["default"] not in [entry["id"] for entry in osc_entries]:
         raise ValueError("The default OSC peer must have an OSC contract")

@@ -12,6 +12,7 @@ Shader "XRT/Avatar Caption"
         _BorderColor ("Border", Color) = (0.25, 0.34, 0.39, 1)
         _BorderWidth ("Border width / height", Range(0, 0.08)) = 0
         _FontSize ("Text size", Float) = 0.0186
+        [Toggle] _NaturalLayout ("Natural layout", Float) = 0
         _Columns ("Columns", Range(8, 32)) = 32
         _CellAspect ("Cell height / width", Float) = 1.25
         _Padding ("Padding", Range(0, 0.2)) = 0.035
@@ -291,7 +292,7 @@ Shader "XRT/Avatar Caption"
             #include "UnityCG.cginc"
             sampler2D _Atlas, _GlyphMap;
             float4 _Color, _OutlineColor, _BackgroundColor, _BorderColor;
-            float _Columns, _CellAspect, _Padding, _CornerRadius, _HideWhenEmpty, _BorderWidth, _FontSize, _OutlineWidth;
+            float _Columns, _CellAspect, _Padding, _CornerRadius, _HideWhenEmpty, _BorderWidth, _FontSize, _OutlineWidth, _NaturalLayout;
             #include "XrtCaptionBytes.hlsl"
             struct appdata
             {
@@ -328,12 +329,115 @@ Shader "XRT/Avatar Caption"
                 return (code >= 48 && code <= 57) || (code >= 65 && code <= 90) ||
                     (code >= 97 && code <= 122) || (code >= 192 && code <= 687);
             }
+            bool IsClosing(float code)
+            {
+                return code == 33 || code == 44 || code == 46 || code == 58 || code == 59 || code == 63 ||
+                    code == 41 || code == 93 || code == 12289 || code == 12290 || code == 65281 ||
+                    code == 65292 || code == 65306 || code == 65307 || code == 65311 || code == 65289;
+            }
+            float Variation(float seed)
+            {
+                // Stable for this text, independent of time and camera position.
+                return frac(sin(seed * 12.9898 + .73) * 43758.5453) * 2 - 1;
+            }
             float RoundedBox(float2 uv, float aspect)
             {
                 float2 size = float2(aspect, 1);
                 float radius = min(_CornerRadius, min(aspect, 1) * 0.5);
                 float2 edge = abs(uv - 0.5) * size - (size * 0.5 - radius);
                 return length(max(edge, 0)) + min(max(edge.x, edge.y), 0) - radius;
+            }
+            float2 NaturalPosition(uint index, float2 uv, float2 size)
+            {
+                // All vertices use the same bounded layout; no clock or random motion is involved.
+                float codes[128], advances[128];
+                uint first = 128, last = 0;
+                float ink = 0;
+                [loop] for (uint i = 0; i < 128; i++)
+                {
+                    codes[i] = CodeAt(i);
+                    advances[i] = codes[i] == 0 ? 0 : Lookup(XrtReadCell(i)).y *
+                        (1 + Variation(codes[i] * .017 + i * 5.31) * .035);
+                    if (codes[i] != 0) { first = min(first, i); last = i; ink += advances[i]; }
+                }
+                float inset = (_Padding + _BorderWidth) * size.y;
+                float2 area = max(size - 2 * inset, 0.00001);
+                float spacing = max(_CellAspect, 1.1);
+                float candidate = min(max(_FontSize, 0.00001),
+                    sqrt(area.x * area.y / max(ink * spacing * 1.12, 1)));
+                uint columns = (uint)clamp(floor(_Columns + .5), 8, 32);
+                float word = 0, longestWord = 0;
+                [loop] for (uint letter = first; letter <= last; letter++)
+                {
+                    if (letter % columns == 0 || !IsWord(codes[letter])) word = 0;
+                    if (IsWord(codes[letter])) word += advances[letter];
+                    longestWord = max(longestWord, word);
+                }
+                candidate = min(candidate, area.x / (longestWord + .75));
+                uint row = 0, targetRow = 0;
+                float pen = 0, targetPen = 0, targetWidth = 0, widest = 0, rowSeed = 0, targetSeed = 0;
+                // Reflow after fitting so shrinking does not leave narrow, over-wrapped columns.
+                [unroll] for (uint iteration = 0; iteration < 3; iteration++)
+                {
+                    row = 0; targetRow = 0; pen = 0; widest = 0; rowSeed = codes[first];
+                    float limit = max(area.x / candidate - .75, 1);
+                    float balanced = limit;
+                    [loop] for (uint current = first; current <= last; current++)
+                    {
+                        bool newRow = current > first && current % columns == 0;
+                        float code = codes[current];
+                        float advance = advances[current];
+                        if (current == first || newRow)
+                        {
+                            float sourceWidth = 0;
+                            [loop] for (uint scan = current; scan < min(128u, (current / columns + 1) * columns); scan++)
+                                sourceWidth += advances[scan];
+                            balanced = min(limit, ceil(sourceWidth / max(ceil(sourceWidth / limit), 1)) + .15);
+                        }
+                        float wordWidth = advance;
+                        bool startWord = IsWord(code) && (current % columns == 0 || !IsWord(codes[max((int)current - 1, 0)]));
+                        if (startWord)
+                        {
+                            [loop] for (uint next = current + 1; next < min(128u, (current / columns + 1) * columns); next++)
+                            {
+                                if (!IsWord(codes[next])) break;
+                                wordWidth += advances[next];
+                            }
+                        }
+                        bool wrap = code != 0 && code != 32 && pen > 0 && !IsClosing(code) &&
+                            ((!IsWord(code) && pen + advance > balanced) ||
+                             (startWord && pen + wordWidth > balanced));
+                        if ((newRow && pen > 0) || wrap)
+                        {
+                            if (targetRow == row) targetWidth = pen;
+                            widest = max(widest, pen);
+                            row++; pen = 0; rowSeed = code;
+                        }
+                        if (current == index) { targetRow = row; targetPen = pen; targetSeed = rowSeed; }
+                        if (code != 32 || pen > 0) pen += advance;
+                    }
+                    if (targetRow == row) targetWidth = pen;
+                    widest = max(widest, pen);
+                    candidate = min(candidate, min(area.x / (widest + 1),
+                        area.y / ((row + 1) * spacing + .4 + widest * .026)));
+                }
+                float font = candidate;
+                float spare = max(0, area.x - (targetWidth + 1) * font);
+                float seed = targetSeed * .019 + targetRow * 3.7;
+                float offset = Variation(seed) * min(font * .22, spare * .18);
+                float scale = 1 + Variation(codes[index] * .031 + index * 7.13) * .06;
+                // Rotate each letter around its own center, keeping its place in the line.
+                float letterAngle = Variation(codes[index] * .043 + index * 11.79 + 29) * .07;
+                float letterSine, letterCosine; sincos(letterAngle, letterSine, letterCosine);
+                float2 corner = (uv - .5) * scale;
+                float2 local = float2(targetPen - targetWidth * .5 + advances[index] * .5, 0) +
+                    float2(letterCosine * corner.x - letterSine * corner.y,
+                        letterSine * corner.x + letterCosine * corner.y);
+                float angle = Variation(seed + 11) * .026;
+                float sine, cosine; sincos(angle, sine, cosine);
+                float2 glyphPosition = float2(cosine * local.x - sine * local.y, sine * local.x + cosine * local.y) * font;
+                glyphPosition += float2(offset, ((row * .5 - targetRow) * spacing + Variation(seed + 23) * .045) * font);
+                return size * .5 + glyphPosition;
             }
             v2f vert(appdata input)
             {
@@ -363,6 +467,15 @@ Shader "XRT/Avatar Caption"
                 else
                 {
                     uint index = (uint)input.cell.x;
+                    [branch] if (_NaturalLayout > .5)
+                    {
+                        float3 glyph = Lookup(XrtReadCell(index));
+                        position.xy = NaturalPosition(index, input.uv, output.size) / output.size - .5;
+                        output.glyph.xy = float2(fmod(glyph.x, 128), floor(glyph.x / 128));
+                        output.boardUV = position.xy + .5;
+                        output.vertex = UnityObjectToClipPos(position);
+                        return output;
+                    }
                     uint columns = (uint)clamp(floor(_Columns + 0.5), 8, 32);
                     float inset = (_Padding + _BorderWidth) * output.size.y;
                     float width = max(output.size.x - 2 * inset, 0.00001);

@@ -24,8 +24,8 @@ continues to own translation intent and runtime status.
 
 Each text object uses the shared 128-glyph mesh and material. Horizontal and Board
 receive four source rows; Portrait receives sixteen. Horizontal and Portrait are
-transparent by default; Board has a background and border. Resize X/Y to wrap
-text and clip overflow, or scale XYZ uniformly to enlarge the whole display.
+transparent by default; Board has a background, border and natural text fitting.
+Resize X/Y to change the text area, or scale XYZ uniformly to enlarge the whole display.
 Appearance controls edit each object's material. Objects mirror one receiver and layout
 without adding synchronized parameters; each retains its own editable mesh,
 material and transform. They can follow a prop, bone or animated parent.
@@ -55,6 +55,14 @@ The receiver repeats Parameter Driver Copy operations while the pointer is held.
 A second FX layer drives all material bytes from the retained values using a
 Direct Blend Tree. The display state enables Write Defaults as recommended for
 direct blending; receive states use timed clips instead of zero-length loops.
+
+The connector SDK uses the manifest's optional begin/commit commands to stage
+changed chunks in local Animator parameters, then replace the visible buffer.
+Streaming updates coalesce behind the frame in flight. Clear resets both buffers
+and returns to direct writes, preserving compatibility with older hosts. Older
+receivers ignore these commands and continue displaying chunks directly. Hosts
+must adopt the updated connector SDK to use complete-frame refresh; no additional
+synchronized expression bits are needed.
 
 The [shared numeric display contract](../../connector-protocol.md#transport-bounds)
 owns changed-chunk selection, region scheduling and cancellation.

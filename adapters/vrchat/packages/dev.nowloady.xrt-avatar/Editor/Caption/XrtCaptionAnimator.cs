@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
@@ -18,6 +19,11 @@ namespace XrtAvatarPlugin.Editor
         internal const string Visible = Prefix + "Visible";
         private const string CachePrefix = Prefix + "Cache";
         private const string Weight = Prefix + "Weight";
+        private const string Buffered = Prefix + "Buffered";
+        private const string PendingPrefix = Prefix + "Pending";
+
+        internal static IEnumerable<string> BufferParameters => new[] { Buffered }.Concat(
+            Enumerable.Range(0, CaptionAssets.ByteCount).Select(i => PendingPrefix + i));
 
         internal static void Build(AnimatorController controller, string rendererPath, int byteCount, int columns,
             out AnimatorStateMachine[] ownedLayers, out AnimationClip[] bindingClips)
@@ -54,7 +60,7 @@ namespace XrtAvatarPlugin.Editor
                     value = 0
                 });
             receive.defaultState = clear;
-            ReceiveTransition(receive, clear, XrtCaptionProtocol.ClearPointer);
+            ReceiveTransition(receive, clear, XrtCaptionProtocol.ClearPointer, false);
             for (int chunk = 0; chunk < CaptionAssets.ByteCount / byteCount; chunk++)
             {
                 var state = receive.AddState("Write " + chunk);
@@ -73,6 +79,7 @@ namespace XrtAvatarPlugin.Editor
                     });
                 ReceiveTransition(receive, state, chunk);
             }
+            AddBuffering(controller, receive, byteCount);
 
             var display = Layer(controller, "XRT Caption · Display");
             var show = display.AddState("Display");
@@ -150,7 +157,59 @@ namespace XrtAvatarPlugin.Editor
             return machine;
         }
 
-        private static void ReceiveTransition(AnimatorStateMachine machine, AnimatorState state, int pointer)
+        internal static void AddBuffering(AnimatorController controller, AnimatorStateMachine receive, int byteCount)
+        {
+            AddParameter(controller, Buffered, AnimatorControllerParameterType.Bool);
+            for (int i = 0; i < CaptionAssets.ByteCount; i++)
+                AddParameter(controller, PendingPrefix + i, AnimatorControllerParameterType.Float);
+            foreach (var transition in receive.anyStateTransitions)
+                if (transition.destinationState != receive.defaultState)
+                    transition.AddCondition(AnimatorConditionMode.IfNot, 0, Buffered);
+            foreach (var transition in receive.defaultState.transitions)
+                if (transition.destinationState == receive.defaultState)
+                    receive.defaultState.RemoveTransition(transition);
+            var reset = receive.defaultState.behaviours.OfType<VRCAvatarParameterDriver>().Single();
+            reset.parameters.Add(new VRC_AvatarParameterDriver.Parameter { name = Buffered, value = 0 });
+            for (int i = 0; i < CaptionAssets.ByteCount; i++)
+                reset.parameters.Add(new VRC_AvatarParameterDriver.Parameter { name = PendingPrefix + i, value = 0 });
+            for (int chunk = 0; chunk < CaptionAssets.ByteCount / byteCount; chunk++)
+            {
+                var state = ReceiveState(receive, "Stage " + chunk);
+                var driver = state.AddStateMachineBehaviour<VRCAvatarParameterDriver>();
+                driver.localOnly = false;
+                driver.parameters = new List<VRC_AvatarParameterDriver.Parameter>();
+                for (int offset = 0; offset < byteCount; offset++)
+                    driver.parameters.Add(Copy(BytePrefix + offset, PendingPrefix + (chunk * byteCount + offset)));
+                ReceiveTransition(receive, state, chunk).AddCondition(AnimatorConditionMode.If, 0, Buffered);
+            }
+            var begin = ReceiveState(receive, "Begin buffered captions");
+            var mode = begin.AddStateMachineBehaviour<VRCAvatarParameterDriver>();
+            mode.localOnly = false;
+            mode.parameters = new List<VRC_AvatarParameterDriver.Parameter> {
+                new VRC_AvatarParameterDriver.Parameter { name = Buffered, value = 1 }
+            };
+            ReceiveTransition(receive, begin, XrtCaptionProtocol.BeginPointer, false);
+            var commit = ReceiveState(receive, "Show complete caption");
+            var publish = commit.AddStateMachineBehaviour<VRCAvatarParameterDriver>();
+            publish.localOnly = false;
+            publish.parameters = Enumerable.Range(0, CaptionAssets.ByteCount)
+                .Select(i => Copy(PendingPrefix + i, CachePrefix + i)).ToList();
+            ReceiveTransition(receive, commit, XrtCaptionProtocol.CommitPointer, false);
+        }
+
+        private static AnimatorState ReceiveState(AnimatorStateMachine machine, string name)
+        {
+            var state = machine.AddState(name);
+            state.writeDefaultValues = false;
+            state.motion = machine.defaultState.motion;
+            return state;
+        }
+
+        private static VRC_AvatarParameterDriver.Parameter Copy(string source, string target) =>
+            new VRC_AvatarParameterDriver.Parameter { type = VRC_AvatarParameterDriver.ChangeType.Copy,
+                source = source, name = target, convertRange = false };
+
+        private static AnimatorStateTransition ReceiveTransition(AnimatorStateMachine machine, AnimatorState state, int pointer, bool repeatWhileHeld = true)
         {
             var transition = machine.AddAnyStateTransition(state);
             transition.AddCondition(AnimatorConditionMode.Equals, pointer, Pointer);
@@ -158,6 +217,7 @@ namespace XrtAvatarPlugin.Editor
             transition.hasExitTime = false;
             transition.canTransitionToSelf = false;
             transition.interruptionSource = TransitionInterruptionSource.None;
+            if (!repeatWhileHeld) return transition;
             // Read again after a real frame interval; remote data can arrive after its address.
             var repeat = state.AddTransition(state);
             repeat.AddCondition(AnimatorConditionMode.Equals, pointer, Pointer);
@@ -165,6 +225,7 @@ namespace XrtAvatarPlugin.Editor
             repeat.hasExitTime = true;
             repeat.exitTime = 1;
             repeat.canTransitionToSelf = true;
+            return transition;
         }
 
         private static AnimatorStateMachine Layer(AnimatorController controller, string name)

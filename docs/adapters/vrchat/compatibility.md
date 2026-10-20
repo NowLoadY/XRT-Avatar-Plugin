@@ -16,6 +16,13 @@ patches; the current installer's other acceptance scenarios below, avatar upload
 and game-client interaction remain unverified.
 Linux/Proton, standalone headsets and mobile clients have no recorded runtime acceptance.
 
+On 2026-10-21, the same Unity/SDK/DX11 project verified natural Board layout with
+short, bilingual and full-buffer text, including narrow and wide surfaces.
+Gesture Manager verified legacy direct writes, staged writes remaining invisible
+until commit, complete-frame replacement and clearing both buffers. This checks
+the plugin receiver and renderer, including static-only headers and footers.
+Older hosts continue using direct writes. Multiplayer delivery has not been measured.
+
 Local Test was checked in the same Unity/SDK project with Gesture Manager
 **3.9.9** and XRTranslate's Windows debug builds dated **2026-10-20 18:47 / 21:09**
 (backend **20:22**).

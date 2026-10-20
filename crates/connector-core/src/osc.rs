@@ -66,6 +66,7 @@ pub struct CaptionContract {
     pub bytes_per_chunk: &'static [usize],
     pub interval_ms: u64,
     pub receiver_idle_ms: Option<u64>,
+    pub buffering: Option<[i32; 2]>,
 }
 
 impl CaptionContract {
@@ -133,6 +134,9 @@ impl CaptionLayout {
     }
 
     fn glyphs_with_limit(self, text: &str, limit: usize) -> Vec<u16> {
+        if limit == 0 {
+            return Vec::new();
+        }
         let normalized: String = text
             .chars()
             .map(|c| {
@@ -235,7 +239,7 @@ impl CaptionLayout {
                 .to_owned()
         };
         if let Some(header) = &mut snapshot.header {
-            *header = preview_text(&cells[..self.columns]);
+            *header = preview_text(&cells[..body.start]);
         }
         if let Some(footer) = &mut snapshot.footer {
             *footer = preview_text(&cells[body.end..]);
@@ -251,17 +255,42 @@ impl CaptionLayout {
         snapshot: &DisplaySnapshot,
     ) -> (DisplaySnapshot, Vec<u16>, Range<usize>) {
         let mut snapshot = snapshot.normalized();
-        let start = if snapshot.header.is_some() {
-            self.columns
-        } else {
-            0
-        };
-        let end = self.contract.slots
-            - if snapshot.footer.is_some() {
-                self.columns
-            } else {
-                0
-            };
+        // Share rows by content, reserving one for each nonempty section first.
+        // The latest translation gets the first extra row; unused space can hold history.
+        let demand = [
+            snapshot.header.as_deref(),
+            snapshot
+                .messages
+                .last()
+                .map(|message| message.text.as_str()),
+            snapshot.footer.as_deref(),
+        ]
+        .map(|text| {
+            text.map_or(0, |text| {
+                self.glyphs_with_limit(text, self.contract.slots)
+                    .len()
+                    .div_ceil(self.columns)
+            })
+        });
+        let mut rows = demand.map(|count| usize::from(count > 0));
+        let mut remaining = self.contract.slots / self.columns - rows.iter().sum::<usize>();
+        while remaining > 0 {
+            let before = remaining;
+            for region in [1, 0, 2] {
+                if remaining > 0 && rows[region] < demand[region] {
+                    rows[region] += 1;
+                    remaining -= 1;
+                }
+            }
+            if before == remaining {
+                break;
+            }
+        }
+        if !snapshot.messages.is_empty() {
+            rows[1] += remaining;
+        }
+        let start = rows[0] * self.columns;
+        let end = start + rows[1] * self.columns;
         let capacity = end - start;
         let mut body = String::new();
         let mut first = snapshot.messages.len();
@@ -281,9 +310,13 @@ impl CaptionLayout {
         }
         let mut cells = vec![0; self.contract.slots];
         for (offset, capacity, text) in [
-            (0, self.columns, snapshot.header.as_deref().unwrap_or("")),
+            (0, start, snapshot.header.as_deref().unwrap_or("")),
             (start, capacity, body.as_str()),
-            (end, self.columns, snapshot.footer.as_deref().unwrap_or("")),
+            (
+                end,
+                rows[2] * self.columns,
+                snapshot.footer.as_deref().unwrap_or(""),
+            ),
         ] {
             if text.is_empty() {
                 continue;
@@ -312,6 +345,14 @@ pub struct CaptionFrame {
     pub values: Vec<(String, i32)>,
     chunk: Option<usize>,
     data: Vec<i32>,
+    control: Option<CaptionControl>,
+}
+
+#[derive(Clone, Copy, Debug)]
+enum CaptionControl {
+    Clear,
+    Begin,
+    Commit,
 }
 
 /// Latest desired display and locally delivered chunks. It performs no I/O.
@@ -324,6 +365,8 @@ pub struct CaptionBuffer {
     body_sent: u8,
     clear_pending: bool,
     last_pointer: Option<usize>,
+    buffering_started: bool,
+    staged: Option<Vec<Vec<i32>>>,
 }
 
 impl CaptionBuffer {
@@ -339,6 +382,8 @@ impl CaptionBuffer {
             body_sent: 0,
             clear_pending: true,
             last_pointer: None,
+            buffering_started: false,
+            staged: None,
         }
     }
 
@@ -355,12 +400,24 @@ impl CaptionBuffer {
         self.delivered.fill(None);
         self.clear_pending = true;
         self.last_pointer = None;
+        self.buffering_started = false;
+        self.staged = None;
     }
 
     pub fn is_current(&self, frame: &CaptionFrame) -> bool {
+        if let Some(control) = frame.control {
+            return match control {
+                CaptionControl::Clear => self.clear_pending,
+                CaptionControl::Begin => !self.clear_pending && !self.buffering_started,
+                CaptionControl::Commit => !self.clear_pending && self.staged.is_some(),
+            };
+        }
         match frame.chunk {
             None => self.clear_pending,
-            Some(index) => !self.clear_pending && self.desired[index] == frame.data,
+            Some(index) => {
+                !self.clear_pending
+                    && self.staged.as_ref().unwrap_or(&self.desired)[index] == frame.data
+            }
         }
     }
 
@@ -372,6 +429,18 @@ impl CaptionBuffer {
     }
 
     pub fn confirm(&mut self, frame: CaptionFrame) {
+        match frame.control {
+            Some(CaptionControl::Begin) => {
+                self.buffering_started = true;
+                return;
+            }
+            Some(CaptionControl::Commit) => {
+                self.staged = None;
+                self.last_pointer = None;
+                return;
+            }
+            _ => {}
+        }
         if let Some(index) = frame.chunk {
             self.delivered[index] = Some(frame.data);
             self.last_pointer = Some(index);
@@ -389,6 +458,8 @@ impl CaptionBuffer {
             self.last_pointer = None;
             self.cursors = [0; 2];
             self.body_sent = 0;
+            self.buffering_started = false;
+            self.staged = None;
         }
     }
 
@@ -400,7 +471,23 @@ impl CaptionBuffer {
                 values: vec![self.layout.clear_write()],
                 chunk: None,
                 data: Vec::new(),
+                control: Some(CaptionControl::Clear),
             });
+        }
+        if let Some([begin, _]) = self.layout.contract.buffering {
+            if !self.buffering_started && !self.is_empty() {
+                return Some(self.control_frame(CaptionControl::Begin, begin));
+            }
+            if self.staged.is_none()
+                && self
+                    .desired
+                    .iter()
+                    .enumerate()
+                    .any(|(i, data)| self.delivered[i].as_ref() != Some(data))
+            {
+                // Finish a coherent frame while coalescing newer streaming updates behind it.
+                self.staged = Some(self.desired.clone());
+            }
         }
         let timeout = self
             .layout
@@ -412,11 +499,12 @@ impl CaptionBuffer {
         }
         // Prefer messages, but reserve every fourth confirmed write for banners.
         // Each group rotates so a changing clock cannot starve the footer either.
+        let target = self.staged.as_ref().unwrap_or(&self.desired);
         let next_dirty = |body: bool| {
             let cursor = self.cursors[usize::from(body)];
             (cursor..self.desired.len()).chain(0..cursor).find(|index| {
                 self.body.contains(index) == body
-                    && self.delivered[*index].as_ref() != Some(&self.desired[*index])
+                    && self.delivered[*index].as_ref() != Some(&target[*index])
             })
         };
         let body = next_dirty(true);
@@ -426,16 +514,31 @@ impl CaptionBuffer {
         } else {
             banners.or(body)
         };
+        if changed.is_none() && self.staged.is_some() {
+            if let Some([_, commit]) = self.layout.contract.buffering {
+                return Some(self.control_frame(CaptionControl::Commit, commit));
+            }
+        }
         let renewal = timeout.is_some_and(|timeout| idle >= timeout / 2) && !self.is_empty();
         let index = changed.or_else(|| {
             renewal.then(|| (self.last_pointer.unwrap_or(0) + 1) % self.desired.len())
         })?;
-        let data = self.desired[index].clone();
+        let data = target[index].clone();
         Some(CaptionFrame {
             values: self.layout.write_chunk(index, &data),
             chunk: Some(index),
             data,
+            control: None,
         })
+    }
+
+    fn control_frame(&self, control: CaptionControl, pointer: i32) -> CaptionFrame {
+        CaptionFrame {
+            values: vec![(self.layout.contract.pointer.into(), pointer)],
+            chunk: None,
+            data: Vec::new(),
+            control: Some(control),
+        }
     }
 }
 
@@ -525,6 +628,9 @@ mod tests {
         let clear = buffer.next_frame(Duration::ZERO).unwrap();
         assert_eq!(clear.values, vec![layout.clear_write()]);
         buffer.confirm(clear);
+        let begin = buffer.next_frame(Duration::ZERO).unwrap();
+        assert!(matches!(begin.control, Some(CaptionControl::Begin)));
+        buffer.confirm(begin);
         for expected in [vec![0, 65, 0x65, 0x87, 0], vec![0, 66, 0, 0, 1]] {
             let frame = buffer.next_frame(Duration::ZERO).unwrap();
             assert_eq!(
@@ -570,11 +676,14 @@ mod tests {
             ],
         };
         let projected = layout.project(&snapshot);
-        assert_eq!(projected.messages.len(), 2);
-        assert_eq!(projected.messages[0].id, "middle");
-        assert_eq!(projected.messages[1].text, "文\u{fffd}");
-        assert_eq!(projected.messages[1].ttl_ms, 8000);
-        assert_eq!(projected.header, Some(format!("{}…", "H".repeat(31))));
+        assert_eq!(projected.messages.len(), 1);
+        assert_eq!(projected.messages[0].id, "new");
+        assert_eq!(projected.messages[0].text, "文\u{fffd}");
+        assert_eq!(projected.messages[0].ttl_ms, 8000);
+        assert_eq!(
+            projected.header,
+            Some(format!("{}\n{}", "H".repeat(32), "H".repeat(8)))
+        );
         assert_eq!(projected.footer, snapshot.footer);
         let cells = |snapshot: &DisplaySnapshot| {
             layout
@@ -584,7 +693,7 @@ mod tests {
                 .map(|chunk| ((chunk[0] << 8) | chunk[1]) as u16)
                 .collect::<Vec<_>>()
         };
-        assert_eq!(cells(&snapshot)[32], 'O' as u16);
+        assert_eq!(cells(&snapshot)[32], 'H' as u16);
         assert_eq!(&cells(&snapshot)[64..66], &[0x6587, 0xfffd]);
 
         snapshot.messages.push(message(
@@ -603,6 +712,17 @@ mod tests {
         assert!(rendered[64..93].iter().all(|glyph| *glyph == 'B' as u16));
         assert_eq!(&rendered[93..96], &[0, 0, 0x2026]);
         assert_eq!(rendered[96], 'F' as u16);
+        snapshot.messages.clear();
+        let rendered = cells(&snapshot);
+        assert_eq!(rendered[64], 'F' as u16);
+        assert!(rendered[70..].iter().all(|glyph| *glyph == 0));
+        snapshot.header = Some("文".repeat(100));
+        snapshot.footer = None;
+        assert_eq!(
+            cells(&snapshot).iter().filter(|glyph| **glyph != 0).count(),
+            100
+        );
+        assert!(!layout.project(&snapshot).header.unwrap().contains('…'));
         assert_eq!(
             layout.project(&DisplaySnapshot::default()),
             DisplaySnapshot::default()
@@ -656,12 +776,20 @@ mod tests {
         buffer.replace(&snapshot);
         let mut erased = 0;
         while let Some(frame) = buffer.next_frame(Duration::ZERO) {
-            assert!((8..24).contains(&frame.chunk.unwrap()));
-            assert!(frame.data.iter().all(|value| *value == 0));
+            assert!((8..32).contains(&frame.chunk.unwrap()));
             buffer.confirm(frame);
             erased += 1;
         }
         assert!(erased > 0);
+        assert_eq!(
+            buffer.delivered,
+            layout
+                .canvas(&snapshot)
+                .0
+                .into_iter()
+                .map(Some)
+                .collect::<Vec<_>>()
+        );
         let previous = buffer.last_pointer;
         let renewal = buffer.next_frame(Duration::from_secs(10)).unwrap();
         assert!(renewal.chunk.is_some() && renewal.chunk != previous);
@@ -693,9 +821,60 @@ mod tests {
                 }],
             });
             let frame = buffer.next_frame(Duration::ZERO).unwrap();
-            seen[frame.chunk.unwrap()] = true;
+            if let Some(index) = frame.chunk {
+                seen[index] = true;
+            }
             buffer.confirm(frame);
         }
         assert!(seen.iter().all(|value| *value));
+    }
+
+    #[test]
+    fn buffered_updates_finish_a_readable_frame_and_clear_cancels_its_commit() {
+        let layout = CaptionLayout {
+            contract: &Connector::Vrchat.osc().unwrap().caption,
+            columns: 32,
+            bytes: 8,
+        };
+        let snapshot = |text: &str| DisplaySnapshot {
+            messages: vec![crate::DisplayMessage {
+                id: "live".into(),
+                text: text.into(),
+                ttl_ms: 8000,
+            }],
+            ..Default::default()
+        };
+        let mut buffer = CaptionBuffer::new(layout);
+        buffer.replace(&snapshot("abcdefgh"));
+        for control in [CaptionControl::Clear, CaptionControl::Begin] {
+            let frame = buffer.next_frame(Duration::ZERO).unwrap();
+            assert_eq!(
+                std::mem::discriminant(&frame.control.unwrap()),
+                std::mem::discriminant(&control)
+            );
+            buffer.confirm(frame);
+        }
+        let first = buffer.next_frame(Duration::ZERO).unwrap();
+        buffer.replace(&snapshot("ijklmnop"));
+        assert!(buffer.is_current(&first));
+        buffer.confirm(first);
+        let second = buffer.next_frame(Duration::ZERO).unwrap();
+        assert_eq!(second.data, vec![0, 101, 0, 102, 0, 103, 0, 104]);
+        buffer.confirm(second);
+        let commit = buffer.next_frame(Duration::ZERO).unwrap();
+        assert!(matches!(commit.control, Some(CaptionControl::Commit)));
+        buffer.confirm(commit);
+        let next = buffer.next_frame(Duration::ZERO).unwrap();
+        assert_eq!(next.data, vec![0, 105, 0, 106, 0, 107, 0, 108]);
+        buffer.confirm(next);
+        let last = buffer.next_frame(Duration::ZERO).unwrap();
+        buffer.confirm(last);
+        let stale_commit = buffer.next_frame(Duration::ZERO).unwrap();
+        buffer.clear();
+        assert!(!buffer.is_current(&stale_commit));
+        let clear = buffer.next_frame(Duration::ZERO).unwrap();
+        assert!(matches!(clear.control, Some(CaptionControl::Clear)));
+        buffer.confirm(clear);
+        assert!(buffer.next_frame(Duration::ZERO).is_none());
     }
 }
