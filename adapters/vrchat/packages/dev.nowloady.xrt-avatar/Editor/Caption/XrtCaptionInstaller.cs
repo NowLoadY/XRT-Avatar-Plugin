@@ -161,7 +161,7 @@ namespace XrtAvatarPlugin.Editor
         {
             var material = CaptionAssets.CreateMaterial();
             CaptionAuthoring.ConfigureMaterial(material, preset.ToString(), columns);
-            CaptionAuthoring.SetPreview(material, string.Empty, columns);
+            CaptionAuthoring.SetPreview(material, CaptionAuthoring.DefaultPreviewText, columns);
             Save(material, folder + "/Caption.mat");
             var mesh = CaptionAssets.CreateMesh();
             Save(mesh, folder + "/Caption.asset");
@@ -172,7 +172,7 @@ namespace XrtAvatarPlugin.Editor
             text.transform.localPosition = parent == avatar.transform
                 ? new Vector3(0, Mathf.Max(0.5f, avatar.ViewPosition.y * 0.65f), 0.3f) : Vector3.zero;
             text.transform.localRotation = Quaternion.identity;
-            text.transform.localScale = CaptionAuthoring.Dimensions(columns);
+            text.transform.localScale = CaptionAuthoring.Dimensions(preset.ToString());
             text.AddComponent<MeshFilter>().sharedMesh = mesh;
             var renderer = text.AddComponent<MeshRenderer>();
             renderer.sharedMaterial = material;

@@ -15,7 +15,9 @@ namespace $namespace
         [SerializeField] private int preset;
         [SerializeField] private int selectedObject;
         [SerializeField] private Vector2 scroll;
-        [SerializeField] private string previewText = "The entrance is on the right.\nWe'll wait near the stairs.";
+        [SerializeField] private string previewText = CaptionAuthoring.DefaultPreviewText;
+        private Material scenePreviewMaterial;
+        private string scenePreviewText;
         private $installer.Status status;
         private CaptionPreview preview;
         private string error;
@@ -103,7 +105,7 @@ namespace $namespace
                 GUILayout.Label("New object", EditorStyles.miniLabel);
                 attachment = (Transform)EditorGUILayout.ObjectField("Attach to", attachment, typeof(Transform), true);
                 GUILayout.Space(8);
-                preset = CaptionAuthoring.DrawPresets(preset, $columns);
+                preset = CaptionAuthoring.DrawPresets(preset);
                 var renderer = CaptionAuthoring.DrawObjectPicker(status.Renderers, ref selectedObject);
                 DrawActions(renderer);
                 GUILayout.Space(8);
@@ -113,11 +115,29 @@ namespace $namespace
                     renderer == null ? null : renderer.transform);
                 GUILayout.Label("Preview text", EditorStyles.miniLabel);
                 previewText = EditorGUILayout.TextArea(previewText, GUILayout.Height(48));
+                UpdateScenePreview(renderer);
                 GUILayout.Space(8);
                 CaptionAuthoring.DrawAppearance(renderer == null ? null : renderer.sharedMaterial);
                 GUILayout.Space(8);
                 if (!string.IsNullOrEmpty(error)) EditorGUILayout.HelpBox(error, MessageType.Error);
             }
+        }
+
+        private void UpdateScenePreview(MeshRenderer renderer)
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode || renderer == null) return;
+            var material = renderer.sharedMaterial;
+            if (material == null || !material.HasProperty("_Byte0") || !material.HasProperty("_Columns") ||
+                (material == scenePreviewMaterial && previewText == scenePreviewText)) return;
+            // Runtime receivers clear the preview before displaying incoming captions.
+            Undo.RecordObject(material, "Caption preview text");
+            CaptionAuthoring.SetPreview(material, previewText,
+                Mathf.Clamp(Mathf.RoundToInt(material.GetFloat("_Columns")), 8, 32));
+            EditorUtility.SetDirty(material);
+            AssetDatabase.SaveAssetIfDirty(material);
+            scenePreviewMaterial = material;
+            scenePreviewText = previewText;
+            SceneView.RepaintAll();
         }
 
         private void DrawActions(MeshRenderer renderer)

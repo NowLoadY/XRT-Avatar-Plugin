@@ -11,6 +11,7 @@ namespace XrtAvatarPlugin.Presentation
     public static class CaptionAuthoring
     {
         private static readonly string[] PresetLabels = { "Horizontal", "Portrait", "Board" };
+        public const string DefaultPreviewText = "The entrance is on the right.\nWe'll wait near the stairs.";
         private static bool showLayout;
 
         public static int ConfigureMaterial(Material material, string preset, int columns = 0)
@@ -25,14 +26,15 @@ namespace XrtAvatarPlugin.Presentation
             material.SetColor("_BorderColor", new Color(.25f, .34f, .39f, 1));
             material.SetFloat("_BorderWidth", board ? .012f : 0);
             material.SetFloat("_CornerRadius", .08f);
-            Vector3 size = Dimensions(columns);
+            Vector3 size = Dimensions(preset);
+            int layoutColumns = string.Equals(preset, "portrait", StringComparison.OrdinalIgnoreCase) ? 8 : 32;
             float inset = (material.GetFloat("_Padding") + material.GetFloat("_BorderWidth")) * size.y;
-            material.SetFloat("_FontSize", Mathf.Min((size.x - 2 * inset) / columns,
-                (size.y - 2 * inset) / (Mathf.CeilToInt(128f / columns) * 1.25f)));
+            material.SetFloat("_FontSize", Mathf.Min((size.x - 2 * inset) / layoutColumns,
+                (size.y - 2 * inset) / (Mathf.CeilToInt(128f / layoutColumns) * 1.25f)));
             return columns;
         }
 
-        public static Vector3 Dimensions(int columns) => columns == 8
+        public static Vector3 Dimensions(string preset) => string.Equals(preset, "portrait", StringComparison.OrdinalIgnoreCase)
             ? new Vector3(.24f, .60f, 1) : new Vector3(.64f, .10f, 1);
 
         public static void DrawAppearance(Material material)
@@ -184,12 +186,9 @@ namespace XrtAvatarPlugin.Presentation
             }
         }
 
-        public static int DrawPresets(int selectedPreset, int columns = 0)
+        public static int DrawPresets(int selectedPreset)
         {
             selectedPreset = Mathf.Clamp(selectedPreset, 0, PresetLabels.Length - 1);
-            if (columns == 8 && selectedPreset == 0) selectedPreset = 1;
-            else if (columns == 32 && selectedPreset == 1) selectedPreset = 0;
-            else if (columns == 16) selectedPreset = 2;
             using (new EditorGUILayout.HorizontalScope())
             {
                 var labelStyle = new GUIStyle(EditorStyles.miniLabel) { alignment = TextAnchor.MiddleCenter };
@@ -197,9 +196,7 @@ namespace XrtAvatarPlugin.Presentation
                 {
                     Rect area = GUILayoutUtility.GetRect(80, 66, GUILayout.ExpandWidth(true));
                     bool selected = selectedPreset == value;
-                    using (new EditorGUI.DisabledScope(columns != 0 &&
-                        ((value == 0 && columns != 32) || (value == 1 && columns != 8))))
-                        if (GUI.Toggle(area, selected, GUIContent.none, "Button") && !selected) selectedPreset = value;
+                    if (GUI.Toggle(area, selected, GUIContent.none, "Button") && !selected) selectedPreset = value;
                     var shape = value == 1
                         ? new Rect(area.center.x - 8, area.y + 9, 16, 25)
                         : new Rect(area.center.x - 20, area.y + 15, 40, 15);
@@ -251,7 +248,7 @@ namespace XrtAvatarPlugin.Presentation
                     resolvedColumns = Mathf.Clamp(Mathf.RoundToInt(installedMaterial.GetFloat("_Columns")), 8, 32);
                 else if (resolvedColumns == 0)
                     resolvedColumns = string.Equals(preset, "portrait", StringComparison.OrdinalIgnoreCase) ? 8 : 32;
-                Vector3 size = CaptionAuthoring.Dimensions(resolvedColumns);
+                Vector3 size = CaptionAuthoring.Dimensions(preset);
                 if (target != null)
                 {
                     Matrix4x4 matrix = target.localToWorldMatrix;

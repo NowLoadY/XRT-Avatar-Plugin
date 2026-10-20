@@ -103,7 +103,7 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
                         ? controller.parameters.First(p => p.name == XrtChilloutCaptionProtocol.ColumnsParameter).defaultInt
                         : record != null && FindRenderers(avatar, record).Any() ? record.columns : 0;
                     int columns = CaptionAuthoring.ConfigureMaterial(material, preset, sourceColumns);
-                    CaptionAuthoring.SetPreview(material, string.Empty, columns);
+                    CaptionAuthoring.SetPreview(material, CaptionAuthoring.DefaultPreviewText, columns);
                     Save(material, folder + "/Caption.mat");
                     var mesh = CaptionAssets.CreateMesh();
                     Save(mesh, folder + "/Caption.asset");
@@ -127,7 +127,7 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
                     board.transform.localPosition = parent == avatar.transform
                         ? new Vector3(0, Mathf.Max(.5f, avatar.viewPosition.y * .65f), .3f) : Vector3.zero;
                     board.transform.localRotation = Quaternion.identity;
-                    board.transform.localScale = CaptionAuthoring.Dimensions(columns);
+                    board.transform.localScale = CaptionAuthoring.Dimensions(preset);
                     board.AddComponent<MeshFilter>().sharedMesh = mesh;
                     var renderer = board.AddComponent<MeshRenderer>();
                     renderer.sharedMaterial = material;

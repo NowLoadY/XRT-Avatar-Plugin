@@ -35,8 +35,9 @@ rendering and layout remain in `XrtAvatarCaption.shader`.
 The shader reads `_Byte0` through `_Byte255`. Each high/low pair encodes one BMP
 Unicode character. Zero clears a slot. `_Columns` selects the source's 8–32 slots
 per row.
-Default horizontal dimensions are 0.64 × 0.10 m with 32 columns; portrait is
-0.24 × 0.60 m with 8 columns. Both use `_CellAspect = 1.25`.
+Default horizontal dimensions are 0.64 × 0.10 m; portrait is 0.24 × 0.60 m.
+The first object selects 32 or 8 source columns respectively. Later objects keep
+that shared source layout but choose their own shape. Both use `_CellAspect = 1.25`.
 
 The shader uses the transform's X/Y dimensions to wrap proportional text and
 clip overflow inside the surface, showing only complete lines. Z provides the
@@ -60,6 +61,8 @@ per-glyph material is required.
 
 Text and outline share one atlas sample and draw pass. Editor previews reuse their
 render texture until the text, material, surface dimensions or preview size changes.
+Preview text also appears on the scene object for assembly. The runtime receivers
+clear these sample bytes at startup; the VRChat in-game panel still starts hidden.
 
 ## Font resources
 
