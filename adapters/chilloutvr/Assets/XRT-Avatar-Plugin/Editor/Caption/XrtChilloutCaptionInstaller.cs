@@ -128,14 +128,14 @@ namespace XrtAvatarPlugin.ChilloutVR.Editor
                         ? new Vector3(0, Mathf.Max(.5f, avatar.viewPosition.y * .65f), .3f) : Vector3.zero;
                     board.transform.localRotation = Quaternion.identity;
                     board.transform.localScale = CaptionAuthoring.Dimensions(preset);
-                    board.AddComponent<MeshFilter>().sharedMesh = mesh;
-                    var renderer = board.AddComponent<MeshRenderer>();
+                    Undo.AddComponent<MeshFilter>(board).sharedMesh = mesh;
+                    var renderer = Undo.AddComponent<MeshRenderer>(board);
                     renderer.sharedMaterial = material;
                     renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                     renderer.receiveShadows = false;
                     renderer.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
                     renderer.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
-                    var receiver = board.AddComponent<CVRLuaClientBehaviour>();
+                    var receiver = Undo.AddComponent<CVRLuaClientBehaviour>(board);
                     receiver.asset = script;
                     receiver.localOnly = false;
                     receiver.boundObjects = new[] { new CVRBaseLuaBehaviour.BoundObject

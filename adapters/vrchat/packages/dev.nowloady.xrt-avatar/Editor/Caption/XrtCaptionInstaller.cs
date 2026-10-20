@@ -173,8 +173,8 @@ namespace XrtAvatarPlugin.Editor
                 ? new Vector3(0, Mathf.Max(0.5f, avatar.ViewPosition.y * 0.65f), 0.3f) : Vector3.zero;
             text.transform.localRotation = Quaternion.identity;
             text.transform.localScale = CaptionAuthoring.Dimensions(preset.ToString());
-            text.AddComponent<MeshFilter>().sharedMesh = mesh;
-            var renderer = text.AddComponent<MeshRenderer>();
+            Undo.AddComponent<MeshFilter>(text).sharedMesh = mesh;
+            var renderer = Undo.AddComponent<MeshRenderer>(text);
             renderer.sharedMaterial = material;
             renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             renderer.receiveShadows = false;
