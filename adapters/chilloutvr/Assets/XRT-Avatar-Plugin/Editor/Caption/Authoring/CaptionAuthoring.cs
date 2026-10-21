@@ -37,7 +37,9 @@ namespace XrtAvatarPlugin.Presentation
         }
 
         public static Vector3 Dimensions(string preset) => string.Equals(preset, "portrait", StringComparison.OrdinalIgnoreCase)
-            ? new Vector3(.24f, .60f, 1) : new Vector3(.64f, .10f, 1);
+            ? new Vector3(.24f, .60f, 1)
+            : string.Equals(preset, "board", StringComparison.OrdinalIgnoreCase)
+                ? new Vector3(.32f, .32f * 2f / 3f, 1) : new Vector3(.64f, .10f, 1);
 
         public static void DrawAppearance(Material material)
         {

@@ -12,7 +12,7 @@ namespace XrtAvatarPlugin.Editor
         private static readonly string[] Presets = { "horizontal", "portrait", "board" };
         [SerializeField] private VRCAvatarDescriptor avatar;
         [SerializeField] private Transform attachment;
-        [SerializeField] private int preset;
+        [SerializeField] private int preset = 2;
         [SerializeField] private int selectedObject;
         [SerializeField] private Vector2 scroll;
         [SerializeField] private string previewText = CaptionAuthoring.DefaultPreviewText;

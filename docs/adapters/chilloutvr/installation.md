@@ -16,8 +16,8 @@ creator's import instructions. Finish its normal animation setup first; see
 2. In Unity, choose **Assets → Import Package → Custom Package** and import it.
 3. Open **Tools → XRT-Avatar-Plugin → ChilloutVR → Caption Objects**. Select your
    avatar in the Hierarchy or drag it into **Avatar**.
-4. Choose **Horizontal**, **Portrait** or **Board**. Use **Attach to** to choose a
-   hand, chest or another object within the avatar, then press **＋**.
+4. Use **Attach to** to choose a hand, chest or another object within the avatar,
+   then press **＋**. The default **Board** is a 3:2 panel, 0.32 m wide.
 5. Select the text with the magnifier icon. Move, rotate and resize it in the
    Scene view. Horizontal and Portrait are transparent; Board has a background and
    border. Resize X/Y to wrap text; use **Appearance** for size, colors, outline and

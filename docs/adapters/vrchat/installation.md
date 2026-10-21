@@ -29,8 +29,8 @@ For a manual install, import the VRChat `.unitypackage` from the
 ## Add captions
 
 1. Open **Tools → XRT-Avatar-Plugin → Caption Objects** and select your avatar.
-2. Choose **Attach to** and **Horizontal**, **Portrait** or **Board**, then click **+**.
-   Horizontal and Portrait are transparent; Board has a background and border.
+2. Choose **Attach to**, then click **+**. The default **Board** is a 3:2 panel,
+   0.32 m wide, with a background and border. **Horizontal** and **Portrait** are transparent alternatives.
 3. Move and rotate in the Scene view. Resize X/Y to change the text area.
    Board automatically fits and balances the text; **Max text size** limits its size.
    Use **Appearance** for text size, colors, outline and border width; **Layout**

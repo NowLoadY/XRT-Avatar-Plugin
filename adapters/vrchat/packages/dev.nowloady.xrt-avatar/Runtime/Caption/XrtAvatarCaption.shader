@@ -327,7 +327,8 @@ Shader "XRT/Avatar Caption"
             bool IsWord(float code)
             {
                 return (code >= 48 && code <= 57) || (code >= 65 && code <= 90) ||
-                    (code >= 97 && code <= 122) || (code >= 192 && code <= 687);
+                    (code >= 97 && code <= 122) || (code >= 192 && code <= 687) ||
+                    code == 39 || code == 8217;
             }
             bool IsClosing(float code)
             {
