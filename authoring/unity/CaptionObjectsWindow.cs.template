@@ -108,7 +108,7 @@ namespace $namespace
                 preset = CaptionAuthoring.DrawPresets(preset);
                 var renderer = CaptionAuthoring.DrawObjectPicker(status.Renderers, ref selectedObject);
                 DrawActions(renderer);
-                GUILayout.Space(8);
+$object_controls                GUILayout.Space(8);
                 if (preview == null) preview = new CaptionPreview();
                 preview.Draw(GUILayoutUtility.GetRect(80, 145, GUILayout.ExpandWidth(true)),
                     Presets[preset], previewText, renderer == null ? null : renderer.sharedMaterial, $columns,

@@ -38,6 +38,11 @@ For a manual install, import the VRChat `.unitypackage` from the
 4. Save, then upload for PC through **VRChat SDK → Show Control Panel → Builder**.
    Wear the uploaded avatar. [First upload](https://creators.vrchat.com/avatars/creating-your-first-avatar/).
 
+For a handheld board, select the caption and enable **Hold in left hand**.
+It keeps your placement and size; move, rotate or resize the caption as usual.
+The right hand aligns the board when close. Turn the option off to remove the
+effect and keep the board. A humanoid avatar with both hands is required.
+
 The **XRT → Caption panel** switch shows or hides all in-game caption panels.
 It starts off and remembers your choice. **Translation** separately starts or stops translation.
 

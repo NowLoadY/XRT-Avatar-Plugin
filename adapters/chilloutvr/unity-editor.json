@@ -15,6 +15,7 @@
     "installer": "XrtChilloutCaptionInstaller",
     "menu_path": "Tools/XRT-Avatar-Plugin/ChilloutVR/Caption Objects",
     "columns": "status.Columns",
-    "preset_argument": "Presets[preset]"
+    "preset_argument": "Presets[preset]",
+    "object_controls": ""
   }
 }

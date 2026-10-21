@@ -15,6 +15,7 @@
     "installer": "XrtCaptionInstaller",
     "menu_path": "Tools/XRT-Avatar-Plugin/Caption Objects",
     "columns": "status.Record?.columns ?? 0",
-    "preset_argument": "(XrtCaptionInstaller.Preset)preset"
+    "preset_argument": "(XrtCaptionInstaller.Preset)preset",
+    "object_controls": "                XrtCaptionHandheld.Draw(avatar, renderer, status.Record, Run);\n"
   }
 }

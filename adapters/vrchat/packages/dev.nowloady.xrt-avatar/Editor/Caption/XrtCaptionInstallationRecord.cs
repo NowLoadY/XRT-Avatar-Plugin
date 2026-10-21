@@ -28,6 +28,28 @@ namespace XrtAvatarPlugin.Editor
             public string path;
             public Mesh mesh;
             public Material material;
+            public Handheld handheld;
+        }
+
+        [Serializable]
+        internal sealed class SceneNode
+        {
+            public string globalId;
+            public string path;
+        }
+
+        [Serializable]
+        internal sealed class Handheld
+        {
+            public SceneNode originalParent;
+            public SceneNode carry;
+            public SceneNode aim;
+            public SceneNode rightGrip;
+            public string parameter;
+            public string contactTag;
+            public AnimatorStateMachine layer;
+            public AnimationClip carryClip;
+            public AnimationClip alignedClip;
         }
         [SerializeField, HideInInspector] internal int byteCount;
         [SerializeField, HideInInspector] internal int columns;

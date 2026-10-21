@@ -227,6 +227,7 @@ namespace XrtAvatarPlugin.Editor
                 }).ToArray();
                 foreach (var item in targets)
                 {
+                    XrtCaptionHandheld.Remove(avatar, working, item);
                     RemoveBindings(working, item.path);
                     var renderer = FindRenderer(avatar, item);
                     if (renderer != null) CaptionAuthoring.RemoveObject(renderer, item.mesh, item.material);
@@ -388,6 +389,7 @@ namespace XrtAvatarPlugin.Editor
             }
             for (int i = 0; i < record.objects.Count; i++)
             {
+                XrtCaptionHandheld.Refresh(avatar, record.objects[i], renderers[i], authoring);
                 record.objects[i].path = paths[i];
                 if (authoring && renderers[i] != null)
                     record.objects[i].rendererGlobalId = GlobalObjectId.GetGlobalObjectIdSlow(renderers[i]).ToString();
@@ -465,6 +467,13 @@ namespace XrtAvatarPlugin.Editor
                     copies.Remap();
                     // The temporary record is deliberately outside the persistent copy graph.
                     working.ownedLayers = record.ownedLayers.Select(layer => copies.Get(layer)).ToArray();
+                    foreach (var item in working.objects)
+                    {
+                        if (!XrtCaptionHandheld.IsEnabled(item)) continue;
+                        item.handheld.layer = copies.Get(item.handheld.layer);
+                        item.handheld.carryClip = copies.Get(item.handheld.carryClip);
+                        item.handheld.alignedClip = copies.Get(item.handheld.alignedClip);
+                    }
                     UpdatePlacement(target, working, false);
                     copies.Save(folder);
                     copies.RemapScene(target.gameObject);
@@ -700,7 +709,7 @@ namespace XrtAvatarPlugin.Editor
         private static MeshRenderer[] FindRenderers(VRCAvatarDescriptor avatar, XrtCaptionInstallationRecord record) =>
             record.objects.Select(item => FindRenderer(avatar, item)).Where(renderer => renderer != null).ToArray();
 
-        private static MeshRenderer FindRenderer(VRCAvatarDescriptor avatar, XrtCaptionInstallationRecord.TextObject item)
+        internal static MeshRenderer FindRenderer(VRCAvatarDescriptor avatar, XrtCaptionInstallationRecord.TextObject item)
         {
             if (GlobalObjectId.TryParse(item.rendererGlobalId, out var identifier))
             {

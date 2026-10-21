@@ -95,6 +95,11 @@ The final object also removes the recorded caption parameters and layers. User
 menu controls, animator additions and customized objects remain. Remove caption
 objects before their translation menu.
 
+Handheld effects belong to individual text objects and always attach to the
+humanoid left hand. Alignment uses the current surface placement and dimensions
+at installation and build time. Removal restores the prior parent while keeping
+the surface's world placement, and removes only the recorded effect.
+
 ## Platform support
 
 The target is a PC Avatar with custom shaders enabled. Android Avatar shaders and

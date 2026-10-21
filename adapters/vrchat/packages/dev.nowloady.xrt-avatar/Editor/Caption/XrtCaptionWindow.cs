@@ -108,6 +108,7 @@ namespace XrtAvatarPlugin.Editor
                 preset = CaptionAuthoring.DrawPresets(preset);
                 var renderer = CaptionAuthoring.DrawObjectPicker(status.Renderers, ref selectedObject);
                 DrawActions(renderer);
+                XrtCaptionHandheld.Draw(avatar, renderer, status.Record, Run);
                 GUILayout.Space(8);
                 if (preview == null) preview = new CaptionPreview();
                 preview.Draw(GUILayoutUtility.GetRect(80, 145, GUILayout.ExpandWidth(true)),
