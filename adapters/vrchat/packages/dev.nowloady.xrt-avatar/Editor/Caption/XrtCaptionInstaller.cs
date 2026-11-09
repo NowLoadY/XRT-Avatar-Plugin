@@ -112,6 +112,7 @@ namespace XrtAvatarPlugin.Editor
                     entries.Add(Parameter(XrtCaptionProtocol.VersionParameter, XrtCaptionProtocol.Version, false));
                     entries.Add(Parameter(XrtCaptionProtocol.ColumnsParameter, columns, false));
                     entries.Add(Parameter(XrtCaptionProtocol.BytesParameter, bytes, false));
+                    entries.Add(Parameter(XrtCaptionProtocol.RefreshParameter, 1, false));
                     entries.Add(Parameter(XrtCaptionProtocol.Pointer, XrtCaptionProtocol.ClearPointer, true));
                     for (int i = 0; i < bytes; i++) entries.Add(Parameter(XrtCaptionProtocol.BytePrefix + i, 0, true));
                     entries.Add(VisibilityParameter());
@@ -128,8 +129,8 @@ namespace XrtAvatarPlugin.Editor
                     record.installedParameters = parameters;
                     record.ownedLayers = ownedLayers;
                     record.bindingClips = bindingClips;
-                    record.expressionParameters = ExpressionNames(bytes);
-                    record.animatorParameters = AnimatorNames(bytes);
+                    record.expressionParameters = ExpressionNames(bytes, progressive: true);
+                    record.animatorParameters = AnimatorNames(bytes, progressive: true);
                     record.columns = columns;
                     record.byteCount = bytes;
                     var baseLayers = WithFx(avatar.baseAnimationLayers, controller, avatar.customizeAnimationLayers);
@@ -274,7 +275,7 @@ namespace XrtAvatarPlugin.Editor
         internal static bool NeedsUpdate(VRCAvatarDescriptor avatar)
         {
             var record = FindRecord(avatar);
-            return record != null && record.objects.Count > 0 && record.recordVersion < 4;
+            return record != null && record.objects.Count > 0 && record.recordVersion < 5;
         }
 
         internal static void Upgrade(VRCAvatarDescriptor avatar)
@@ -286,6 +287,7 @@ namespace XrtAvatarPlugin.Editor
             {
                 EnsureVisibility(avatar, working, controls?.xrtMenu);
                 EnsureBuffering(working);
+                EnsureProgressive(avatar, working);
                 Changed(avatar);
             });
         }
@@ -296,6 +298,27 @@ namespace XrtAvatarPlugin.Editor
             XrtCaptionAnimator.AddBuffering(record.installedController, record.ownedLayers[0], record.byteCount);
             record.animatorParameters = record.animatorParameters.Concat(XrtCaptionAnimator.BufferParameters).ToArray();
             record.recordVersion = 4;
+            EditorUtility.SetDirty(record.installedController);
+            AssetDatabase.SaveAssetIfDirty(record.installedController);
+            if (authoring) SaveRecord(record);
+        }
+
+        private static void EnsureProgressive(VRCAvatarDescriptor avatar, XrtCaptionInstallationRecord record, bool authoring = true)
+        {
+            if (record.recordVersion >= 5) return;
+            var parameters = avatar.expressionParameters;
+            var entries = parameters.parameters ?? Array.Empty<VRCExpressionParameters.Parameter>();
+            if (entries.Any(parameter => parameter?.name == XrtCaptionProtocol.RefreshParameter))
+                throw new InvalidOperationException("A parameter named " + XrtCaptionProtocol.RefreshParameter + " already exists.");
+            if (entries.Length >= 8192) throw new InvalidOperationException("Free one Expressions Parameter to update captions.");
+            if (authoring) Undo.RecordObject(parameters, "Update XRT Captions");
+            parameters.parameters = entries.Concat(new[] { Parameter(XrtCaptionProtocol.RefreshParameter, 1, false) }).ToArray();
+            EditorUtility.SetDirty(parameters);
+            AssetDatabase.SaveAssetIfDirty(parameters);
+            XrtCaptionAnimator.AddProgressive(record.installedController, record.ownedLayers[0], record.byteCount, record.columns);
+            record.expressionParameters = record.expressionParameters.Concat(new[] { XrtCaptionProtocol.RefreshParameter }).ToArray();
+            record.animatorParameters = record.animatorParameters.Concat(new[] { XrtCaptionProtocol.RefreshParameter }).ToArray();
+            record.recordVersion = 5;
             EditorUtility.SetDirty(record.installedController);
             AssetDatabase.SaveAssetIfDirty(record.installedController);
             if (authoring) SaveRecord(record);
@@ -479,6 +502,7 @@ namespace XrtAvatarPlugin.Editor
                     copies.RemapScene(target.gameObject);
                     EnsureVisibility(target, working, controls == null ? null : copies.Get(controls.xrtMenu), false);
                     EnsureBuffering(working, false);
+                    EnsureProgressive(target, working, false);
                     copies.Commit();
                 }
                 finally { Object.DestroyImmediate(working); }
@@ -496,8 +520,8 @@ namespace XrtAvatarPlugin.Editor
                 throw new InvalidOperationException("Save the Expressions Parameters asset first.");
             var budget = XrtParameterBudget.Inspect(avatar, entries);
             foreach (int bytes in XrtCaptionProtocol.BusByteCounts)
-                if (budget.Bits + (bytes + 1) * 8 + 1 <= 256 && budget.Count + bytes + 5 <= 8192) return bytes;
-            if (budget.Count + XrtCaptionProtocol.BusByteCounts.Min() + 5 > 8192)
+                if (budget.Bits + (bytes + 1) * 8 + 1 <= 256 && budget.Count + bytes + 6 <= 8192) return bytes;
+            if (budget.Count + XrtCaptionProtocol.BusByteCounts.Min() + 6 > 8192)
                 throw new InvalidOperationException("This avatar has no room for caption parameters. Remove unused Expressions Parameters first.");
             throw new InvalidOperationException("Caption objects need at least 25 free synced bits in Expressions Parameters.");
         }
@@ -579,7 +603,7 @@ namespace XrtAvatarPlugin.Editor
 
         private static bool ReceiverAssigned(VRCAvatarDescriptor avatar, XrtCaptionInstallationRecord record)
         {
-            if ((record.recordVersion < 2 || record.recordVersion > 4) || record.installedController == null ||
+            if ((record.recordVersion < 2 || record.recordVersion > 5) || record.installedController == null ||
                 !avatar.customizeAnimationLayers || !avatar.customExpressions) return false;
             bool controller = (avatar.baseAnimationLayers ?? Array.Empty<VRCAvatarDescriptor.CustomAnimLayer>())
                 .Any(layer => layer.type == VRCAvatarDescriptor.AnimLayerType.FX && !layer.isDefault &&
@@ -599,13 +623,14 @@ namespace XrtAvatarPlugin.Editor
                 throw new InvalidOperationException("Restore the caption FX controller and parameters before adding more text objects.");
         }
 
-        private static string[] ExpressionNames(int bytes, bool visibility = true) => new[] {
+        private static string[] ExpressionNames(int bytes, bool visibility = true, bool progressive = false) => new[] {
             XrtCaptionProtocol.VersionParameter, XrtCaptionProtocol.ColumnsParameter,
             XrtCaptionProtocol.BytesParameter, XrtCaptionProtocol.Pointer
         }.Concat(Enumerable.Range(0, bytes).Select(index => XrtCaptionProtocol.BytePrefix + index))
-            .Concat(visibility ? new[] { XrtCaptionAnimator.Visible } : Array.Empty<string>()).ToArray();
+            .Concat(visibility ? new[] { XrtCaptionAnimator.Visible } : Array.Empty<string>())
+            .Concat(progressive ? new[] { XrtCaptionProtocol.RefreshParameter } : Array.Empty<string>()).ToArray();
 
-        private static string[] AnimatorNames(int bytes, bool visibility = true, bool buffering = true) => ExpressionNames(bytes, visibility)
+        private static string[] AnimatorNames(int bytes, bool visibility = true, bool buffering = true, bool progressive = false) => ExpressionNames(bytes, visibility, progressive)
             .Concat(new[] { XrtCaptionProtocol.Prefix + "Weight" })
             .Concat(Enumerable.Range(0, CaptionAssets.ByteCount).Select(index => XrtCaptionProtocol.Prefix + "Cache" + index))
             .Concat(buffering ? XrtCaptionAnimator.BufferParameters : Array.Empty<string>()).ToArray();

@@ -56,13 +56,14 @@ A second FX layer drives all material bytes from the retained values using a
 Direct Blend Tree. The display state enables Write Defaults as recommended for
 direct blending; receive states use timed clips instead of zero-length loops.
 
-The connector SDK uses the manifest's optional begin/commit commands to stage
-changed chunks in local Animator parameters, then replace the visible buffer.
-Streaming updates coalesce behind the frame in flight. Clear resets both buffers
-and returns to direct writes, preserving compatibility with older hosts. Older
-receivers ignore these commands and continue displaying chunks directly. Hosts
-must adopt the updated connector SDK to use complete-frame refresh; no additional
-synchronized expression bits are needed.
+Receivers advertising progressive refresh show changed chunks as they arrive.
+Retired messages trigger a priority row-clear command; the receiver erases those
+rows locally, retaining unaffected banners. Obsolete pending writes are revoked.
+The capability is unsynchronized and uses no additional synchronized bits.
+
+Receivers without this capability retain buffered begin/commit delivery.
+Updated receivers also retain those commands for older hosts. Full clear resets
+both buffers and restores direct writes.
 
 The [shared numeric display contract](../../connector-protocol.md#transport-bounds)
 owns changed-chunk selection, region scheduling and cancellation.

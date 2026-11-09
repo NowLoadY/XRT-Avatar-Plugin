@@ -35,6 +35,7 @@ For a manual install, import the VRChat `.unitypackage` from the
    Board automatically fits and balances the text; **Max text size** limits its size.
    Use **Appearance** for text size, colors, outline and border width; **Layout**
    adjusts natural layout, line spacing, padding and rounded corners.
+   Board stays visible without text; enable **Layout → Hide when empty** to hide it instead.
 4. Save, then upload for PC through **VRChat SDK → Show Control Panel → Builder**.
    Wear the uploaded avatar. [First upload](https://creators.vrchat.com/avatars/creating-your-first-avatar/).
 

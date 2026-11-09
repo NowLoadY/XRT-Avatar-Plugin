@@ -9,6 +9,7 @@ namespace XrtAvatarPlugin.Editor
         internal const string BytesParameter = "XRT/Caption/Bytes";
         internal const string Pointer = "XRT/Caption/Pointer";
         internal const string BytePrefix = "XRT/Caption/Byte";
+        internal const string RefreshParameter = "XRT/Caption/Refresh";
         internal const int Version = 1;
         internal const int Slots = 128;
         internal const int ClearPointer = 255;
@@ -16,6 +17,7 @@ namespace XrtAvatarPlugin.Editor
         internal const int PortraitColumns = 8;
         internal const int BeginPointer = 253;
         internal const int CommitPointer = 254;
+        internal const int ClearRowsPointer = 252;
         internal static readonly int[] BusByteCounts = { 8, 4, 2 };
     }
 }

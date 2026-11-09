@@ -72,6 +72,10 @@ const VRCHAT: osc::Contract = osc::Contract {
         interval_ms: 200,
         column_counts: &[8, 16, 32],
         bytes_per_chunk: &[8, 4, 2],
+        refresh: Some(osc::CaptionRefresh {
+            capability: "/avatar/parameters/XRT/Caption/Refresh",
+            clear_rows_pointer: 252,
+        }),
         buffering: Some([253, 254]),
         receiver_idle_ms: None,
     },
@@ -101,6 +105,7 @@ const CHILLOUTVR: osc::Contract = osc::Contract {
         interval_ms: 200,
         column_counts: &[8, 16, 32],
         bytes_per_chunk: &[8],
+        refresh: None,
         buffering: None,
         receiver_idle_ms: Some(20000),
     },

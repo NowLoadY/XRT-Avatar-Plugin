@@ -123,6 +123,8 @@ integer frames and their send interval. The same SDK maps payload width and loca
 from each adapter's manifest; host code does not branch on a game to encode text.
 The SDK maps regions into the glyph buffer and selects changed chunks. Updates
 replace the desired buffer and revoke pending writes that no longer match it.
+Progressive receivers clear retired message rows before sending further changed
+chunks. Clearing invalidates pending text writes without disturbing other rows.
 A new binding, an empty display or disabling display content requests a full clear.
 A present header/footer uses the first/last row; messages use the remaining rows,
 with recent messages taking precedence. Layout and payload width come from the

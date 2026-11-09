@@ -52,6 +52,12 @@ impl Contract {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct CaptionRefresh {
+    pub capability: &'static str,
+    pub clear_rows_pointer: i32,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct CaptionContract {
     pub version: &'static str,
     pub columns: &'static str,
@@ -67,6 +73,7 @@ pub struct CaptionContract {
     pub interval_ms: u64,
     pub receiver_idle_ms: Option<u64>,
     pub buffering: Option<[i32; 2]>,
+    pub refresh: Option<CaptionRefresh>,
 }
 
 impl CaptionContract {
@@ -74,6 +81,7 @@ impl CaptionContract {
         [self.version, self.columns, self.bytes, self.pointer]
             .into_iter()
             .map(str::to_owned)
+            .chain(self.refresh.map(|refresh| refresh.capability.to_owned()))
             .chain(
                 (0..self.bytes_per_chunk.iter().copied().max().unwrap_or(0)
                     / self.integer_bytes.max(1))
@@ -88,6 +96,7 @@ pub struct CaptionLayout {
     contract: &'static CaptionContract,
     columns: usize,
     bytes: usize,
+    progressive: bool,
 }
 
 impl CaptionLayout {
@@ -122,6 +131,9 @@ impl CaptionLayout {
             contract,
             columns,
             bytes,
+            progressive: contract
+                .refresh
+                .is_some_and(|refresh| integer(refresh.capability, 1) == Some(1)),
         })
     }
 
@@ -328,13 +340,18 @@ impl CaptionLayout {
         (snapshot, cells, start..end)
     }
 
-    fn canvas(self, snapshot: &DisplaySnapshot) -> (Vec<Vec<i32>>, Range<usize>) {
+    fn canvas(self, snapshot: &DisplaySnapshot) -> (Vec<Vec<i32>>, Range<usize>, Vec<String>) {
         // Keep original cell padding: reparsing preview whitespace would change placement.
-        let (_, cells, body) = self.project_cells(snapshot);
+        let (snapshot, cells, body) = self.project_cells(snapshot);
         let size = self.bytes / 2;
         (
             cells.chunks(size).map(|chunk| self.pack(chunk)).collect(),
             body.start / size..body.end / size,
+            snapshot
+                .messages
+                .into_iter()
+                .map(|message| message.id)
+                .collect(),
         )
     }
 }
@@ -353,6 +370,7 @@ enum CaptionControl {
     Clear,
     Begin,
     Commit,
+    ClearRows { first: usize, end: usize },
 }
 
 /// Latest desired display and locally delivered chunks. It performs no I/O.
@@ -367,11 +385,13 @@ pub struct CaptionBuffer {
     last_pointer: Option<usize>,
     buffering_started: bool,
     staged: Option<Vec<Vec<i32>>>,
+    message_ids: Vec<String>,
+    refresh_pending: Option<Range<usize>>,
 }
 
 impl CaptionBuffer {
     pub fn new(layout: CaptionLayout) -> Self {
-        let (desired, body) = layout.canvas(&DisplaySnapshot::default());
+        let (desired, body, message_ids) = layout.canvas(&DisplaySnapshot::default());
         let delivered = vec![None; desired.len()];
         Self {
             layout,
@@ -384,11 +404,40 @@ impl CaptionBuffer {
             last_pointer: None,
             buffering_started: false,
             staged: None,
+            message_ids,
+            refresh_pending: None,
         }
     }
 
     pub fn replace(&mut self, snapshot: &DisplaySnapshot) {
-        (self.desired, self.body) = self.layout.canvas(snapshot);
+        let (desired, body, message_ids) = self.layout.canvas(snapshot);
+        if self.layout.progressive && self.message_ids.iter().any(|id| !message_ids.contains(id)) {
+            let chunks_per_row = self.layout.columns / (self.layout.bytes / 2);
+            let mut range =
+                self.body.start / chunks_per_row..self.body.end.div_ceil(chunks_per_row);
+            // A region can move when messages expire. Erase its vacated rows too,
+            // so an old footer cannot remain behind while the new placement arrives.
+            for (index, (old, next)) in self.desired.iter().zip(&desired).enumerate() {
+                if old.iter().any(|value| *value != 0) && next.iter().all(|value| *value == 0) {
+                    range.start = range.start.min(index / chunks_per_row);
+                    range.end = range.end.max(index / chunks_per_row + 1);
+                }
+            }
+            if range.start < range.end {
+                if let Some(pending) = &self.refresh_pending {
+                    range.start = range.start.min(pending.start);
+                    range.end = range.end.max(pending.end);
+                }
+                self.refresh_pending = Some(range);
+            }
+        }
+        self.desired = desired;
+        self.body = body;
+        self.message_ids = message_ids;
+    }
+
+    pub fn needs_clear(&self) -> bool {
+        self.clear_pending || self.refresh_pending.is_some()
     }
 
     pub fn is_empty(&self) -> bool {
@@ -402,6 +451,7 @@ impl CaptionBuffer {
         self.last_pointer = None;
         self.buffering_started = false;
         self.staged = None;
+        self.refresh_pending = None;
     }
 
     pub fn is_current(&self, frame: &CaptionFrame) -> bool {
@@ -410,12 +460,20 @@ impl CaptionBuffer {
                 CaptionControl::Clear => self.clear_pending,
                 CaptionControl::Begin => !self.clear_pending && !self.buffering_started,
                 CaptionControl::Commit => !self.clear_pending && self.staged.is_some(),
+                CaptionControl::ClearRows { first, end } => {
+                    !self.clear_pending
+                        && self
+                            .refresh_pending
+                            .as_ref()
+                            .is_some_and(|range| range.start == first && range.end == end)
+                }
             };
         }
         match frame.chunk {
             None => self.clear_pending,
             Some(index) => {
                 !self.clear_pending
+                    && self.refresh_pending.is_none()
                     && self.staged.as_ref().unwrap_or(&self.desired)[index] == frame.data
             }
         }
@@ -439,6 +497,26 @@ impl CaptionBuffer {
                 self.last_pointer = None;
                 return;
             }
+            Some(CaptionControl::ClearRows { first, end }) => {
+                let chunks_per_row = self.layout.columns / (self.layout.bytes / 2);
+                for entry in &mut self.delivered[first * chunks_per_row..end * chunks_per_row] {
+                    *entry = Some(vec![
+                        0;
+                        self.layout.bytes / self.layout.contract.integer_bytes
+                    ]);
+                }
+                if self
+                    .refresh_pending
+                    .as_ref()
+                    .is_some_and(|range| range.start == first && range.end == end)
+                {
+                    self.refresh_pending = None;
+                }
+                self.last_pointer = None;
+                self.cursors = [0, self.body.start];
+                self.body_sent = 0;
+                return;
+            }
             _ => {}
         }
         if let Some(index) = frame.chunk {
@@ -460,6 +538,7 @@ impl CaptionBuffer {
             self.body_sent = 0;
             self.buffering_started = false;
             self.staged = None;
+            self.refresh_pending = None;
         }
     }
 
@@ -474,7 +553,41 @@ impl CaptionBuffer {
                 control: Some(CaptionControl::Clear),
             });
         }
-        if let Some([begin, _]) = self.layout.contract.buffering {
+        if let Some(range) = &self.refresh_pending {
+            let refresh = self
+                .layout
+                .contract
+                .refresh
+                .expect("negotiated row clearing");
+            return Some(CaptionFrame {
+                values: vec![
+                    (
+                        format!("{}0", self.layout.contract.data_prefix),
+                        range.start as i32,
+                    ),
+                    (
+                        format!("{}1", self.layout.contract.data_prefix),
+                        range.end as i32,
+                    ),
+                    (
+                        self.layout.contract.pointer.into(),
+                        refresh.clear_rows_pointer,
+                    ),
+                ],
+                chunk: None,
+                data: Vec::new(),
+                control: Some(CaptionControl::ClearRows {
+                    first: range.start,
+                    end: range.end,
+                }),
+            });
+        }
+        if let Some([begin, _]) = self
+            .layout
+            .contract
+            .buffering
+            .filter(|_| !self.layout.progressive)
+        {
             if !self.buffering_started && !self.is_empty() {
                 return Some(self.control_frame(CaptionControl::Begin, begin));
             }
@@ -549,6 +662,64 @@ mod tests {
     use std::collections::BTreeMap;
 
     #[test]
+    fn progressive_expiry_preempts_text_and_keeps_unchanged_header() {
+        let layout =
+            CaptionLayout::discover(&Connector::Vrchat.osc().unwrap().caption, |path, _| {
+                Some(match path.rsplit('/').next().unwrap() {
+                    "Version" | "Refresh" => 1,
+                    "Columns" => 32,
+                    "Bytes" => 8,
+                    "Pointer" => 255,
+                    _ => 0,
+                })
+            })
+            .unwrap();
+        let mut buffer = CaptionBuffer::new(layout);
+        let mut snapshot = DisplaySnapshot {
+            header: Some("Header".into()),
+            messages: vec![crate::DisplayMessage {
+                id: "first".into(),
+                text: "A".repeat(48),
+                ttl_ms: 8000,
+            }],
+            footer: Some("Footer".into()),
+        };
+        buffer.replace(&snapshot);
+        while let Some(frame) = buffer.next_frame(Duration::ZERO) {
+            assert!(!matches!(
+                frame.control,
+                Some(CaptionControl::Begin | CaptionControl::Commit)
+            ));
+            buffer.confirm(frame);
+        }
+        let header = buffer.delivered[..8].to_vec();
+        snapshot.messages[0].text.push('B');
+        buffer.replace(&snapshot);
+        let stale_write = buffer.next_frame(Duration::ZERO).unwrap();
+        assert!(stale_write.chunk.is_some()); // In-place growth does not blank the caption.
+        snapshot.messages.clear();
+        buffer.replace(&snapshot);
+        assert!(!buffer.is_current(&stale_write));
+        assert!(buffer.needs_clear());
+        let clear = buffer.next_frame(Duration::ZERO).unwrap();
+        assert!(matches!(
+            clear.control,
+            Some(CaptionControl::ClearRows { first: 1, end: 4 })
+        ));
+        buffer.confirm(clear);
+        assert_eq!(&buffer.delivered[..8], header.as_slice());
+        assert!(buffer.delivered[8..].iter().all(|chunk| chunk
+            .as_ref()
+            .unwrap()
+            .iter()
+            .all(|value| *value == 0)));
+        assert!(!buffer.needs_clear());
+        let footer = buffer.next_frame(Duration::ZERO).unwrap();
+        assert!(footer.chunk.is_some());
+        assert_eq!(footer.chunk, Some(8)); // Footer's new placement streams without waiting for a commit.
+    }
+
+    #[test]
     fn profiles_preserve_byte_and_signed_word_wire_formats() {
         let snapshot = |contract: &CaptionContract| -> BTreeMap<_, _> {
             contract
@@ -607,6 +778,7 @@ mod tests {
     #[test]
     fn layout_normalizes_wraps_truncates_and_clears_before_writing() {
         let layout = CaptionLayout {
+            progressive: false,
             contract: &Connector::Vrchat.osc().unwrap().caption,
             columns: 16,
             bytes: 4,
@@ -657,6 +829,7 @@ mod tests {
     #[test]
     fn projection_fits_recent_messages_and_preserves_truncated_cell_padding() {
         let layout = CaptionLayout {
+            progressive: false,
             contract: &Connector::Vrchat.osc().unwrap().caption,
             columns: 32,
             bytes: 2,
@@ -732,6 +905,7 @@ mod tests {
     #[test]
     fn sections_update_without_clearing_and_only_confirmed_chunks_are_cached() {
         let layout = CaptionLayout {
+            progressive: false,
             contract: &Connector::Chilloutvr.osc().unwrap().caption,
             columns: 32,
             bytes: 8,
@@ -802,6 +976,7 @@ mod tests {
     #[test]
     fn continuous_messages_and_clock_changes_do_not_starve_either_banner() {
         let layout = CaptionLayout {
+            progressive: false,
             contract: &Connector::Vrchat.osc().unwrap().caption,
             columns: 32,
             bytes: 2,
@@ -832,6 +1007,7 @@ mod tests {
     #[test]
     fn buffered_updates_finish_a_readable_frame_and_clear_cancels_its_commit() {
         let layout = CaptionLayout {
+            progressive: false,
             contract: &Connector::Vrchat.osc().unwrap().caption,
             columns: 32,
             bytes: 8,

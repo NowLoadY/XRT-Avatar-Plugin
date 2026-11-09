@@ -20,6 +20,7 @@ namespace XrtAvatarPlugin.Presentation
             material.SetFloat("_Columns", columns);
             bool board = string.Equals(preset, "board", StringComparison.OrdinalIgnoreCase);
             material.SetFloat("_NaturalLayout", board ? 1 : 0);
+            material.SetFloat("_HideWhenEmpty", board ? 0 : 1);
             material.SetColor("_Color", board ? new Color(.208f, .259f, .302f, 1) : Color.white);
             material.SetColor("_OutlineColor", new Color(.04f, .05f, .07f, .85f));
             material.SetFloat("_OutlineWidth", board ? 0 : .10f);

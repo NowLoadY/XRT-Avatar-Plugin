@@ -80,6 +80,7 @@ namespace XrtAvatarPlugin.Editor
                 ReceiveTransition(receive, state, chunk);
             }
             AddBuffering(controller, receive, byteCount);
+            AddProgressive(controller, receive, byteCount, columns);
 
             var display = Layer(controller, "XRT Caption · Display");
             var show = display.AddState("Display");
@@ -195,6 +196,30 @@ namespace XrtAvatarPlugin.Editor
             publish.parameters = Enumerable.Range(0, CaptionAssets.ByteCount)
                 .Select(i => Copy(PendingPrefix + i, CachePrefix + i)).ToList();
             ReceiveTransition(receive, commit, XrtCaptionProtocol.CommitPointer, false);
+        }
+
+        internal static void AddProgressive(AnimatorController controller, AnimatorStateMachine receive, int byteCount, int columns)
+        {
+            AddParameter(controller, XrtCaptionProtocol.RefreshParameter, AnimatorControllerParameterType.Int, 1);
+            int rows = CaptionAssets.SlotCount / columns;
+            for (int first = 0; first < rows; first++)
+                for (int end = first + 1; end <= rows; end++)
+                {
+                    var state = ReceiveState(receive, "Clear rows " + first + "–" + end);
+                    var driver = state.AddStateMachineBehaviour<VRCAvatarParameterDriver>();
+                    driver.localOnly = false;
+                    driver.parameters = new List<VRC_AvatarParameterDriver.Parameter> {
+                        new VRC_AvatarParameterDriver.Parameter { name = Buffered, value = 0 }
+                    };
+                    for (int i = first * columns * 2; i < end * columns * 2; i++)
+                    {
+                        driver.parameters.Add(new VRC_AvatarParameterDriver.Parameter { name = CachePrefix + i, value = 0 });
+                        driver.parameters.Add(new VRC_AvatarParameterDriver.Parameter { name = PendingPrefix + i, value = 0 });
+                    }
+                    var transition = ReceiveTransition(receive, state, XrtCaptionProtocol.ClearRowsPointer, false);
+                    transition.AddCondition(AnimatorConditionMode.Equals, first, BytePrefix + "0");
+                    transition.AddCondition(AnimatorConditionMode.Equals, end, BytePrefix + "1");
+                }
         }
 
         private static AnimatorState ReceiveState(AnimatorStateMachine machine, string name)

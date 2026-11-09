@@ -27,6 +27,10 @@ Left-hand holding and proximity-based two-hand alignment were verified in the
 same Unity/SDK project on 2026-10-22, including saved scenes and reversible editing.
 Multiplayer behavior remains unverified.
 
+Progressive caption display, priority body clearing with retained banners,
+empty-board visibility and legacy buffered delivery were verified in the same
+Unity/SDK project on 2026-11-09. The synchronized parameter budget was unchanged.
+
 Local Test was checked in the same Unity/SDK project with Gesture Manager
 **3.9.9** and XRTranslate's Windows debug builds dated **2026-10-20 18:47 / 21:09**
 (backend **20:22**).
